@@ -95,9 +95,8 @@ pred = nb(records = records, cols=['name','addr'])
 the output `pred` contains a series of length len(df) containing cluster IDs  
 records that are matched share the same cluster ID
 """
-
 # %%
-df['pred'] = pred
+df["pred"] = pred
 
 # %%
 df.sort_values('pred')

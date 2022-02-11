@@ -91,10 +91,6 @@ records = b.Records(df=df1, df2=df2, rec_id = 'ruid', true_id = 'cuid')
 nb = n.NaiveBlocking(threshold=0.75, block_union = block_union)
 pred = nb(records = records, cols=['name','addr'])
 
-df1['cluster'] = pred[0].values
-df2['cluster'] = pred[1].values
-df1.merge(df2, on ='cluster')
-
 # %% [markdown]
 """
 the output `pred` contains a list of size 2 containing:
@@ -103,3 +99,11 @@ the output `pred` contains a list of size 2 containing:
 
 records that are matched share the same cluster ID
 """
+
+# %%
+
+df1['cluster'] = pred[0].values
+df2['cluster'] = pred[1].values
+
+df1.merge(df2, on ='cluster')
+# %%
