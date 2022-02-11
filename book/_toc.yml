@@ -1,0 +1,7 @@
+format: jb-book
+root: contents/home
+parts:
+  - caption: Home
+    chapters:
+    - file: contents/demo/quickstart
+    - file: contents/demo/quickstart_rl

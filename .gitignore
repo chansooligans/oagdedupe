@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 
+# book build files
+book/_build/*
+
+
 # C extensions
 *.so
 
