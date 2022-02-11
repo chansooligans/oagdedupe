@@ -48,24 +48,40 @@ df.head(10)
 """
 ## To de-dupe: 
 
-(1) create a Records object using dataframe, record_id, and true_id if available (e.g. true_id may be used for testing benchmark dataset).  
+(1) create a Records object using dataframe (`df`) and record_id (`rec_id`). If testing, 
+ use true_id to pass the correct labels
 
 `records = b.Records(df, rec_id = 'ruid', true_id = None)`
 
-(2) select algorithm with the required parameters, e.g.:
+(2) pass blocking methods
 
-`nb = n.NaiveBlocking(threshold=0.75, blocking_method = "first_letter")`
+```
+nb = n.NaiveBlocking(threshold=0.75, block_union = block_union)
+```
+
+where `block_union` is an object defining your blocking methods:
+
+```
+block_union = bl.union.Union(
+    [
+        bl.intersection.Intersection(
+            [
+                bm.Pair(method=bm.commonFourGram, attribute='name'), 
+                bm.Pair(method=bm.first_letter, attribute='name')
+            ]),
+        bl.intersection.Intersection(
+            [
+                bm.Pair(method=bm.oneGramFingerprint, attribute='addr')
+            ]
+        )
+    ],    
+)
+```
 
 (3) run algorithm on your data
 
 `pred = nb(records = records, cols=['name','addr'])`
 
-"""
-
-
-# %% [markdown]
-"""
-## Naive Blocking
 """
 
 # %% tags=["remove-output"]
@@ -83,7 +99,6 @@ block_union = bl.union.Union(
         )
     ],    
 )
-
 
 # %% tags=['remove-output']
 records = b.Records(df=df, rec_id = 'ruid', true_id = None)
