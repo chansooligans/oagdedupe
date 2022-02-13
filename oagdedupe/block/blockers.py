@@ -73,21 +73,18 @@ class NoBlocker(BaseBlocker, BlockerMixin):
     """
     No Blocking, gets all combinations.
     """
-    df: pd.DataFrame
 
-    def get_block_maps(self):
-        return {"_":[x for x in range(len(self.df))]}
+    def get_block_maps(self, df):
+        return [{"_":[x for x in range(len(df))]}]
 
 @dataclass
 class ManualBlocker(BaseBlocker, BlockerMixin):
-    df: pd.DataFrame
 
     def get_block_maps(self):
         return
 
 @dataclass
 class AutoBlocker(BaseBlocker, BlockerMixin):
-    df: pd.DataFrame
     
     def get_block_maps(self):
         return

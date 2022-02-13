@@ -73,17 +73,9 @@ class Dedupe(BaseModel):
         return
 
     def _get_candidates(self):
-        
-        block_map_list = self.blocker.get_block_maps(df=self.df)
-        
-        candidates = []
-        for block_map in block_map_list:
-            for x in block_map.values():
-                candidates.extend(
-                    [pair for pair in itertools.combinations(x, 2) if pair not in candidates]
-                )
-
-        return candidates
+        return self.blocker.dedupe_get_candidates(
+            self.blocker.get_block_maps(df=self.df)
+        )
 
 @dataclass
 class RecordLinkage(BaseModel, BaseRecordLinkage):
@@ -98,19 +90,11 @@ class RecordLinkage(BaseModel, BaseRecordLinkage):
 
     def _get_candidates(self):
         
-        block_map_list1 = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
-        block_map_list2 = self.blocker.get_block_maps(df=self.df2, attributes=self.attributes2)
+        block_maps1, block_maps2 = [
+            self.blocker.get_block_maps(df=_)
+            for _ in [self.df, self.df2]
+        ]
         
-        candidates_rl = []
-        for block_map1, block_map2 in zip(block_map_list1, block_map_list2):
-            joint_keys = [name for name in set(block_map1).intersection(set(block_map2))]
-            for key in joint_keys:
-                candidates_rl.extend(
-                    [
-                        pair 
-                        for pair in self.blocker.product([block_map1[key], block_map2[key]], nodupes=False) 
-                        if pair not in candidates_rl
-                    ]
-                )
-
-        return candidates_rl
+        return self.blocker.rl_get_candidates(
+            block_maps1, block_maps2
+        )
