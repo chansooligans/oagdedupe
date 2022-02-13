@@ -22,8 +22,9 @@ class ConnectedComponents:
             for rec_id in cluster:
                 clusters.append({"cluster": clusteridx, self.rec_id: rec_id})
                 clustered.add(rec_id)
+        return
 
-    def handle_unclustered
+    def handle_unclustered(self):
         # handling unclustered
         logging.info('handling unclustered')
         current_cluster = len(conn_comp)
@@ -34,3 +35,4 @@ class ConnectedComponents:
                         {"cluster": current_cluster, self.rec_id: rec_id}
                     )
                     current_cluster += 1
+        return

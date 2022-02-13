@@ -4,3 +4,5 @@ from oagdedupe.base import BaseTrain
 
 class Threshold(BaseTrain):
 
+    def test(self):
+        return

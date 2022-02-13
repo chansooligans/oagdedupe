@@ -1,33 +1,42 @@
 from abc import ABCMeta, abstractmethod
 from typing import List, Union, Any, Optional, Dict
 from dataclasses import dataclass
+
+import pandas as pd
+import itertools
+
 from oagdedupe.mixin import BlockerMixin
-from oagdedupe.block.blockers import ManualBlocker
+from oagdedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
+from oagdedupe.block.blockers import TestBlocker
 from oagdedupe.train.threshold import Threshold
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.cluster.cluster import ConnectedComponents
 
+@dataclass
 class BaseModel(metaclass=ABCMeta):
     """ Abstract base class from which all model classes inherit.
     All descendent classes must implement predict, train, and candidates methods.
     """
-    blocker = ManualBlocker()
-    distance = AllJaro()
-    trainer = Threshold()
-    cluster = ConnectedComponents()
+    df: pd.DataFrame
+    cols: List[str]
+    blocker: Optional[BaseBlocker] = TestBlocker()
+    distance: Optional[BaseDistance] = AllJaro()
+    trainer: Optional[BaseTrain] = Threshold()
+    cluster: Optional[BaseCluster] = ConnectedComponents()
     
     @abstractmethod
-    def predict(self, df, cols):
+    def predict(self):
         """
         (1) Use trained model to identify matched candidates.
         (2) Use clustering algorithm to assign cluster IDs. Default is to define each connected component as a cluster.
         (3) Handle unclustered nodes.
         (4) Returns cluster IDs
         """
+        candidates = self._get_candidates()
         return
 
     @abstractmethod    
-    def train():
+    def train(self):
         """
         (1) Computes similarity scores for each column.
         (2) fit a model to learn p(match).
@@ -37,7 +46,7 @@ class BaseModel(metaclass=ABCMeta):
         return
 
     @abstractmethod
-    def get_candidates(self):
+    def _get_candidates(self):
         """
         1) generate unique IDs;
         2) check if blocker selected
@@ -48,30 +57,50 @@ class BaseModel(metaclass=ABCMeta):
         return
 
 @dataclass
-class Dedupe(BaseModel, BlockerMixin):
+class BaseRecordLinkage:
+    df2: pd.DataFrame
+    cols2: List[str]
+
+@dataclass
+class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel.
     """
 
-    def predict(self, df, cols):
+    def predict(self):
         return
 
     def train(self):
-
         return
 
-    def get_candidates(self):
-        return
+    def _get_candidates(self):
+        
+        block_map = self.blocker.get_block_map(df=self.df, cols=self.cols)
+
+        candidates = []
+        for x in block_map.values():
+            candidates.extend([list(z) for z in itertools.combinations(x, 2)])
+
+        return candidates
 
 @dataclass
-class RecordLinkage(BaseModel, BlockerMixin):
+class RecordLinkage(BaseModel, BaseRecordLinkage):
     """General record linkage block, inherits from BaseModel.
     """
 
-    def predict(self, df, cols):
+    def predict(self):
         return
 
-    def train():
+    def train(self):
         return
 
-    def get_candidates(self):
-        return
+    def _get_candidates(self):
+        
+        block_map1 = self.blocker.get_block_map(df=self.df, cols=self.cols)
+        block_map2 = self.blocker.get_block_map(df=self.df2, cols=self.cols2)
+        
+        joint_keys = [name for name in set(block_map1).intersection(set(block_map2))]
+        candidates_rl = []
+        for key in joint_keys:
+            candidates_rl.extend(self.blocker.product([block_map1[key], block_map2[key]], nodupes=False))
+
+        return candidates_rl
