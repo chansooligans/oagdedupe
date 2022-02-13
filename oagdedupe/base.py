@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from typing import List, Union, Any, Optional, Dict
 from dataclasses import dataclass
 
-class BaseBlock(metaclass=ABCMeta):
+class BaseBlocker(metaclass=ABCMeta):
     """ Abstract base class for all blockers to inherit
     """
 

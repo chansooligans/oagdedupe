@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import List, Union, Any, Optional, Dict
 from dataclasses import dataclass
+from oagdedupe.mixin import BlockerMixin
 
 class BaseModel(metaclass=ABCMeta):
     """ Abstract base class from which all model classes inherit.
@@ -41,7 +42,7 @@ class BaseModel(metaclass=ABCMeta):
 
 
 @dataclass
-class Dedupe(BaseModel):
+class Dedupe(BaseModel, BlockerMixin):
     """General dedupe block, inherits from BaseModel.
     """
 
@@ -64,7 +65,7 @@ class Dedupe(BaseModel):
     """
 
 @dataclass
-class RecordLinkage(BaseModel):
+class RecordLinkage(BaseModel, BlockerMixin):
     """General record linkage block, inherits from BaseModel.
     """
 
