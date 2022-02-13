@@ -44,7 +44,7 @@ class BaseModel(metaclass=ABCMeta):
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel.
     """
-    
+
 
     def predict(
         self,
