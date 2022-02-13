@@ -10,7 +10,3 @@ class BlockerMixin(BaseBlocker):
     def block_map:
         "use raw data to get block maps"
         return block_map
-
-    
-
-
