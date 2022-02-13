@@ -18,7 +18,7 @@ class BaseModel(metaclass=ABCMeta):
     All descendent classes must implement predict, train, and candidates methods.
     """
     df: pd.DataFrame
-    cols: List[str]
+    attributes: List[str]
     blocker: Optional[BaseBlocker] = TestBlocker()
     distance: Optional[BaseDistance] = AllJaro()
     trainer: Optional[BaseTrain] = Threshold()
@@ -59,7 +59,7 @@ class BaseModel(metaclass=ABCMeta):
 @dataclass
 class BaseRecordLinkage:
     df2: pd.DataFrame
-    cols2: List[str]
+    attributes2: List[str]
 
 @dataclass
 class Dedupe(BaseModel):
@@ -74,11 +74,14 @@ class Dedupe(BaseModel):
 
     def _get_candidates(self):
         
-        block_map = self.blocker.get_block_map(df=self.df, cols=self.cols)
-
+        block_map_list = self.blocker.get_block_maps(df=self.df)
+        
         candidates = []
-        for x in block_map.values():
-            candidates.extend([list(z) for z in itertools.combinations(x, 2)])
+        for block_map in block_map_list:
+            for x in block_map.values():
+                candidates.extend(
+                    [pair for pair in itertools.combinations(x, 2) if pair not in candidates]
+                )
 
         return candidates
 
@@ -95,12 +98,19 @@ class RecordLinkage(BaseModel, BaseRecordLinkage):
 
     def _get_candidates(self):
         
-        block_map1 = self.blocker.get_block_map(df=self.df, cols=self.cols)
-        block_map2 = self.blocker.get_block_map(df=self.df2, cols=self.cols2)
+        block_map_list1 = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
+        block_map_list2 = self.blocker.get_block_maps(df=self.df2, attributes=self.attributes2)
         
-        joint_keys = [name for name in set(block_map1).intersection(set(block_map2))]
         candidates_rl = []
-        for key in joint_keys:
-            candidates_rl.extend(self.blocker.product([block_map1[key], block_map2[key]], nodupes=False))
+        for block_map1, block_map2 in zip(block_map_list1, block_map_list2):
+            joint_keys = [name for name in set(block_map1).intersection(set(block_map2))]
+            for key in joint_keys:
+                candidates_rl.extend(
+                    [
+                        pair 
+                        for pair in self.blocker.product([block_map1[key], block_map2[key]], nodupes=False) 
+                        if pair not in candidates_rl
+                    ]
+                )
 
         return candidates_rl
