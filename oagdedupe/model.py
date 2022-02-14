@@ -3,12 +3,13 @@ from typing import List, Union, Any, Optional, Dict
 from dataclasses import dataclass
 
 import pandas as pd
+import numpy as np
 import itertools
 
 from oagdedupe.mixin import BlockerMixin
 from oagdedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
 from oagdedupe.block.blockers import TestBlocker
-from oagdedupe.train.threshold import Threshold
+from oagdedupe.train.models import Threshold
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.cluster.cluster import ConnectedComponents
 
@@ -21,7 +22,7 @@ class BaseModel(metaclass=ABCMeta):
     attributes: List[str]
     blocker: Optional[BaseBlocker] = TestBlocker()
     distance: Optional[BaseDistance] = AllJaro()
-    trainer: Optional[BaseTrain] = Threshold()
+    trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     
     @abstractmethod
@@ -67,10 +68,25 @@ class Dedupe(BaseModel):
     """
 
     def predict(self):
+        y = self.trainer.fit(
+            self.train()
+        )
         return
 
     def train(self):
-        return
+        candidates = []
+        for idx,idy in self._get_candidates():
+            distances = []
+            for attribute in self.attributes:
+                distances.append(
+                    self.distance.distance(self.df[attribute].iloc[idx], self.df[attribute].iloc[idy])
+                )
+            candidates.append([idx, idy] + distances)
+
+        candidates = np.array(candidates)
+        self.trainer.learn(candidates[:,2:])
+        
+        return candidates
 
     def _get_candidates(self):
         return self.blocker.dedupe_get_candidates(
