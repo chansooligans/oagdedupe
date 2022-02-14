@@ -78,7 +78,7 @@ class Dedupe(BaseModel):
         )
         df_clusters = pd.DataFrame(clusters)
         df_clusters["x"] = df_clusters["id"].str.contains("x")
-        df_clusters["id"] = df_clusters["id"].str.replace("x|y","").astype(float).astype(int)
+        df_clusters["id"] = df_clusters["id"].str.replace("x|y","", regex=True).astype(float).astype(int)
         return df_clusters
 
 
