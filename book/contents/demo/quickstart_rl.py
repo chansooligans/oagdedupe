@@ -104,7 +104,7 @@ block_union = bl.Union(
 
 
 records = b.Records(df=df1, df2=df2, rec_id = 'ruid', true_id = 'cuid')
-nb = n.NaiveBlocking(threshold=0.75, block_union = block_union)
+nb = b.AlgoWBlocking(threshold=0.75, block_union = block_union)
 pred = nb(records = records, cols=['name','addr'])
 
 # %% [markdown]
