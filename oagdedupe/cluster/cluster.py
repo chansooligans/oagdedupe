@@ -10,29 +10,17 @@ class ConnectedComponents:
     just copied and pasted below from old code for now!!
     """
 
-    def get_connected_components(self):
+    def cluster_ids(self, matches, scores, nobs, rl):
+        return self.get_connected_components(matches, scores)
+
+    def get_connected_components(self, matches, scores):
         g = nx.Graph()
-        g.add_edges_from([tuple(i) for i in self.matches.values])
-
-        logging.info("getting clusters")
-        conn_comp = list(nx.connected_components(g))
-        clusters = []
-        clustered = set()
-        for clusteridx, cluster in enumerate(conn_comp):
+        g.add_weighted_edges_from([tuple([f"{match[0]}x",f"{match[1]}y",score]) for match,score in zip(matches,scores)])
+        self.conn_comp = list(nx.connected_components(g))
+        self.clusters = []
+        self.clustered = set()
+        for clusteridx, cluster in enumerate(self.conn_comp):
             for rec_id in cluster:
-                clusters.append({"cluster": clusteridx, self.rec_id: rec_id})
-                clustered.add(rec_id)
-        return
-
-    def handle_unclustered(self):
-        # handling unclustered
-        logging.info('handling unclustered')
-        current_cluster = len(conn_comp)
-        if self.df2 is None:
-            for rec_id in self.df[self.rec_id].values:
-                if not rec_id in clustered:
-                    clusters.append(
-                        {"cluster": current_cluster, self.rec_id: rec_id}
-                    )
-                    current_cluster += 1
-        return
+                self.clusters.append({"cluster": clusteridx, "id": rec_id})
+                self.clustered.add(rec_id)
+        return self.clusters

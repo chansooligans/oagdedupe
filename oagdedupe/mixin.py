@@ -29,8 +29,8 @@ class BlockerMixin:
     def get_attribute_blocks(self) -> Dict[str, Set[int]]:
         
         attribute_blocks = {}
-        for rec_id, block in self.blocks:
-            attribute_blocks.setdefault(block, set()).add(rec_id)
+        for _id, block in self.blocks:
+            attribute_blocks.setdefault(block, set()).add(_id)
         
         return attribute_blocks
 
