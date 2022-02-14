@@ -68,10 +68,19 @@ class Dedupe(BaseModel):
     """
 
     def predict(self):
-        y = self.trainer.fit(
-            self.train()
+        idxmat, X = self.train()
+        score, y = self.trainer.fit(X)
+        clusters = self.cluster.cluster_ids(
+            matches=idxmat[y==1].astype(int), 
+            scores=score[y==1], 
+            nobs=len(self.df), 
+            rl=False
         )
-        return
+        df_clusters = pd.DataFrame(clusters)
+        df_clusters["x"] = df_clusters["id"].str.contains("x")
+        df_clusters["id"] = df_clusters["id"].str.replace("x|y","").astype(float).astype(int)
+        return df_clusters
+
 
     def train(self):
         candidates = []
@@ -86,7 +95,7 @@ class Dedupe(BaseModel):
         candidates = np.array(candidates)
         self.trainer.learn(candidates[:,2:])
         
-        return candidates
+        return candidates[:,:2],candidates[:,2:]
 
     def _get_candidates(self):
         return self.blocker.dedupe_get_candidates(
@@ -96,6 +105,8 @@ class Dedupe(BaseModel):
 @dataclass
 class RecordLinkage(BaseModel, BaseRecordLinkage):
     """General record linkage block, inherits from BaseModel.
+
+    Keep this in mind when coding Dedupe, but update once Dedupe is done.
     """
 
     def predict(self):

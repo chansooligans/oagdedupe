@@ -14,4 +14,5 @@ class Threshold(BaseTrain):
 
     def fit(self, X):
         means = X.mean(axis=1)
-        return np.where(means>self.threshold, 1, 0)
+        labels = np.where(means>self.threshold, 1, 0)
+        return means, labels
