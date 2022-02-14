@@ -23,6 +23,10 @@ class BaseDistance(metaclass=ABCMeta):
     """
 
     @abstractmethod
+    def distance(self):
+        return
+
+    @abstractmethod
     def config(self):
         return
 
@@ -31,7 +35,7 @@ class BaseTrain(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def test(self):
+    def fit(self):
         return
 
 class BaseCluster(metaclass=ABCMeta):

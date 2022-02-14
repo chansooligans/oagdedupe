@@ -6,7 +6,7 @@ from jellyfish import jaro_winkler_similarity
 @dataclass
 class AllJaro(BaseDistance):
 
-    def jaro_winkler(self,x,y):
+    def distance(self,x,y):
         return jaro_winkler_similarity(x,y)
 
     def config(self):

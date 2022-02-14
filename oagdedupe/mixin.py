@@ -3,6 +3,11 @@ from dataclasses import dataclass
 import itertools
 
 @dataclass
+class CandidatePair:
+    idx: int
+    idy: int
+
+@dataclass
 class BlockerMixin:
     
     def product(self, lists, nodupes=True):
@@ -34,9 +39,14 @@ class BlockerMixin:
         for block_map in block_maps:
             for x in block_map.values():
                 candidates.extend(
-                    [pair for pair in itertools.combinations(x, 2) if pair not in candidates]
+                    [
+                        pair 
+                        for pair in itertools.combinations(x, 2) 
+                        if pair not in candidates
+                    ]
                 )
-        return candidates
+        for cand in candidates:
+            yield cand
 
     def rl_get_candidates(self, block_maps1, block_maps2):
         candidates_rl = []
@@ -50,4 +60,5 @@ class BlockerMixin:
                         if pair not in candidates_rl
                     ]
                 )
-        return candidates_rl
+        for cand in candidates_rl:
+            yield cand
