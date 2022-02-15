@@ -83,19 +83,10 @@ class Dedupe(BaseModel):
 
 
     def train(self):
-        candidates = []
-        for idx,idy in self._get_candidates():
-            distances = []
-            for attribute in self.attributes:
-                distances.append(
-                    self.distance.distance(self.df[attribute].iloc[idx], self.df[attribute].iloc[idy])
-                )
-            candidates.append([idx, idy] + distances)
-
-        candidates = np.array(candidates)
-        self.trainer.learn(candidates[:,2:])
-        
-        return candidates[:,:2],candidates[:,2:]
+        idxmat = self._get_candidates()
+        X = self.distance.get_distmat(self.df, self.attributes, idxmat)
+        self.trainer.learn(X)
+        return idxmat, X
 
     def _get_candidates(self):
         
@@ -116,7 +107,10 @@ class RecordLinkage(BaseModel, BaseRecordLinkage):
         return
 
     def train(self):
-        return
+        idxmat = self._get_candidates()
+        X = self.distance.get_distmat(self.df, self.attributes, idxmat)
+        self.trainer.learn(X)
+        return idxmat, X
 
     def _get_candidates(self):
         
