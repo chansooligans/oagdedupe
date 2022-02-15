@@ -4,21 +4,21 @@ from dataclasses import dataclass
 import networkx as nx
 import pandas as pd
 
-from oagdedupe.base import BaseDistance
+from oagdedupe.base import BaseCluster
 
 @dataclass
-class ConnectedComponents:
+class ConnectedComponents(BaseCluster):
 
     """
     just copied and pasted below from old code for now!!
     """
 
-    def cluster_ids(self, matches, scores, rl):
-        df_clusters = pd.DataFrame(
-            self.get_connected_components(matches, scores)
-        )
+    def get_df_cluster(self, matches, scores, rl):
+        
+        df_clusters = self.get_connected_components(matches, scores)
         df_clusters["x"] = df_clusters["id"].str.contains("x")
         df_clusters["id"] = df_clusters["id"].str.replace("x|y","", regex=True).astype(float).astype(int)
+
         if rl == False:
             return df_clusters[["id","cluster"]]
         else:
@@ -29,11 +29,14 @@ class ConnectedComponents:
 
     def get_connected_components(self, matches, scores):
         g = nx.Graph()
-        g.add_weighted_edges_from([tuple([f"{match[0]}x",f"{match[1]}y",score]) for match,score in zip(matches,scores)])
-        self.conn_comp = list(nx.connected_components(g))
-        self.clusters = [
+        g.add_weighted_edges_from([
+                tuple([f"{match[0]}x",f"{match[1]}y",score]) 
+                for match,score in zip(matches,scores)
+            ])
+        conn_comp = list(nx.connected_components(g))
+        clusters = [
             {"cluster": clusteridx, "id": rec_id}
-            for clusteridx, cluster in enumerate(self.conn_comp)
+            for clusteridx, cluster in enumerate(conn_comp)
             for rec_id in cluster
         ]
-        return self.clusters
+        return pd.DataFrame(clusters)

@@ -43,5 +43,5 @@ class BaseCluster(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def test(self):
+    def get_df_cluster(self):
         return

@@ -70,7 +70,7 @@ class Dedupe(BaseModel):
     def predict(self):
         
         idxmat, scores, y = self.fit()
-        return self.cluster.cluster_ids(
+        return self.cluster.get_df_cluster(
             matches=idxmat[y==1].astype(int), 
             scores=scores[y==1],
             rl=False
@@ -80,8 +80,8 @@ class Dedupe(BaseModel):
         idxmat = self._get_candidates()
         X = self.distance.get_distmat(self.df, self.attributes, idxmat)
         self.trainer.learn(X)
-        preds = self.trainer.fit(X)
-        return idxmat, preds[0], preds[1]
+        scores, y = self.trainer.fit(X)
+        return idxmat, scores, y
 
     def _get_candidates(self):
         
@@ -101,7 +101,7 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
     def predict(self):
         
         idxmat, scores, y = self.fit()
-        return self.cluster.cluster_ids(
+        return self.cluster.get_df_cluster(
             matches=idxmat[y==1].astype(int), 
             scores=scores[y==1],
             rl=True
