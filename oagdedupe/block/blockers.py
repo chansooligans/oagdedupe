@@ -1,21 +1,57 @@
-from typing import List, Union, Any, Optional, Dict
+from typing import List, Union, Any, Set, Optional, Dict
 from dataclasses import dataclass
 
 import pandas as pd
 
 from oagdedupe.base import BaseBlocker
 from oagdedupe.mixin import BlockerMixin
-from oagdedupe.block.groups import Union,Intersection, Pair
-from oagdedupe.block.algos import (
-    FirstLetter,
-    FirstLetterLastToken
-)
+from oagdedupe.block.groups import Union, Intersection, Pair
+from oagdedupe.block.algos import FirstLetter, FirstLetterLastToken
 from oagdedupe.base import BaseBlockAlgo
+
 
 @dataclass
 class PairBlock(BlockerMixin):
-    attribute: str
+    v: pd.Series
     BlockAlgo: BaseBlockAlgo
+
+    @property
+    def blocks(self):
+        return [(i, self.BlockAlgo.get_block(x)) for i, x in enumerate(self.v.tolist())]
+
+    def get_attribute_blocks(self) -> Dict[str, Set[int]]:
+
+        attribute_blocks = {}
+        for _id, block in self.blocks:
+            attribute_blocks.setdefault(block, set()).add(_id)
+
+        return attribute_blocks
+
+
+@dataclass
+class IntersectionBlock(BlockerMixin):
+    df: pd.DataFrame
+    intersection: Intersection
+
+    @property
+    def blocks(self):
+        return [
+            PairBlock(
+                v=self.df[pair.attribute], BlockAlgo=pair.BlockAlgo
+            ).get_attribute_blocks()
+            for pair in self.intersection.pairs
+        ]
+
+    def block_maps(self):
+
+        key_list = self.product([item.keys() for item in self.blocks])
+        block_map = {}
+        for keys in key_list:
+            block_map[tuple(keys)] = tuple(
+                set.intersection(*[block[key] for key, block in zip(keys, self.blocks)])
+            )
+        return block_map
+
 
 @dataclass
 class TestBlocker(BaseBlocker, BlockerMixin):
@@ -27,46 +63,28 @@ class TestBlocker(BaseBlocker, BlockerMixin):
     @property
     def config(self):
         return Union(
-            intersections = [
-                    Intersection([
-                        Pair(BlockAlgo=FirstLetter(),attribute="name"),
-                        Pair(BlockAlgo=FirstLetter(),attribute="addr")
-                    ]),
-                    Intersection([
-                        Pair(BlockAlgo=FirstLetter(),attribute="name"),
-                        Pair(BlockAlgo=FirstLetterLastToken(),attribute="name"),
-                    ])
-                ]
+            intersections=[
+                Intersection(
+                    [
+                        Pair(BlockAlgo=FirstLetter(), attribute="name"),
+                        Pair(BlockAlgo=FirstLetter(), attribute="addr"),
+                    ]
+                ),
+                Intersection(
+                    [
+                        Pair(BlockAlgo=FirstLetter(), attribute="name"),
+                        Pair(BlockAlgo=FirstLetterLastToken(), attribute="name"),
+                    ]
+                ),
+            ]
         )
 
-    def get_block_maps(self, df:pd.DataFrame) -> Dict[tuple,tuple]:
-        """
-        needs work
+    def get_block_maps(self, df) -> Dict[tuple, tuple]:
+        return [
+            IntersectionBlock(df=df, intersection=intersection).block_maps()
+            for intersection in self.config.intersections
+        ]
 
-        For each Intersection:
-            For each Pair:
-                Get Pair Blocks
-                Group Pair Block by Block ID and Aggregate Record IDs
-
-        Returns Intersection Blocks: Combine Pair Blocks by getting unique combinations of Block IDs and sets of Record IDs
-        """
-        
-        block_maps = []
-        for intersection in self.config.intersections:
-            attribute_blocks = [
-                PairBlock(attribute=df[pair.attribute], BlockAlgo=pair.BlockAlgo).get_attribute_blocks()
-                for pair in intersection.pairs
-            ]
-
-            key_list = self.product([item.keys() for item in attribute_blocks])
-            block_map = {}
-            for keys in key_list:
-                block_map[tuple(keys)] = tuple(
-                    set.intersection(*[block[key] for key,block in zip(keys,attribute_blocks)])
-                )
-            block_maps.append(block_map)
-            
-        return block_maps
 
 @dataclass
 class NoBlocker(BaseBlocker, BlockerMixin):
@@ -75,16 +93,16 @@ class NoBlocker(BaseBlocker, BlockerMixin):
     """
 
     def get_block_maps(self, df):
-        return [{"_":[x for x in range(len(df))]}]
+        return [{"_": [x for x in range(len(df))]}]
+
 
 @dataclass
 class ManualBlocker(BaseBlocker, BlockerMixin):
-
     def get_block_maps(self):
         return
 
+
 @dataclass
 class AutoBlocker(BaseBlocker, BlockerMixin):
-    
     def get_block_maps(self):
         return

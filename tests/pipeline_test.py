@@ -21,6 +21,7 @@ df = pd.concat([
 attributes = ["name", "addr"]
 
 d = Dedupe(df=df, attributes=attributes)
+rl = RecordLinkage(df=df, df2=df.copy(), attributes=attributes, attributes2=attributes)
 
 def test_dedupe_pipeline() -> None:
     df_clusters = d.predict()
@@ -28,3 +29,6 @@ def test_dedupe_pipeline() -> None:
 
 def test_get_candidates() -> None:
     assert len([x for x in d._get_candidates()])==15
+
+def test_get_candidates_rl() -> None:
+    assert len([x for x in rl._get_candidates()])==48

@@ -98,8 +98,11 @@ class Dedupe(BaseModel):
         return candidates[:,:2],candidates[:,2:]
 
     def _get_candidates(self):
+        
+        block_maps = self.blocker.get_block_maps(df=self.df)
+        
         return self.blocker.dedupe_get_candidates(
-            self.blocker.get_block_maps(df=self.df)
+            block_maps
         )
 
 @dataclass
