@@ -6,6 +6,7 @@
 
 ```
 from oagdedupe.datasets.fake import df, df2
+print(df.head())
 ```
 
 
