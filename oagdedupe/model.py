@@ -19,7 +19,8 @@ class BaseModel(metaclass=ABCMeta):
     All descendent classes must implement predict, train, and candidates methods.
     """
     df: pd.DataFrame
-    attributes: List[str]
+    attributes: Optional[List[str]] = None
+    attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
     distance: Optional[BaseDistance] = AllJaro()
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
@@ -60,12 +61,15 @@ class BaseModel(metaclass=ABCMeta):
 @dataclass
 class BaseRecordLinkage:
     df2: pd.DataFrame
-    attributes2: List[str]
 
 @dataclass
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel.
     """
+    
+    def __post_init__(self):
+        if self.attributes is None:
+            self.attributes = self.df.columns
 
     def predict(self):
         
@@ -98,6 +102,13 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
     Keep this in mind when coding Dedupe, but update once Dedupe is done.
     """
 
+    def __post_init__(self):
+        if (self.attributes is None) & (self.attributes2 is None):
+            unq_cols = list(set(self.df.columns).intersection(self.df2.columns))
+            self.attributes = self.attributes2 = unq_cols
+        elif self.attributes2 is None:
+            self.attributes2 = self.attributes
+
     def predict(self):
         
         idxmat, scores, y = self.fit()
@@ -106,6 +117,13 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
             scores=scores[y==1],
             rl=True
         )
+
+    def fit(self):
+        idxmat = self._get_candidates()
+        X = self.distance.get_distmat_rl(self.df, self.df2, self.attributes, self.attributes2, idxmat)
+        self.trainer.learn(X)
+        scores, y = self.trainer.fit(X)
+        return idxmat, scores, y
 
     def _get_candidates(self):
         

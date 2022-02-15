@@ -6,9 +6,8 @@ from oagdedupe.datasets.fake import df, df2
 import pandas as pd
 import numpy as np
 
-attributes = ["name", "addr"]
-d = Dedupe(df=df, attributes=attributes)
-rl = RecordLinkage(df=df, df2=df.copy(), attributes=attributes, attributes2=attributes)
+d = Dedupe(df=df)
+rl = RecordLinkage(df=df, df2=df.copy())
 
 def test_pipeline_dedupe() -> None:
     assert len(d.predict())==22
