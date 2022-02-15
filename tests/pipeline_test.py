@@ -1,5 +1,5 @@
 # %%
-from oagdedupe.model import Dedupe, RecordLinkage
+from oagdedupe.api import Dedupe, RecordLinkage
 from oagdedupe.block.blockers import NoBlocker
 from oagdedupe.datasets.fake import df, df2
 
