@@ -23,9 +23,12 @@ attributes = ["name", "addr"]
 d = Dedupe(df=df, attributes=attributes)
 rl = RecordLinkage(df=df, df2=df.copy(), attributes=attributes, attributes2=attributes)
 
-def test_dedupe_pipeline() -> None:
-    df_clusters = d.predict()
-    assert len(df_clusters)==22
+def test_pipeline_dedupe() -> None:
+    assert len(d.predict())==22
+
+def test_pipeline_rl() -> None:
+    predsx, predsy = rl.predict()
+    assert len(predsx)==len(predsy)==20
 
 def test_get_candidates() -> None:
     assert len([x for x in d._get_candidates()])==15

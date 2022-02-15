@@ -37,7 +37,7 @@ class BaseModel(metaclass=ABCMeta):
         return
 
     @abstractmethod    
-    def train(self):
+    def fit(self):
         """
         (1) Computes similarity scores for each column.
         (2) fit a model to learn p(match).
@@ -68,25 +68,20 @@ class Dedupe(BaseModel):
     """
 
     def predict(self):
-        idxmat, X = self.train()
-        score, y = self.trainer.fit(X)
-        clusters = self.cluster.cluster_ids(
+        
+        idxmat, scores, y = self.fit()
+        return self.cluster.cluster_ids(
             matches=idxmat[y==1].astype(int), 
-            scores=score[y==1], 
-            nobs=len(self.df), 
+            scores=scores[y==1],
             rl=False
         )
-        df_clusters = pd.DataFrame(clusters)
-        df_clusters["x"] = df_clusters["id"].str.contains("x")
-        df_clusters["id"] = df_clusters["id"].str.replace("x|y","", regex=True).astype(float).astype(int)
-        return df_clusters
 
-
-    def train(self):
+    def fit(self):
         idxmat = self._get_candidates()
         X = self.distance.get_distmat(self.df, self.attributes, idxmat)
         self.trainer.learn(X)
-        return idxmat, X
+        preds = self.trainer.fit(X)
+        return idxmat, preds[0], preds[1]
 
     def _get_candidates(self):
         
@@ -97,20 +92,20 @@ class Dedupe(BaseModel):
         )
 
 @dataclass
-class RecordLinkage(BaseModel, BaseRecordLinkage):
+class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
     """General record linkage block, inherits from BaseModel.
 
     Keep this in mind when coding Dedupe, but update once Dedupe is done.
     """
 
     def predict(self):
-        return
-
-    def train(self):
-        idxmat = self._get_candidates()
-        X = self.distance.get_distmat(self.df, self.attributes, idxmat)
-        self.trainer.learn(X)
-        return idxmat, X
+        
+        idxmat, scores, y = self.fit()
+        return self.cluster.cluster_ids(
+            matches=idxmat[y==1].astype(int), 
+            scores=scores[y==1],
+            rl=True
+        )
 
     def _get_candidates(self):
         
