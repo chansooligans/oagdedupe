@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Union, Any, Optional, Dict
+from typing import List, Union, Any, Optional, Dict, Tuple
 from dataclasses import dataclass
 
 import pandas as pd
@@ -28,34 +28,15 @@ class BaseModel(metaclass=ABCMeta):
     
     @abstractmethod
     def predict(self):
-        """
-        (1) Use trained model to identify matched candidates.
-        (2) Use clustering algorithm to assign cluster IDs. Default is to define each connected component as a cluster.
-        (3) Handle unclustered nodes.
-        (4) Returns cluster IDs
-        """
         candidates = self._get_candidates()
         return
 
     @abstractmethod    
     def fit(self):
-        """
-        (1) Computes similarity scores for each column.
-        (2) fit a model to learn p(match).
-            - Default model is to average similarity scores and use a threshold of 0.9.
-        (3) Return model that takes any dataframe or dataframes with same columns, and returns matched candidates.
-        """
         return
 
     @abstractmethod
     def _get_candidates(self):
-        """
-        1) generate unique IDs;
-        2) check if blocker selected
-            - if blocker not selected, block map is all possible combinations of ID pairs;
-            - else use blocker to get block map;
-        3) use block map to generate pairs of candidate pairs of records
-        """
         return
 
 @dataclass
@@ -71,24 +52,26 @@ class Dedupe(BaseModel):
         if self.attributes is None:
             self.attributes = self.df.columns
 
-    def predict(self):
+    def predict(self) -> pd.DataFrame:
         
         idxmat, scores, y = self.fit()
+        print('cluster')
         return self.cluster.get_df_cluster(
             matches=idxmat[y==1].astype(int), 
             scores=scores[y==1],
             rl=False
         )
 
-    def fit(self):
+    def fit(self) -> Tuple[np.array, np.array, np.array]:
         idxmat = self._get_candidates()
+        print('fit')
         X = self.distance.get_distmat(self.df, self.attributes, idxmat)
         self.trainer.learn(X)
         scores, y = self.trainer.fit(X)
         return idxmat, scores, y
 
-    def _get_candidates(self):
-        
+    def _get_candidates(self) -> np.array:
+        print('get_candidates')
         block_maps = self.blocker.get_block_maps(df=self.df)
         
         return self.blocker.dedupe_get_candidates(
@@ -109,7 +92,7 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
         elif self.attributes2 is None:
             self.attributes2 = self.attributes
 
-    def predict(self):
+    def predict(self) -> pd.DataFrame:
         
         idxmat, scores, y = self.fit()
         return self.cluster.get_df_cluster(
@@ -118,14 +101,14 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
             rl=True
         )
 
-    def fit(self):
+    def fit(self) -> Tuple[np.array, np.array, np.array]:
         idxmat = self._get_candidates()
         X = self.distance.get_distmat_rl(self.df, self.df2, self.attributes, self.attributes2, idxmat)
         self.trainer.learn(X)
         scores, y = self.trainer.fit(X)
         return idxmat, scores, y
 
-    def _get_candidates(self):
+    def _get_candidates(self) -> np.array:
         
         block_maps1, block_maps2 = [
             self.blocker.get_block_maps(df=_)

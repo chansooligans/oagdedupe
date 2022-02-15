@@ -48,7 +48,7 @@ class DistanceMixin:
     def get_distmat(self, df, attributes, indices):
         return np.array([
             [
-                self.distance(df[attribute].iloc[idx], df[attribute].iloc[idy])
+                self.distance(df[attribute][idx], df[attribute].iloc[idy])
                 for attribute in attributes
             ]
             for idx,idy in indices
