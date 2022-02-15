@@ -20,6 +20,7 @@ jellyfish = "^0.9.0"
 sparse-dot-topn = "^0.3.1"
 seaborn = "^0.11.2"
 statsmodels = "^0.13.2"
+tabulate = "^0.8.9"
 
 [tool.poetry.dev-dependencies]
 
