@@ -53,3 +53,12 @@ class DistanceMixin:
             ]
             for idx,idy in indices
         ])
+
+    def get_distmat_rl(self, df, df2, attributes, attributes2, indices):
+        return np.array([
+            [
+                self.distance(df[attributex].iloc[idx], df2[attributey].iloc[idy])
+                for attributex, attributey in zip(attributes,attributes2)
+            ]
+            for idx,idy in indices
+        ])
