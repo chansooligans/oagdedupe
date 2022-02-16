@@ -16,6 +16,7 @@ class Pair:
 
 @dataclass
 class Intersection:
+    """intersection of Pairs"""
     pairs: List[Pair]
 
     @property
@@ -30,6 +31,7 @@ class Intersection:
 
 @dataclass
 class Union:
+    """union of intersections"""
     intersections: List[Intersection]
 
     @property

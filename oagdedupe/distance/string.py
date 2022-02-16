@@ -8,6 +8,7 @@ from oagdedupe.mixin import DistanceMixin
 
 @dataclass
 class AllJaro(BaseDistance, DistanceMixin):
+    "needs work: update to allow user to specify attribute-algorithm pairs"
 
     def distance(self,x,y):
         return jaro_winkler_similarity(x,y)

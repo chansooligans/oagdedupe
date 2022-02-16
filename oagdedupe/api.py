@@ -53,9 +53,9 @@ class Dedupe(BaseModel):
             self.attributes = self.df.columns
 
     def predict(self) -> pd.DataFrame:
+        """get clusters of matches and return cluster IDs"""
         
         idxmat, scores, y = self.fit()
-        print('cluster')
         return self.cluster.get_df_cluster(
             matches=idxmat[y==1].astype(int), 
             scores=scores[y==1],
@@ -63,15 +63,15 @@ class Dedupe(BaseModel):
         )
 
     def fit(self) -> Tuple[np.array, np.array, np.array]:
+        """learn p(match)"""
         idxmat = self._get_candidates()
-        print('fit')
         X = self.distance.get_distmat(self.df, self.attributes, idxmat)
         self.trainer.learn(X)
         scores, y = self.trainer.fit(X)
         return idxmat, scores, y
 
     def _get_candidates(self) -> np.array:
-        print('get_candidates')
+        """get candidate pairs"""
         block_maps = self.blocker.get_block_maps(df=self.df)
         
         return self.blocker.dedupe_get_candidates(
@@ -93,6 +93,7 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
             self.attributes2 = self.attributes
 
     def predict(self) -> pd.DataFrame:
+        """get clusters of matches and return cluster IDs"""
         
         idxmat, scores, y = self.fit()
         return self.cluster.get_df_cluster(
@@ -102,6 +103,7 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
         )
 
     def fit(self) -> Tuple[np.array, np.array, np.array]:
+        """learn p(match)"""
         idxmat = self._get_candidates()
         X = self.distance.get_distmat_rl(self.df, self.df2, self.attributes, self.attributes2, idxmat)
         self.trainer.learn(X)
@@ -109,6 +111,7 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
         return idxmat, scores, y
 
     def _get_candidates(self) -> np.array:
+        "get candidate pairs"
         
         block_maps1, block_maps2 = [
             self.blocker.get_block_maps(df=_)
