@@ -4,7 +4,7 @@ __pycache__/
 
 # book build files
 book/_build/*
-
+profile/
 
 # C extensions
 *.so
