@@ -81,8 +81,6 @@ class Dedupe(BaseModel):
 @dataclass
 class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
     """General record linkage block, inherits from BaseModel.
-
-    Keep this in mind when coding Dedupe, but update once Dedupe is done.
     """
 
     def __post_init__(self):
