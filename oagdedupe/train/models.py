@@ -9,6 +9,10 @@ from oagdedupe.base import BaseTrain
 
 @dataclass
 class TestTrain(BaseTrain):
+    """
+    Model to be used only for testing Dedupe with test dataframes.
+    Uses pre-labelled classes to train overfit svm. 
+    """
     threshold: float = 0.8
 
     @property
@@ -26,6 +30,10 @@ class TestTrain(BaseTrain):
 
 @dataclass
 class Threshold(BaseTrain):
+    """
+    Naive model that computes means of distances for each candidate pair.
+    Then labels all pairs whose mean distance > threshold as a match.
+    """
     threshold: float = 0.8
 
     def learn(self, X):
