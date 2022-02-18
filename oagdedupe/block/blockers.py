@@ -1,5 +1,6 @@
 from typing import List, Union, Any, Set, Optional, Dict, Tuple
 from dataclasses import dataclass
+from functools import cached_property
 
 import pandas as pd
 
@@ -8,7 +9,7 @@ from oagdedupe.mixin import BlockerMixin
 from oagdedupe.block.groups import Union, Intersection, Pair
 from oagdedupe.block.algos import FirstLetter, FirstLetterLastToken
 from oagdedupe.base import BaseBlockAlgo
-
+from oagdedupe.utils import timing
 
 @dataclass
 class PairBlock(BlockerMixin):
@@ -18,7 +19,7 @@ class PairBlock(BlockerMixin):
     v: pd.Series
     BlockAlgo: BaseBlockAlgo
 
-    @property
+    @cached_property
     def blocks(self) -> List[Tuple[int, str]]:
         """Uses blocking algo on attributes to get list of tuples 
         containing idx and block
@@ -29,7 +30,6 @@ class PairBlock(BlockerMixin):
         """converts blocks to dictionary where keys are blocks and values are 
         set of unique idx
         """
-
         attribute_blocks = {}
         for _id, block in self.blocks:
             attribute_blocks.setdefault(block, set()).add(_id)
@@ -45,7 +45,7 @@ class IntersectionBlock(BlockerMixin):
     df: pd.DataFrame
     intersection: Intersection
 
-    @property
+    @cached_property
     def blocks(self) -> List[PairBlock]:
         """Create PairBlock for each pair in intersection configuration
         """
@@ -96,6 +96,7 @@ class TestBlocker(BaseBlocker, BlockerMixin):
             ]
         )
 
+    @timing
     def get_block_maps(self, df) -> List[dict]:
         "returns list of intersection block maps"
         return [
