@@ -92,7 +92,7 @@ class DistanceMixin:
             yield lst[i:i + n]
 
 
-    def p_distances(self, comparisons, cores=6):
+    def p_distances(self, comparisons):
         
         try:
             # split block_map into chunks for parallel processing
@@ -101,7 +101,7 @@ class DistanceMixin:
             n_chunks = np.ceil(len(comparisons)/chunksize)
             
             # parallel process with progress bar
-            p = Pool(cores)
+            p = Pool(self.ncores)
             results = []
 
             # pmap_chunk is number of chunks sent to each processor at a time and should be multiple of chunksize

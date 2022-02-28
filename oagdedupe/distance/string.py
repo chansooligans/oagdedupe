@@ -9,6 +9,7 @@ from oagdedupe.mixin import DistanceMixin
 @dataclass
 class AllJaro(BaseDistance, DistanceMixin):
     "needs work: update to allow user to specify attribute-algorithm pairs"
+    ncores: int = 6
 
     def distance(self,pairs):
         return [

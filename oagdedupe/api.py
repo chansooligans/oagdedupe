@@ -23,7 +23,7 @@ class BaseModel(metaclass=ABCMeta):
     attributes: Optional[List[str]] = None
     attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
-    distance: Optional[BaseDistance] = AllJaro()
+    distance: Optional[BaseDistance] = AllJaro(ncores=6)
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     
