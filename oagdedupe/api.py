@@ -19,10 +19,11 @@ class BaseModel(metaclass=ABCMeta):
     All descendent classes must implement predict, train, and candidates methods.
     """
     df: pd.DataFrame
+    df2: Optional[pd.DataFrame] = None
     attributes: Optional[List[str]] = None
     attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
-    distance: Optional[BaseDistance] = AllJaro()
+    distance: Optional[BaseDistance] = AllJaro(ncores=6)
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     
@@ -38,10 +39,6 @@ class BaseModel(metaclass=ABCMeta):
     @abstractmethod
     def _get_candidates(self):
         return
-
-@dataclass
-class BaseRecordLinkage:
-    df2: pd.DataFrame
 
 @dataclass
 class Dedupe(BaseModel):
@@ -64,10 +61,13 @@ class Dedupe(BaseModel):
 
     def fit(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
+        
         idxmat = self._get_candidates()
-        X = self.distance.get_distmat(self.df, self.attributes, idxmat)
+
+        X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
         self.trainer.learn(X)
         scores, y = self.trainer.fit(X)
+        
         return idxmat, scores, y
 
     def _get_candidates(self) -> np.array:
@@ -79,7 +79,7 @@ class Dedupe(BaseModel):
         )
 
 @dataclass
-class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
+class RecordLinkage(Dedupe, BaseModel):
     """General record linkage block, inherits from BaseModel.
     """
 
@@ -99,14 +99,6 @@ class RecordLinkage(Dedupe, BaseModel, BaseRecordLinkage):
             scores=scores[y==1],
             rl=True
         )
-
-    def fit(self) -> Tuple[np.array, np.array, np.array]:
-        """learn p(match)"""
-        idxmat = self._get_candidates()
-        X = self.distance.get_distmat_rl(self.df, self.df2, self.attributes, self.attributes2, idxmat)
-        self.trainer.learn(X)
-        scores, y = self.trainer.fit(X)
-        return idxmat, scores, y
 
     def _get_candidates(self) -> np.array:
         "get candidate pairs"

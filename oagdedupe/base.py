@@ -22,6 +22,9 @@ class BaseDistance(metaclass=ABCMeta):
     """ Abstract base class for all distance configurations to inherit
     """
 
+    def __init__(self, ncores):
+        self.ncores = ncores
+
     @abstractmethod
     def distance(self):
         return

@@ -6,6 +6,7 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 
 from oagdedupe.base import BaseTrain
+from oagdedupe.utils import timing
 
 @dataclass
 class TestTrain(BaseTrain):
@@ -36,9 +37,11 @@ class Threshold(BaseTrain):
     """
     threshold: float = 0.8
 
+    @timing
     def learn(self, X):
         return
 
+    @timing
     def fit(self, X):
         means = X.mean(axis=1)
         labels = np.where(means>self.threshold, 1, 0)

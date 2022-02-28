@@ -1,7 +1,12 @@
 from typing import List, Union, Any, Set, Optional, Dict
 from dataclasses import dataclass
 import itertools
+
 import numpy as np
+from multiprocessing import Pool
+from tqdm import tqdm
+
+from oagdedupe.utils import timing
 
 @dataclass
 class BlockerMixin:
@@ -19,6 +24,7 @@ class BlockerMixin:
                 result = [x+[y] for x in result for y in item]
         return result
 
+    @timing
     def dedupe_get_candidates(self, block_maps) -> np.array:
         """dedupe: convert union (list of block maps) to candidate pairs
 
@@ -63,22 +69,63 @@ class DistanceMixin:
     Mixin class for all distance computers
     """
 
-    def get_distmat(self, df, attributes, indices) -> np.array:
-        """for each candidate pair and attribute, compute distances"""
-        return np.array([
-            [
-                self.distance(df[attribute][idx], df[attribute].iloc[idy])
-                for attribute in attributes
-            ]
-            for idx,idy in indices
-        ])
+    def get_comparisons(self, df, df2, attributes, attributes2, indices):
+        if df2 is None:
+            df2 = df
+        if attributes2 is None:
+            attributes2 = attributes
+        
+        return {
+            attribute:np.concatenate(
+                (
+                    np.array(df[[attribute]].iloc[indices[:,0]]),
+                    np.array(df2[[attribute2]].iloc[indices[:,1]])
+                ),
+                axis=1
+            )
+            for attribute,attribute2 in zip(attributes,attributes2)
+        }
 
-    def get_distmat_rl(self, df, df2, attributes, attributes2, indices) -> np.array:
-        """record linkage: for each candidate pair and attribute, compute distances"""
-        return np.array([
-            [
-                self.distance(df[attributex].iloc[idx], df2[attributey].iloc[idy])
-                for attributex, attributey in zip(attributes,attributes2)
-            ]
-            for idx,idy in indices
+    def get_chunks(self, lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
+
+    def p_distances(self, comparisons):
+        
+        try:
+            # split block_map into chunks for parallel processing
+            chunksize = 80
+            comparisons_split = self.get_chunks(lst=comparisons, n=chunksize)
+            n_chunks = np.ceil(len(comparisons)/chunksize)
+            
+            # parallel process with progress bar
+            p = Pool(self.ncores)
+            results = []
+
+            # pmap_chunk is number of chunks sent to each processor at a time and should be multiple of chunksize
+            pmap_chunk=min(480, int(n_chunks))
+            for _ in tqdm(p.imap(self.distance, comparisons_split, chunksize=pmap_chunk), total=n_chunks):
+                results.append(_)
+                pass
+        except KeyboardInterrupt:
+            p.terminate()
+            p.join()
+        else:
+            p.close()
+            p.join()
+        if results:
+            return np.concatenate(results)
+    
+    @timing
+    def get_distmat(self, df, df2, attributes, attributes2, indices) -> np.array:
+        """for each candidate pair and attribute, compute distances"""
+        
+        print(f"making {indices.shape[0]} comparions")
+        comparisons = self.get_comparisons(df, df2, attributes, attributes2, indices)
+
+        return np.column_stack([
+            self.p_distances(comparisons[attribute])
+            for attribute in attributes
         ])
