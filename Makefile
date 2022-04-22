@@ -1,10 +1,10 @@
 .PHONY: book clean
 
 book:
-	poetry run jb build book
+	b build book
 
 clean:
-	poetry run jb clean book
+	jb clean book
 
 tests_all:
-	poetry run pytest -v
+	pytest -v
