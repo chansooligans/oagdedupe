@@ -6,7 +6,7 @@ from typing import Any, Callable, Set, Tuple, Sequence, Union
 import pandas as pd
 import re
 
-from oagdedupe.base import BaseBlockAlgo
+from dedupe.base import BaseBlockAlgo
 
 class FirstLetter(BaseBlockAlgo):
 

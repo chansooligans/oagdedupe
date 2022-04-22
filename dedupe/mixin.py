@@ -6,7 +6,7 @@ import numpy as np
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from oagdedupe.utils import timing
+from dedupe.utils import timing
 
 @dataclass
 class BlockerMixin:

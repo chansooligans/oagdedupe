@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from jellyfish import jaro_winkler_similarity
 
-from oagdedupe.base import BaseDistance
-from oagdedupe.mixin import DistanceMixin
+from dedupe.base import BaseDistance
+from dedupe.mixin import DistanceMixin
 
 @dataclass
 class AllJaro(BaseDistance, DistanceMixin):

@@ -1,11 +1,11 @@
-# oagdedupe  
+# dedupe  
 
 ## quickstart
 
 #### fake datasets for testing:
 
 ```
-from oagdedupe.datasets.fake import df, df2
+from dedupe.datasets.fake import df, df2
 print(df.head())
 ```
 
@@ -20,7 +20,7 @@ print(df.head())
 #### dedupe:
 
 ```
-from oagdedupe.api import Dedupe
+from dedupe.api import Dedupe
 d = Dedupe(df=df, attributes=None)
 preds = d.predict()
 
@@ -40,7 +40,7 @@ df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 #### record linkage:
 
 ```
-from oagdedupe.api import RecordLinkage
+from dedupe.api import RecordLinkage
 rl = RecordLinkage(df=df, df2=df2, attributes=None, attributes2=None)
 predsx, predsy = rl.predict()
 

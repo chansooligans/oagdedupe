@@ -4,12 +4,12 @@ from functools import cached_property
 
 import pandas as pd
 
-from oagdedupe.base import BaseBlocker
-from oagdedupe.mixin import BlockerMixin
-from oagdedupe.block.groups import Union, Intersection, Pair
-from oagdedupe.block.algos import FirstLetter, FirstLetterLastToken
-from oagdedupe.base import BaseBlockAlgo
-from oagdedupe.utils import timing
+from dedupe.base import BaseBlocker
+from dedupe.mixin import BlockerMixin
+from dedupe.block.groups import Union, Intersection, Pair
+from dedupe.block.algos import FirstLetter, FirstLetterLastToken
+from dedupe.base import BaseBlockAlgo
+from dedupe.utils import timing
 
 @dataclass
 class PairBlock(BlockerMixin):

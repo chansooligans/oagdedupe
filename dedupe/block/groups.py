@@ -2,7 +2,7 @@
 """
 from dataclasses import dataclass
 from typing import List, FrozenSet
-from oagdedupe.base import BaseBlockAlgo
+from dedupe.base import BaseBlockAlgo
 
 @dataclass(frozen=True)
 class Pair:

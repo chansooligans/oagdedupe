@@ -5,8 +5,8 @@ import numpy as np
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 
-from oagdedupe.base import BaseTrain
-from oagdedupe.utils import timing
+from dedupe.base import BaseTrain
+from dedupe.utils import timing
 
 @dataclass
 class TestTrain(BaseTrain):

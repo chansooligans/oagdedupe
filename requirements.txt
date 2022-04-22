@@ -67,7 +67,7 @@ debugpy @ file:///root/.cache/pypoetry/artifacts/63/97/20/ce2c2f45489f0ab6d2a7d1
 decorator @ file:///root/.cache/pypoetry/artifacts/34/17/0e/2b47ba09c969bda1d9eaefda2d9ccee318289f9e57d361761be4f3ab90/decorator-5.1.0-py3-none-any.whl
 dedupe==2.0.6
 dedupe-hcluster @ file:///root/.cache/pypoetry/artifacts/9a/f6/b1/87006392f3b1f25215474e204bc4dfc604c41babf0f4240e2b5ea0ebe8/dedupe_hcluster-0.3.8-cp38-cp38-manylinux1_x86_64.whl
--e git+ssh://git@git.ag.ny.gov/research/oagdedupe.git@86b606f4547d52c2c15590ab575d8beb2647ad9c#egg=oagdedupe
+-e git+ssh://git@git.ag.ny.gov/research/dedupe.git@86b606f4547d52c2c15590ab575d8beb2647ad9c#egg=dedupe
 dedupe-variable-datetime @ file:///root/.cache/pypoetry/artifacts/cf/9e/20/d9058c9a0434c2a25153bd630b1c1b780f2ee753b47b743471e60a4ceb/dedupe_variable_datetime-0.1.5-py3-none-any.whl
 defusedxml @ file:///root/.cache/pypoetry/artifacts/15/b0/94/888992ee7b1de9fbc975b6afd17d34f441df6e96172df8d4eba95c9432/defusedxml-0.7.1-py2.py3-none-any.whl
 descartes @ file:///root/.cache/pypoetry/artifacts/55/48/93/2dfc9278d131ed2413ab628c59d287240743e57326202133caf6e06d67/descartes-1.1.0-py3-none-any.whl

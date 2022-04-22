@@ -13,11 +13,10 @@ if get_ipython() is not None:
 
 
 # %%
-import oaglib as oag
-from oagdedupe import base as b
-from oagdedupe.naiveblocking import naiveblocking as n
-from oagdedupe.blocking import blockmethod as bm
-import oagdedupe.blocking as bl
+from dedupe import base as b
+from dedupe.naiveblocking import naiveblocking as n
+from dedupe.blocking import blockmethod as bm
+import dedupe.blocking as bl
 import string
 import pandas as pd
 import numpy as np

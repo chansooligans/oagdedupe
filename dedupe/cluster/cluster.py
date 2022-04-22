@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import networkx as nx
 import pandas as pd
 
-from oagdedupe.base import BaseCluster
+from dedupe.base import BaseCluster
 
 @dataclass
 class ConnectedComponents(BaseCluster):

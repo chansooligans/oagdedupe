@@ -6,12 +6,12 @@ import pandas as pd
 import numpy as np
 import itertools
 
-from oagdedupe.mixin import BlockerMixin
-from oagdedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
-from oagdedupe.block.blockers import TestBlocker
-from oagdedupe.train.models import Threshold
-from oagdedupe.distance.string import AllJaro
-from oagdedupe.cluster.cluster import ConnectedComponents
+from dedupe.mixin import BlockerMixin
+from dedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
+from dedupe.block.blockers import TestBlocker
+from dedupe.train.models import Threshold
+from dedupe.distance.string import AllJaro
+from dedupe.cluster.cluster import ConnectedComponents
 
 @dataclass
 class BaseModel(metaclass=ABCMeta):

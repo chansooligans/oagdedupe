@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "oagdedupe"
+name = "dedupe"
 version = "0.1.0"
 description = ""
 authors = ["RAD"]
