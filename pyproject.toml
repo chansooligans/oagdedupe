@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "oagdedupe"
+version = "0.1.0"
+description = ""
+authors = ["RAD"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+oaglib = {git = "git@git.ag.ny.gov:research/oaglib.git"}
+pandas = "^1.4.0"
+numpy = "^1.22.2"
+pytest = "^7.0.0"
+jupyter-book = "^0.12.1"
+psycopg2-binary = "^2.9.3"
+Faker = "^12.3.0"
+dedupe = "^2.0.13"
+networkx = "^2.6.3"
+sklearn = "^0.0"
+jellyfish = "^0.9.0"
+sparse-dot-topn = "^0.3.1"
+seaborn = "^0.11.2"
+statsmodels = "^0.13.2"
+tabulate = "^0.8.9"
+line-profiler = "^3.4.0"
+Resource = "^0.2.1"
+memory-profiler = "^0.60.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
