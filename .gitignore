@@ -12,6 +12,7 @@ profile/
 # Distribution / packaging
 .Python
 .venv/
+.vscode/
 env/
 build/
 develop-eggs/
