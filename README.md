@@ -1,5 +1,10 @@
 # dedupe  
 
+## to-do:
+
+- implement active learning
+- add more blocking algos
+
 ## quickstart
 
 #### fake datasets for testing:
