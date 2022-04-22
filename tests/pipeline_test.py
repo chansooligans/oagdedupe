@@ -21,3 +21,5 @@ def test_get_candidates() -> None:
 
 def test_get_candidates_rl() -> None:
     assert len([x for x in rl._get_candidates()])==48
+
+# %%
