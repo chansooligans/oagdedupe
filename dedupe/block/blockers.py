@@ -96,7 +96,6 @@ class TestBlocker(BaseBlocker, BlockerMixin):
             ]
         )
 
-    @timing
     def get_block_maps(self, df) -> List[dict]:
         "returns list of intersection block maps"
         return [

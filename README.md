@@ -4,6 +4,8 @@
 
 - implement active learning
 - add more blocking algos
+- scale
+    - "comparisons" in DistanceMixin can get large 
 
 ## quickstart
 

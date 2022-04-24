@@ -23,7 +23,7 @@ class BaseModel(metaclass=ABCMeta):
     attributes: Optional[List[str]] = None
     attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
-    distance: Optional[BaseDistance] = AllJaro(ncores=6)
+    distance: Optional[BaseDistance] = AllJaro(ncores=2)
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     
@@ -65,7 +65,8 @@ class Dedupe(BaseModel):
         idxmat = self._get_candidates()
 
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
-        self.trainer.learn(X)
+
+        self.trainer.learn(self.df, X, idxmat)
         scores, y = self.trainer.fit(X)
         
         return idxmat, scores, y

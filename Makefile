@@ -1,10 +1,4 @@
-.PHONY: book clean
-
-book:
-	b build book
-
-clean:
-	jb clean book
+.PHONY: tests_all
 
 tests_all:
-	pytest -v
+	poetry run pytest -v
