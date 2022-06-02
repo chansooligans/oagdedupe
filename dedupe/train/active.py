@@ -50,7 +50,13 @@ class Active(BaseTrain):
 
         unlabelled = self.dfX.loc[~self.dfX["index"].isin(self.active_dict.keys()),"index"]
 
-        self.samples["init"] = np.append(unlabelled[:5].values,unlabelled[-5:].values)
+        low = unlabelled[:10].values
+        high = unlabelled[-10:].values
+        lowhigh = [None] * (len(low) + len(high))
+        lowhigh[::2] = low
+        lowhigh[1::2] = high
+        
+        self.samples["init"] = lowhigh
         self.samples["uncertain"] = self.dfX.sort_values("uncertain").loc[
             ~self.dfX["index"].isin(self.active_dict.keys()),"index"
         ][:5].values
