@@ -1,44 +1,89 @@
 # %%
+from IPython import get_ipython
+if get_ipython() is not None:
+    get_ipython().run_line_magic('load_ext', 'autoreload')
+    get_ipython().run_line_magic('autoreload', '2')
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(rc={'figure.figsize':(11.7,8.27)})
 import streamlit as st
 import streamlit.components.v1 as components
 
-def run(self,candidates, df ,_type="lowhigh"):
-    self.get_samples()
-    if _type == "lowhigh":
-        for x in ["lowest","highest"]:
-            self.active_learn(x, candidates, df)
-    else:
-        self.active_learn("uncertain", candidates, df)
-    self.update_active_dict(_type)
-    self.retrain()
-    plt.figure()
-    sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.scores)
-    plt.figure()
-    sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.y)
-    plt.show()
+from dedupe.api import Dedupe, RecordLinkage
+from dedupe.train.active import Active
+from dedupe.datasets.fake import df, df2
 
-def active_learn(self, _type, candidates, df):
-    self.labels[_type] = []
-    for a,b in candidates[self.samples[_type],:]:
-        while True:
-            try:
-                userinput = int(input(f"{df.loc[a]} \n\n {df.loc[b]}"))
-            except ValueError:
-                print("Needs to be 1 or 0")
-                continue
-            else:
-                break
-        self.labels[_type].append(userinput)
+import pandas as pd
+import numpy as np
 
-def update_active_dict(self,_type):
-    if _type == "uncertain":
-        indices = list(self.samples["uncertain"])
-        labels = self.labels["uncertain"] 
-    else:
-        indices = list(self.samples["lowest"]) + list(self.samples["highest"])
-        labels = self.labels["lowest"] + self.labels["highest"]
-    for idx,lab in zip(indices, labels):
-        self.active_dict[idx] = lab
+# %%
+d = Dedupe(df=df, trainer=Active())
+idxmat = d._get_candidates()
+X = d.distance.get_distmat(d.df, d.df2, d.attributes, d.attributes2, idxmat)
+d.trainer.initialize(X)
+
+# %%
+d.trainer.get_samples()
+
+# %%
+_type = "init"
+
+samples = pd.concat(
+    [
+        df.loc[idxmat[d.trainer.samples[_type],0]].reset_index(drop=True),
+        df.loc[idxmat[d.trainer.samples[_type],1]].reset_index(drop=True)
+    ],
+    axis=1
+).assign(
+    score=d.trainer.scores[d.trainer.samples[_type]],
+    label=None
+)
+samples
+
+# %%
+samples["label"] = [0,0,0,0,1,1,1,1,1,1]
+
+d.trainer.labels[_type] = samples["label"].values
+
+for idx,lab in zip(d.trainer.samples[_type], d.trainer.labels[_type]):
+    d.trainer.active_dict[idx] = lab
+
+d.trainer.train(
+    X[list(d.trainer.active_dict.keys()),:], 
+    init=False, 
+    labels=list(d.trainer.active_dict.values())
+)
+d.trainer.scores, d.trainer.y = d.trainer.fit(X)
+
+
+# %%
+_type = "uncertain"
+
+samples = pd.concat(
+    [
+        df.loc[idxmat[d.trainer.samples[_type],0]].reset_index(drop=True),
+        df.loc[idxmat[d.trainer.samples[_type],1]].reset_index(drop=True)
+    ],
+    axis=1
+).assign(
+    score=d.trainer.scores[d.trainer.samples[_type]],
+    label=None
+)
+samples
+
+# %%
+samples["label"] = [1,1,1,1,1]
+
+d.trainer.labels[_type] = samples["label"].values
+
+for idx,lab in zip(d.trainer.samples[_type], d.trainer.labels[_type]):
+    d.trainer.active_dict[idx] = lab
+
+d.trainer.train(
+    X[list(d.trainer.active_dict.keys()),:], 
+    init=False, 
+    labels=list(d.trainer.active_dict.values())
+)
+d.trainer.scores, d.trainer.y = d.trainer.fit(X)
+
+# %%
