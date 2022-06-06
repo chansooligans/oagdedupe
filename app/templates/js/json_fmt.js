@@ -6,3 +6,10 @@ document.getElementById("sample2").textContent = JSON.stringify(sample2, undefin
 
 var labels = {{ labels|tojson }}
 document.getElementById("labels").textContent = JSON.stringify(labels, undefined, 2);
+
+var meta = {{ meta|tojson }}
+document.getElementById("meta").textContent = JSON.stringify(meta, undefined, 2);
+
+$("#retrain").click(function() { 
+    $.get('/retrain');
+});

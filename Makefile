@@ -6,4 +6,7 @@ tests_all:
 serve:
 	poetry run python app/app.py
 
+reset:
+	rm cache/*
+	poetry run python app/app.py
 

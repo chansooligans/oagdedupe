@@ -26,6 +26,8 @@ init.setup_cache(cache_path)
 from dedupe.datasets.fake import df, df2
 d, idxmat = init.setup_dedupe(df)
 lab = utils.Labels(cache_path)
+d.trainer.labels = lab.labels
+
 
 # %%
 app = Flask(__name__)
@@ -34,15 +36,22 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 @app.route('/learn/', methods=["GET","POST"])
 def active_learn():
 
-    idxl,idxr = idxmat[d.trainer.samples[lab._type]][lab.sampleidx]
+    c_index = d.trainer.samples[lab._type][lab.sampleidx]
+    idxl,idxr = idxmat[c_index]
+    score = d.trainer.sorted_scores[lab._type][lab.sampleidx]
     sample1 = df.loc[idxl].to_dict()
     sample2 = df.loc[idxr].to_dict()
 
     if request.method == "POST":
         lab.labels[lab.sampleidx] = {
             "ids":f"{idxl}|{idxr}",
+            "c_index":f"{c_index}",
+            "score":f"{score}",
             "label":request.form["btnradio"]
         }
+        lab.meta[request.form["btnradio"]] += 1
+        lab.meta[lab._type] += 1
+        lab.meta[lab._type+"_current"] += 1
         lab.save()
         return redirect(url_for('active_learn'))
 
@@ -50,12 +59,25 @@ def active_learn():
         'learn.html', 
         sample1=sample1,
         sample2=sample2,
-        labels=lab.labels
+        score=score,
+        labels=lab.labels,
+        meta=lab.meta,
     )
+
+@app.route('/retrain', methods=["GET", "POST"])
+def retrain():
+    print(123)
+    d.trainer.labels = lab.labels
+    print(lab.labels)
+    if request.method == "GET":
+        d.trainer.retrain()
+        return redirect(url_for('active_learn'))
 
 app.run(host="pdcprlrdsci02",port=8008, debug=True)
 
+# %%
 
+# %%
 
 
 # # %%

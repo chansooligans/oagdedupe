@@ -1,5 +1,5 @@
 import json
-from collections import Counter
+from collections import defaultdict
 from functools import cached_property
 
 class Labels:
@@ -12,16 +12,15 @@ class Labels:
         with open(f"{self.cache_path}/samples.json", "r") as f:
             return json.load(f)
 
-    @property
-    def label_counts(self):
-        label_counts = Counter()
-        for val in self.labels.values():
-            label_counts[val["label"]] += 1
-        return label_counts
+    @cached_property
+    def meta(self):
+        with open(f"{self.cache_path}/meta.json", "r") as f:
+            meta = json.load(f)
+        return defaultdict(int, meta)
 
     @property
     def sufficient_positive_negative(self):
-        return (self.label_counts["Yes"] > 5) & (self.label_counts["No"] > 5) 
+        return (self.meta["Yes"] >= 5) & (self.meta["No"] >= 5) 
 
     @property
     def _type(self):
@@ -32,10 +31,11 @@ class Labels:
 
     @property
     def sampleidx(self):
-        print(len(self.labels))
-        return len(self.labels)
+        return self.meta[self._type+"_current"]
 
     def save(self):
         with open(f"{self.cache_path}/samples.json", "w") as f:
             json.dump(self.labels, f)
-        del self.labels
+        with open(f"{self.cache_path}/meta.json", "w") as f:
+            json.dump(self.meta, f)
+        del self.labels, self.meta
