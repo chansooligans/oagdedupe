@@ -16,6 +16,11 @@
     <div class="container">
         
         <h1>Dedupe</h1>
+
+        <form action = "/uploader" method = "POST" enctype = "multipart/form-data">
+            <input type = "file" name = "file" />
+            <input type = "submit"/>
+        </form> 
         
         <form method="POST" class="row g-3">
             <div class="col-md-12">
@@ -25,6 +30,7 @@
             <div>
                 <p>{{ score }}</p>
             </div>
+
             <div class="col-md-4">
                 <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
                     <input type="radio" class="btn-check" name="btnradio" id="btnradio1" value="Yes" autocomplete="off">
@@ -44,6 +50,10 @@
         
         <div class="col-12">
             <input id="retrain" class="btn btn-primary" type="submit" value="Re-Train">
+        </div>
+
+        <div>          
+            <img src="data:image/png;base64, {{ scatterplt }}" >
         </div>
         
         <div>

@@ -7,10 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(rc={'figure.figsize':(11.7,8.27)})
 
-from dedupe.app import (
-    init,
-    utils
-)
+from dedupe.app import utils
+from dedupe.app.init import Init
 from flask import Flask
 from flask import (
     render_template, 
@@ -18,41 +16,71 @@ from flask import (
     redirect,
     url_for,
 )
-import json
+import pandas as pd
+import os
+import seaborn as sns
+from io import BytesIO
+import base64
+from werkzeug.utils import secure_filename
 
 # %%
 cache_path = "/home/csong/cs_github/deduper/cache"
-init.setup_cache(cache_path)
-from dedupe.datasets.fake import df, df2
-d, idxmat = init.setup_dedupe(df)
-lab = utils.Labels(cache_path)
-d.trainer.labels = lab.labels
-
 
 # %%
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+app.config['UPLOAD_FOLDER'] = cache_path
+
+app.init = Init(cache_path=cache_path)
+app.init.setup_cache()
+app.lab = utils.Labels(cache_path)
+
+@app.route('/uploader', methods = ['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        f = request.files['file']
+        app.init.df = pd.read_csv(request.files.get('file'))
+        app.init.setup_dedupe(app.init.df)
+        app.init.d.trainer.labels = app.lab.labels
+        f.save(f"{app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
+    return redirect(url_for('active_learn'))
+    
 
 @app.route('/learn/', methods=["GET","POST"])
 def active_learn():
+    print(dir(app.init))
+    if not hasattr(app.init, "d"):
+        print(123)
+        return render_template(
+            'load.html', 
+        )
 
-    c_index = d.trainer.samples[lab._type][lab.sampleidx]
-    idxl,idxr = idxmat[c_index]
-    score = d.trainer.sorted_scores[lab._type][lab.sampleidx]
-    sample1 = df.loc[idxl].to_dict()
-    sample2 = df.loc[idxr].to_dict()
+    c_index = app.init.d.trainer.samples[app.lab._type][app.lab.sampleidx]
+    idxl,idxr = app.init.idxmat[c_index]
+    score = app.init.d.trainer.sorted_scores[app.lab._type][app.lab.sampleidx]
+    sample1 = app.init.df.loc[idxl].to_dict()
+    sample2 = app.init.df.loc[idxr].to_dict()
+
+    img = BytesIO()
+    # sns.kdeplot(app.init.d.trainer.sorted_scores["init"])
+    fig = sns.scatterplot(x=0, y=1, hue = "scores", data=app.init.d.trainer.dfX)
+    sns.set(rc={'figure.figsize':(5,4)})
+    plt.savefig(img, format='png')
+    plt.close()
+    img.seek(0)
+    scatterplt = base64.b64encode(img.getvalue()).decode('utf8')
 
     if request.method == "POST":
-        lab.labels[lab.sampleidx] = {
+        app.lab.labels[app.lab.sampleidx] = {
             "ids":f"{idxl}|{idxr}",
             "c_index":f"{c_index}",
             "score":f"{score}",
             "label":request.form["btnradio"]
         }
-        lab.meta[request.form["btnradio"]] += 1
-        lab.meta[lab._type] += 1
-        lab.meta[lab._type+"_current"] += 1
-        lab.save()
+        app.lab.meta[request.form["btnradio"]] += 1
+        app.lab.meta[app.lab._type] += 1
+        app.lab.meta[app.lab._type+"_current"] += 1
+        app.lab.save()
         return redirect(url_for('active_learn'))
 
     return render_template(
@@ -60,72 +88,22 @@ def active_learn():
         sample1=sample1,
         sample2=sample2,
         score=score,
-        labels=lab.labels,
-        meta=lab.meta,
+        labels=app.lab.labels,
+        meta=app.lab.meta,
+        scatterplt=scatterplt
     )
 
 @app.route('/retrain', methods=["GET", "POST"])
 def retrain():
     print(123)
-    d.trainer.labels = lab.labels
-    print(lab.labels)
+    app.init.d.trainer.labels = app.lab.labels
+    print(app.lab.labels)
     if request.method == "GET":
-        d.trainer.retrain()
-        return redirect(url_for('active_learn'))
+        app.init.d.trainer.retrain()
+        app.init.d.trainer.get_samples()
+        return "success"
 
 app.run(host="pdcprlrdsci02",port=8008, debug=True)
 
 # %%
 
-# %%
-
-
-# # %%
-# samples["label"] = [0,0,0,0,1,1,1,1,1,1]
-
-# d.trainer.labels[_type] = samples["label"].values
-
-# for idx,lab in zip(d.trainer.samples[_type], d.trainer.labels[_type]):
-#     d.trainer.active_dict[idx] = lab
-
-# d.trainer.train(
-#     X[list(d.trainer.active_dict.keys()),:], 
-#     init=False, 
-#     labels=list(d.trainer.active_dict.values())
-# )
-# d.trainer.scores, d.trainer.y = d.trainer.fit(X)
-
-
-# # %%
-# _type = "uncertain"
-
-# samples = pd.concat(
-#     [
-#         df.loc[idxmat[d.trainer.samples[_type],0]].reset_index(drop=True),
-#         df.loc[idxmat[d.trainer.samples[_type],1]].reset_index(drop=True)
-#     ],
-#     axis=1
-# ).assign(
-#     score=d.trainer.scores[d.trainer.samples[_type]],
-#     label=None
-# )
-# samples
-
-# # %%
-# samples["label"] = [1,1,1,1,1]
-
-# d.trainer.labels[_type] = samples["label"].values
-
-# for idx,lab in zip(d.trainer.samples[_type], d.trainer.labels[_type]):
-#     d.trainer.active_dict[idx] = lab
-
-# d.trainer.train(
-#     X[list(d.trainer.active_dict.keys()),:], 
-#     init=False, 
-#     labels=list(d.trainer.active_dict.values())
-# )
-# d.trainer.scores, d.trainer.y = d.trainer.fit(X)
-
-
-
-# %%

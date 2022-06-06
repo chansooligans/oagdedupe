@@ -79,29 +79,6 @@ class Active(BaseTrain):
         )
         self.scores, self.y = self.fit(self.X)
 
-    def run(self,candidates, df ,_type="lowhigh"):
-        self.get_samples()
-        if _type == "lowhigh":
-            for x in ["lowest","highest"]:
-                self.active_learn(x, candidates, df)
-        else:
-            self.active_learn("uncertain", candidates, df)
-        self.update_active_dict(_type)
-        self.retrain()
-        plt.figure()
-        sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.scores)
-        plt.figure()
-        sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.y)
-        plt.show()
-
-    def learn(self, df, X, candidates):
-        self.initialize(X)
-        self.run(candidates=candidates, df = df, _type="lowhigh")
-        user_continue = True
-        while user_continue:
-            self.run(candidates=candidates, df = df, _type="uncertain")
-            user_continue = input()
-
     def fit(self, X):
         X = StandardScaler().fit_transform(X)
         return self.clf.predict_proba(X)[:,1], self.clf.predict(X)

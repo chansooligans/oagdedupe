@@ -122,7 +122,7 @@ python-versions = "*"
 
 [[package]]
 name = "Faker"
-version = "13.12.0"
+version = "13.12.1"
 description = "Faker is a Python package that generates fake data for you."
 category = "main"
 optional = false
@@ -136,7 +136,7 @@ python-dateutil = ">=2.4"
 type = "git"
 url = "https://github.com/joke2k/faker.git"
 reference = "master"
-resolved_reference = "23b0fa4885152bf95dde318e30d543c06277b42e"
+resolved_reference = "d5cf706c778e58e9fa24bf91bf2836ccf20ea893"
 
 [[package]]
 name = "flask"
@@ -821,7 +821,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <4.0"
-content-hash = "02e6570cf660176e9deb020a51dfe543621f0f4d774ed22c8c5fc895777fcacd"
+content-hash = "56d2791322aff97c97726363263b16805b83c53cd9a8d76499de05ea50361488"
 
 [metadata.files]
 appnope = [
