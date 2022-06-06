@@ -17,16 +17,15 @@
         
         {% include 'nav.html' %}
 
-        <div class="col-md-12">
-            <div class="card-body">
-                <form action = "/uploader" method = "POST" enctype = "multipart/form-data">
-                    <input type = "file" name = "file" />
-                    <input type = "submit"/>
-                </form> 
-            </div>
+        <div>          
+            <img src="data:image/png;base64, {{ scatterplt }}" >
         </div>
 
-
+        <div>          
+            <img src="data:image/png;base64, {{ kdeplot }}" >
+        </div>
+        
     </div>
+        
 </body>
 </html>

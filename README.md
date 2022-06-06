@@ -2,10 +2,17 @@
 
 ## to-do:
 
-- implement active learning
-- add more blocking algos
+- app / active learning
+    - learn
+        - previous / next / edit options for learning samples
+        - editable json?
+    - datasets
+        - show cached files on load page
+- algos
+    - add more blocking algos
 - scale
-    - "comparisons" in DistanceMixin can get large 
+    - sql database
+    - parallelize
 
 ## quickstart
 

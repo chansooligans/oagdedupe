@@ -15,18 +15,15 @@
     
     <div class="container">
         
-        <h1>Dedupe</h1>
+        {% include 'nav.html' %}
 
-        <form action = "/uploader" method = "POST" enctype = "multipart/form-data">
-            <input type = "file" name = "file" />
-            <input type = "submit"/>
-        </form> 
-        
         <form method="POST" class="row g-3">
+
             <div class="col-md-12">
                 <pre id="sample1"></pre>
                 <pre id="sample2"></pre>
             </div>
+
             <div>
                 <p>{{ score }}</p>
             </div>
@@ -52,14 +49,10 @@
             <input id="retrain" class="btn btn-primary" type="submit" value="Re-Train">
         </div>
 
-        <div>          
-            <img src="data:image/png;base64, {{ scatterplt }}" >
-        </div>
-        
         <div>
             <pre id="meta"></pre>    
         </div>
-
+        
         <div>
             <pre id="labels"></pre>    
         </div>

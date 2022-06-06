@@ -30,10 +30,9 @@ cache_path = "/home/csong/cs_github/deduper/cache"
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.config['UPLOAD_FOLDER'] = cache_path
-
 app.init = Init(cache_path=cache_path)
-app.init.setup_cache()
 app.lab = utils.Labels(cache_path)
+app.init.setup_cache()
 
 @app.route('/uploader', methods = ['GET', 'POST'])
 def upload_file():
@@ -45,15 +44,42 @@ def upload_file():
         f.save(f"{app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
     return redirect(url_for('active_learn'))
     
+@app.route('/load', methods=["GET","POST"])
+def load_page():
+    return render_template(
+        'load.html', 
+    )
 
-@app.route('/learn/', methods=["GET","POST"])
+@app.route('/plots', methods=["GET","POST"])
+def load_plots():
+
+    img = BytesIO()
+    plt.figure()
+    sns.scatterplot(x=0, y=1, hue = "scores", data=app.init.d.trainer.dfX)
+    plt.savefig(img, format='png')
+    plt.close()
+    
+    img2 = BytesIO()
+    plt.figure()
+    sns.kdeplot(app.init.d.trainer.scores)
+    sns.histplot(app.init.d.trainer.scores)
+    plt.savefig(img2, format='png')
+    plt.close()
+
+    img.seek(0)
+    scatterplt = base64.b64encode(img.getvalue()).decode('utf8')
+
+    img2.seek(0)
+    kdeplot = base64.b64encode(img2.getvalue()).decode('utf8')
+    
+    return render_template(
+        'plots.html', 
+        scatterplt=scatterplt,
+        kdeplot=kdeplot
+    )
+
+@app.route('/learn', methods=["GET","POST"])
 def active_learn():
-    print(dir(app.init))
-    if not hasattr(app.init, "d"):
-        print(123)
-        return render_template(
-            'load.html', 
-        )
 
     c_index = app.init.d.trainer.samples[app.lab._type][app.lab.sampleidx]
     idxl,idxr = app.init.idxmat[c_index]
@@ -61,14 +87,7 @@ def active_learn():
     sample1 = app.init.df.loc[idxl].to_dict()
     sample2 = app.init.df.loc[idxr].to_dict()
 
-    img = BytesIO()
-    # sns.kdeplot(app.init.d.trainer.sorted_scores["init"])
-    fig = sns.scatterplot(x=0, y=1, hue = "scores", data=app.init.d.trainer.dfX)
-    sns.set(rc={'figure.figsize':(5,4)})
-    plt.savefig(img, format='png')
-    plt.close()
-    img.seek(0)
-    scatterplt = base64.b64encode(img.getvalue()).decode('utf8')
+    
 
     if request.method == "POST":
         app.lab.labels[app.lab.sampleidx] = {
@@ -90,17 +109,15 @@ def active_learn():
         score=score,
         labels=app.lab.labels,
         meta=app.lab.meta,
-        scatterplt=scatterplt
     )
 
 @app.route('/retrain', methods=["GET", "POST"])
 def retrain():
-    print(123)
     app.init.d.trainer.labels = app.lab.labels
-    print(app.lab.labels)
     if request.method == "GET":
         app.init.d.trainer.retrain()
         app.init.d.trainer.get_samples()
+        app.lab.meta[app.lab._type+"_current"] = 0
         return "success"
 
 app.run(host="pdcprlrdsci02",port=8008, debug=True)
