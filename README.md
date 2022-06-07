@@ -6,18 +6,21 @@
     - learn
         - [x] labelled samples dataframe interactive table
         - [x] previous / next / edit options for learning samples
-        - [ ] reformat active learning sample cards to be text instead of json
+        - [x] reformat active learning sample cards to be text instead of json
         - [x] show which dataset is being used    
-        - [ ] link to cards from dataframe
-            - [ ] ability to pass parameter to learn/<idl>-<idr> route
-        - [ ] if previous submit is revised, update json
-        - [ ] re-implenet active-dict to not relearn from already-learned samples
+        - [x] link to cards from dataframe
+            - [x] ability to pass parameter to learn/<idl>-<idr> route
+        - [x] if previous submit is revised, update json
+        - [x] re-implenet active-dict to not relearn from already-learned samples
     - datasets
         - [x] show cached files on load page
         - [x] if no file is selected, use first in glob
     - plots
         - [ ] ability to select features
-    - [ ] handling multiple csv files
+        - [x] axis labels
+    - data 
+        - [ ] handling multiple csv files
+        - [x] select previously uploaded file
 - algos
     - [ ] add more blocking algos
     - [ ] add other ML algos
@@ -29,6 +32,7 @@
 - output
     - [ ] predictions page
     - [ ] download option
+- record linkage option
 
 ## quickstart
 

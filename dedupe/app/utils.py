@@ -5,8 +5,6 @@ from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(rc={'figure.figsize':(8,6)})
-
 
 class Labels:
 
@@ -43,18 +41,24 @@ class Labels:
             json.dump(self.meta, f)
         del self.labels
 
-def get_plots(dfX):
+def get_plots(X, scores, attributes):
 
     img = BytesIO()
-    plt.figure()
-    sns.scatterplot(x=0, y=1, hue = "scores", data=dfX)
+    sns.set(rc={'figure.figsize':(7,5)})
+    fig, ax = plt.subplots()
+    p = sns.scatterplot(x=X[:,0], y=X[:,1], hue = scores, ax = ax)
+    p.set_xlabel(f"{attributes[0]} distance")
+    p.set_ylabel(f"{attributes[1]} distance")
     plt.savefig(img, format='png')
     plt.close()
     
     img2 = BytesIO()
-    plt.figure()
-    sns.kdeplot(dfX["scores"])
-    sns.histplot(dfX["scores"])
+    sns.set(rc={'figure.figsize':(7,5)})
+    fig, ax = plt.subplots()
+    p = sns.kdeplot(scores, ax = ax)
+    p.set_xlabel(f"scores")
+    ax2 = ax.twinx()
+    sns.histplot(scores, ax = ax2)
     plt.savefig(img2, format='png')
     plt.close()
 

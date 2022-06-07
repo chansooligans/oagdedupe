@@ -6,3 +6,8 @@ th, td {
     width: 25%;
     text-align: left;
 }
+
+
+.alert{
+    display:none;
+}
