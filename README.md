@@ -1,11 +1,56 @@
 # dedupe  
 
+## Run with Docker
+
+```
+# First, clone the repo
+1. git clone https://github.com/chansooligans/deduper.git
+2. cd deduper
+
+# Build Docker image
+3. docker build -t deduper:latest .
+
+# Run
+4. docker run -t -d --rm --name deduper -p 8007:8080 deduper 
+
+# Test Datset
+5. Go to http://127.0.0.1:8008/load
+6. Import "test.csv" from this repo
+```
+
 ## to-do:
 
-- implement active learning
-- add more blocking algos
-- scale
-    - "comparisons" in DistanceMixin can get large 
+- app / active learning
+    - learn
+        - [x] labelled samples dataframe interactive table
+        - [x] previous / next / edit options for learning samples
+        - [x] reformat active learning sample cards to be text instead of json
+        - [x] show which dataset is being used    
+        - [x] link to cards from dataframe
+            - [x] ability to pass parameter to learn/<idl>-<idr> route
+        - [x] if previous submit is revised, update json
+        - [x] re-implenet active-dict to not relearn from already-learned samples
+    - datasets
+        - [x] show cached files on load page
+        - [x] if no file is selected, use first in glob
+    - plots
+        - [ ] ability to select features
+        - [x] axis labels
+    - data 
+        - [ ] handling multiple csv files
+        - [x] select previously uploaded file
+- algos
+    - [ ] add more blocking algos
+    - [ ] add other ML algos
+- sql
+    - [ ] mysql database
+- parallelize (ray / dask)
+    - [ ] parallelize blocks? 
+- [ ] dockerize
+- output
+    - [ ] predictions page
+    - [ ] download option
+- record linkage option
 
 ## quickstart
 

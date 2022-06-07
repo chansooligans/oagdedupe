@@ -4,8 +4,8 @@ import pandas as pd
 fake = Faker()
 fake.seed_instance(0)
 df = pd.DataFrame({
-    'name':[fake.name() for x in range(10)],
-    'addr':[fake.address() for x in range(10)]
+    'name':[fake.name() for x in range(100)],
+    'addr':[fake.address() for x in range(100)]
 })
 
 attributes = ["name", "addr"]

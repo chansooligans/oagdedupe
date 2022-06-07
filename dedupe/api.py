@@ -9,7 +9,7 @@ import itertools
 from dedupe.mixin import BlockerMixin
 from dedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
 from dedupe.block.blockers import TestBlocker
-from dedupe.train.models import Threshold
+from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 
@@ -26,6 +26,7 @@ class BaseModel(metaclass=ABCMeta):
     distance: Optional[BaseDistance] = AllJaro(ncores=2)
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
+    fp: str = "/home/csong/cs_github/deduper/cache"
     
     @abstractmethod
     def predict(self):
@@ -54,8 +55,8 @@ class Dedupe(BaseModel):
         
         idxmat, scores, y = self.fit()
         return self.cluster.get_df_cluster(
-            matches=idxmat[y==1].astype(int), 
-            scores=scores[y==1],
+            matches=idxmat[y=="Yes"].astype(int), 
+            scores=scores[y=="No"],
             rl=False
         )
 
