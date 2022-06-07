@@ -1,5 +1,23 @@
 # dedupe  
 
+## Run with Docker
+
+```
+# First, clone the repo
+1. git clone https://github.com/chansooligans/deduper.git
+2. cd deduper
+
+# Build Docker image
+3. docker build -t deduper:latest .
+
+# Run
+4. docker run -t -d --rm --name deduper -p 8007:8080 deduper 
+
+# Test Datset
+5. Go to http://127.0.0.1:8008/load
+6. Import "test.csv" from this repo
+```
+
 ## to-do:
 
 - app / active learning

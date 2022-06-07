@@ -121,22 +121,15 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "Faker"
+name = "faker"
 version = "13.12.1"
 description = "Faker is a Python package that generates fake data for you."
 category = "main"
 optional = false
 python-versions = ">=3.6"
-develop = false
 
 [package.dependencies]
 python-dateutil = ">=2.4"
-
-[package.source]
-type = "git"
-url = "https://github.com/joke2k/faker.git"
-reference = "master"
-resolved_reference = "d5cf706c778e58e9fa24bf91bf2836ccf20ea893"
 
 [[package]]
 name = "flask"
@@ -821,7 +814,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <4.0"
-content-hash = "56d2791322aff97c97726363263b16805b83c53cd9a8d76499de05ea50361488"
+content-hash = "47cd4ba687364b5f6efe65158fcb931dc98de633b8f64626b71d4fba7bcc5f02"
 
 [metadata.files]
 appnope = [
@@ -940,7 +933,10 @@ executing = [
     {file = "executing-0.8.3-py2.py3-none-any.whl", hash = "sha256:d1eef132db1b83649a3905ca6dd8897f71ac6f8cac79a7e58a1a09cf137546c9"},
     {file = "executing-0.8.3.tar.gz", hash = "sha256:c6554e21c6b060590a6d3be4b82fb78f8f0194d809de5ea7df1c093763311501"},
 ]
-Faker = []
+faker = [
+    {file = "Faker-13.12.1-py3-none-any.whl", hash = "sha256:0122b75e7960cbb1e2bbbf10ef9b8c183377878e38466854953539c6d822e7c0"},
+    {file = "Faker-13.12.1.tar.gz", hash = "sha256:fb95f956bac59c90f54543919d5c5ef41625e12a0773e5aa08c9b9c62ba58fb3"},
+]
 flask = [
     {file = "Flask-2.1.2-py3-none-any.whl", hash = "sha256:fad5b446feb0d6db6aec0c3184d16a8c1f6c3e464b511649c8918a9be100b4fe"},
     {file = "Flask-2.1.2.tar.gz", hash = "sha256:315ded2ddf8a6281567edb27393010fe3406188bafbfe65a3339d5787d89e477"},

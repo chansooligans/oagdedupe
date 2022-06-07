@@ -50,7 +50,8 @@ def upload_file():
             app.init._load_dataset(request.form.get('dataset-hidden-selection'), app.lab)
 
     return redirect(url_for('active_learn'))
-    
+
+@app.route('/', methods=["GET","POST"])    
 @app.route('/load', methods=["GET","POST"])
 def load_page():
     return render_template(
@@ -171,5 +172,6 @@ def download_csv():
             attachment_filename='results.csv',
         )
 
-app.run(host="pdcprlrdsci02",port=8008, debug=True)
 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
