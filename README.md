@@ -4,20 +4,31 @@
 
 - app / active learning
     - learn
-        - previous / next / edit options for learning samples
-        - editable json?
-        - show which dataset is being used    
+        - [x] labelled samples dataframe interactive table
+        - [x] previous / next / edit options for learning samples
+        - [ ] reformat active learning sample cards to be text instead of json
+        - [x] show which dataset is being used    
+        - [ ] link to cards from dataframe
+            - [ ] ability to pass parameter to learn/<idl>-<idr> route
+        - [ ] if previous submit is revised, update json
+        - [ ] re-implenet active-dict to not relearn from already-learned samples
     - datasets
-        - show cached files on load page
-        - if no file is selected, use first in glob
+        - [x] show cached files on load page
+        - [x] if no file is selected, use first in glob
     - plots
-        - ability to select features
-    - handling multiple csv files
+        - [ ] ability to select features
+    - [ ] handling multiple csv files
 - algos
-    - add more blocking algos
-- scale
-    - sql database
-    - parallelize
+    - [ ] add more blocking algos
+    - [ ] add other ML algos
+- sql
+    - [ ] mysql database
+- parallelize (ray / dask)
+    - [ ] parallelize blocks? 
+- [ ] dockerize
+- output
+    - [ ] predictions page
+    - [ ] download option
 
 ## quickstart
 

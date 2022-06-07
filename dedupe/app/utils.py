@@ -1,11 +1,11 @@
 import json
-from collections import defaultdict
+from collections import defaultdict, Counter
 from functools import cached_property
 from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(rc={'figure.figsize':(11.7,8.27)})
+sns.set(rc={'figure.figsize':(8,6)})
 
 
 class Labels:
@@ -18,35 +18,32 @@ class Labels:
         with open(f"{self.cache_path}/samples.json", "r") as f:
             return json.load(f)
 
-    @cached_property
-    def meta(self):
-        with open(f"{self.cache_path}/meta.json", "r") as f:
-            meta = json.load(f)
-        return defaultdict(int, meta)
-
     @property
-    def sufficient_positive_negative(self):
-        return (self.meta["Yes"] >= 5) & (self.meta["No"] >= 5) 
+    def meta(self):
+        counter = Counter()
+        for x in [x["label"] for x in self.labels.values()]:
+            counter[x]  += 1
+        for x in [x["type"] for x in self.labels.values()]:
+            counter[x]  += 1
+        return counter
 
     @property
     def _type(self):
-        if self.sufficient_positive_negative:
+        if (self.meta["Yes"] >= 5) & (self.meta["No"] >= 5) :
             return "uncertain"
+        elif (self.meta["high"] >= 5):
+            return "low"
         else:
-            return "init"
-
-    @property
-    def sampleidx(self):
-        return self.meta[self._type+"_current"]
+            return "high"
 
     def save(self):
         with open(f"{self.cache_path}/samples.json", "w") as f:
             json.dump(self.labels, f)
         with open(f"{self.cache_path}/meta.json", "w") as f:
             json.dump(self.meta, f)
-        del self.labels, self.meta
+        del self.labels
 
-def get_plots(dfX, scores):
+def get_plots(dfX):
 
     img = BytesIO()
     plt.figure()
@@ -68,3 +65,6 @@ def get_plots(dfX, scores):
     kdeplot = base64.b64encode(img2.getvalue()).decode('utf8')
 
     return scatterplt, kdeplot
+
+def html_input(c):
+    return '<input name="{}" value="{{}}" />'.format(c)

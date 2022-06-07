@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -20,13 +20,12 @@ class Active(BaseTrain):
 
     def __post_init__(self):
         self.labels = {}
-        self.samples = defaultdict(str)
-        self.sorted_scores = defaultdict(list)
 
     def initialize(self, X):
         self.X = X
         self.train(self.X, init=True)
         self.scores, self.y = self.fit(self.X)
+        assert len(self.samples) > 0
 
     def init_y(self, size):
         return np.random.choice([0,1],size=size, replace=True)
@@ -40,44 +39,30 @@ class Active(BaseTrain):
             self.clf.fit(X_scaled, labels)
         return self.clf
 
-    def alternate_low_high(self, low):
-        high = low[::-1]
-        lowhigh = [None] * (len(low) + len(high))
-        lowhigh[::2] = low
-        lowhigh[1::2] = high
-        return lowhigh
-
-    def get_samples(self):
-        self.dfX = (
-            pd.DataFrame(self.X)
-            .assign(scores=self.scores,y=self.y,uncertain=abs(self.scores-0.5))
-            .reset_index()
-            .sort_values("scores")
-        )
-        
-        self.sorted_scores["init"] = self.alternate_low_high(self.dfX["scores"].values)
-        self.sorted_scores["uncertain"] = self.dfX.sort_values("uncertain")["scores"].values
-
-        unlabelled = self.dfX.loc[~self.dfX["index"].isin(self.active_dict.keys()),"index"]
-        self.samples["init"] = self.alternate_low_high(unlabelled.values)
-        self.samples["uncertain"] = self.dfX.sort_values("uncertain").loc[
-            ~self.dfX["index"].isin(self.active_dict.keys()),"index"
-        ].values
+    @cached_property
+    def samples(self):
+        return {
+            "low": deque(np.argsort(self.scores)),
+            "high": deque(np.argsort(self.scores)[::-1]),
+            "uncertain": deque(np.argsort(abs(self.scores-0.5)))
+        }
 
     @property
     def active_dict(self):
         return {
-            int(x["c_index"]):x["label"] 
+            int(x["idxmat_idx"]):x["label"] 
             for x in self.labels.values()
         }
 
     def retrain(self):
+        del self.samples
         self.train(
             self.X[list(self.active_dict.keys()),:], 
             init=False, 
             labels=list(self.active_dict.values())
         )
         self.scores, self.y = self.fit(self.X)
+        assert len(self.samples) > 0
 
     def fit(self, X):
         X = StandardScaler().fit_transform(X)

@@ -11,10 +11,12 @@ class Init:
     def __init__(self, cache_path):
         self.cache_path = cache_path
 
-    def _load_default_dataset(self, csv, labs):
-        self.df = pd.read_csv(csv)
+    def _load_dataset(self, datset_filename, lab):
+        self.lab = lab
+        self.datset_filename = datset_filename
+        self.df = pd.read_csv(self.datset_filename)
         self.setup_dedupe(self.df)
-        self.d.trainer.labels = labs
+        self.d.trainer.labels = self.lab.labels
 
     def setup_cache(self):
         os.makedirs(self.cache_path, exist_ok=True) 
@@ -39,5 +41,4 @@ class Init:
             self.idxmat
         )
         self.d.trainer.initialize(X)
-        self.d.trainer.get_samples()
         return self.d, self.idxmat
