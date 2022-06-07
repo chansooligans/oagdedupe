@@ -1,0 +1,26 @@
+title: oagdedupe
+author: RAD (Research and Analytics Department)
+only_build_toc_files: true
+collapse_inactive_chapters: true
+repository:
+  url: https://git.ag.ny.gov/research/oagdedupe
+html:
+  use_repository_button: true
+  use_issues_button: true
+  extra_footer: |
+    <p>DRAFT</br>Attorney Work Product</br>Privileged and Confidential</p>
+execute:
+  execute_notebooks: cache
+  allow_errors: true
+  timeout: 60
+parse:
+  myst_enable_extensions:
+      - tasklist
+      - dollarmath
+sphinx:
+  config:
+    html_show_copyright: false
+    nb_custom_formats:
+        .py:
+            - jupytext.reads
+            - fmt: py:percent
