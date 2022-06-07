@@ -9,8 +9,13 @@ profile/
 # C extensions
 *.so
 
+# data
+cache/
+
 # Distribution / packaging
 .Python
+.venv/
+.vscode/
 env/
 build/
 develop-eggs/

@@ -51,6 +51,7 @@
     - [ ] predictions page
     - [ ] download option
 - record linkage option
+- gitlab mirror
 
 ## quickstart
 
