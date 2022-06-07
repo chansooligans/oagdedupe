@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 import pandas as pd
-import os
+import glob
 import seaborn as sns
 from io import BytesIO
 import base64
@@ -46,8 +46,13 @@ def upload_file():
     
 @app.route('/load', methods=["GET","POST"])
 def load_page():
+    entries = [
+        x.split("/")[-1] for x in 
+        glob.glob(f"{app.config['UPLOAD_FOLDER']}/*.csv")
+    ]
     return render_template(
         'load.html', 
+        entries=entries
     )
 
 @app.route('/plots', methods=["GET","POST"])
