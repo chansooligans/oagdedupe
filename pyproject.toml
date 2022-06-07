@@ -1,29 +1,25 @@
 [tool.poetry]
-name = "oagdedupe"
+name = "dedupe"
 version = "0.1.0"
 description = ""
-authors = ["RAD"]
+authors = ["Chansoo Song"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-oaglib = {git = "git@git.ag.ny.gov:research/oaglib.git"}
-pandas = "^1.4.0"
-numpy = "^1.22.2"
-pytest = "^7.0.0"
-jupyter-book = "^0.12.1"
-psycopg2-binary = "^2.9.3"
-Faker = "^12.3.0"
-dedupe = "^2.0.13"
-networkx = "^2.6.3"
-sklearn = "^0.0"
+python = ">=3.8, <4.0"
+pandas = "^1.4.2"
+networkx = "^2.8"
+numpy = "^1.22.3"
 jellyfish = "^0.9.0"
-sparse-dot-topn = "^0.3.1"
+scikit-learn = "^1.0.2"
+tqdm = "^4.64.0"
+pytest = "^7.1.2"
+ipykernel = "^6.13.0"
+matplotlib = "^3.5.1"
 seaborn = "^0.11.2"
-statsmodels = "^0.13.2"
-tabulate = "^0.8.9"
-line-profiler = "^3.4.0"
-Resource = "^0.2.1"
-memory-profiler = "^0.60.0"
+Pillow = "^9.1.1"
+Flask = "^2.1.2"
+Werkzeug = "^2.1.2"
+Faker = "^13.12.1"
 
 [tool.poetry.dev-dependencies]
 
