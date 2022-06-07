@@ -1,6 +1,12 @@
 import json
 from collections import defaultdict
 from functools import cached_property
+from io import BytesIO
+import base64
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(rc={'figure.figsize':(11.7,8.27)})
+
 
 class Labels:
 
@@ -39,3 +45,26 @@ class Labels:
         with open(f"{self.cache_path}/meta.json", "w") as f:
             json.dump(self.meta, f)
         del self.labels, self.meta
+
+def get_plots(dfX, scores):
+
+    img = BytesIO()
+    plt.figure()
+    sns.scatterplot(x=0, y=1, hue = "scores", data=dfX)
+    plt.savefig(img, format='png')
+    plt.close()
+    
+    img2 = BytesIO()
+    plt.figure()
+    sns.kdeplot(dfX["scores"])
+    sns.histplot(dfX["scores"])
+    plt.savefig(img2, format='png')
+    plt.close()
+
+    img.seek(0)
+    scatterplt = base64.b64encode(img.getvalue()).decode('utf8')
+
+    img2.seek(0)
+    kdeplot = base64.b64encode(img2.getvalue()).decode('utf8')
+
+    return scatterplt, kdeplot

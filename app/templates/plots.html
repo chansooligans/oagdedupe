@@ -12,10 +12,13 @@
     </head>
 <body>
 
+    {% include 'nav.html' %}
     
-    <div class="container">
-        
-        {% include 'nav.html' %}
+    <div class="col-lg-8 mx-auto p-3 py-md-5">
+
+        <header class="d-flex align-items-center pb-3 mb-5 border-bottom">
+            <h1 class="fs-4">Plots</h1>
+        </header>
 
         <div>          
             <img src="data:image/png;base64, {{ scatterplt }}" >

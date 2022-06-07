@@ -4,11 +4,17 @@ import json
 from dedupe.api import Dedupe, RecordLinkage
 from dedupe.train.active import Active
 from collections import defaultdict
+import pandas as pd
 
 class Init:
 
     def __init__(self, cache_path):
         self.cache_path = cache_path
+
+    def _load_default_dataset(self, csv, labs):
+        self.df = pd.read_csv(csv)
+        self.setup_dedupe(self.df)
+        self.d.trainer.labels = labs
 
     def setup_cache(self):
         os.makedirs(self.cache_path, exist_ok=True) 

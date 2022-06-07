@@ -3,9 +3,6 @@ from IPython import get_ipython
 if get_ipython() is not None:
     get_ipython().run_line_magic('load_ext', 'autoreload')
     get_ipython().run_line_magic('autoreload', '2')
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(rc={'figure.figsize':(11.7,8.27)})
 
 from dedupe.app import utils
 from dedupe.app.init import Init
@@ -19,8 +16,6 @@ from flask import (
 import pandas as pd
 import glob
 import seaborn as sns
-from io import BytesIO
-import base64
 from werkzeug.utils import secure_filename
 
 # %%
@@ -30,53 +25,38 @@ cache_path = "/home/csong/cs_github/deduper/cache"
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 app.config['UPLOAD_FOLDER'] = cache_path
+app.cached_files = [
+    x
+    for x in glob.glob(f"{app.config['UPLOAD_FOLDER']}/*.csv")
+]
+
 app.init = Init(cache_path=cache_path)
 app.lab = utils.Labels(cache_path)
 app.init.setup_cache()
 
 @app.route('/uploader', methods = ['GET', 'POST'])
 def upload_file():
+    print(request.form)
     if request.method == 'POST':
         f = request.files['file']
-        app.init.df = pd.read_csv(request.files.get('file'))
-        app.init.setup_dedupe(app.init.df)
-        app.init.d.trainer.labels = app.lab.labels
+        app.init._load_default_dataset(request.files.get('file'), app.lab.labels)
         f.save(f"{app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
     return redirect(url_for('active_learn'))
     
 @app.route('/load', methods=["GET","POST"])
 def load_page():
-    entries = [
-        x.split("/")[-1] for x in 
-        glob.glob(f"{app.config['UPLOAD_FOLDER']}/*.csv")
-    ]
     return render_template(
         'load.html', 
-        entries=entries
+        entries=app.cached_files
     )
 
 @app.route('/plots', methods=["GET","POST"])
 def load_plots():
 
-    img = BytesIO()
-    plt.figure()
-    sns.scatterplot(x=0, y=1, hue = "scores", data=app.init.d.trainer.dfX)
-    plt.savefig(img, format='png')
-    plt.close()
-    
-    img2 = BytesIO()
-    plt.figure()
-    sns.kdeplot(app.init.d.trainer.scores)
-    sns.histplot(app.init.d.trainer.scores)
-    plt.savefig(img2, format='png')
-    plt.close()
+    if not hasattr(app.init, "d"):
+        app.init._load_default_dataset(app.cached_files[0], app.lab.labels)
 
-    img.seek(0)
-    scatterplt = base64.b64encode(img.getvalue()).decode('utf8')
-
-    img2.seek(0)
-    kdeplot = base64.b64encode(img2.getvalue()).decode('utf8')
-    
+    scatterplt, kdeplot = utils.get_plots(app.init.trainer.dfX)
     return render_template(
         'plots.html', 
         scatterplt=scatterplt,
@@ -86,13 +66,14 @@ def load_plots():
 @app.route('/learn', methods=["GET","POST"])
 def active_learn():
 
+    if not hasattr(app.init, "d"):
+        app.init._load_default_dataset(app.cached_files[0], app.lab.labels)
+
     c_index = app.init.d.trainer.samples[app.lab._type][app.lab.sampleidx]
     idxl,idxr = app.init.idxmat[c_index]
     score = app.init.d.trainer.sorted_scores[app.lab._type][app.lab.sampleidx]
     sample1 = app.init.df.loc[idxl].to_dict()
     sample2 = app.init.df.loc[idxr].to_dict()
-
-    
 
     if request.method == "POST":
         app.lab.labels[app.lab.sampleidx] = {

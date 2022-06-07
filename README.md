@@ -6,8 +6,13 @@
     - learn
         - previous / next / edit options for learning samples
         - editable json?
+        - show which dataset is being used    
     - datasets
         - show cached files on load page
+        - if no file is selected, use first in glob
+    - plots
+        - ability to select features
+    - handling multiple csv files
 - algos
     - add more blocking algos
 - scale
