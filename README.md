@@ -29,6 +29,7 @@
             - [x] ability to pass parameter to learn/<idl>-<idr> route
         - [x] if previous submit is revised, update json
         - [x] re-implenet active-dict to not relearn from already-learned samples
+        - [ ] prettier presentation of counter in learn page
     - datasets
         - [x] show cached files on load page
         - [x] if no file is selected, use first in glob
@@ -45,6 +46,10 @@
     - bugs
         - [ ] retrain requires at least one sample in each class
         - [ ] with each hard refresh, cached samples is popped
+        - [x] redirect to load page if dataset is not loaded
+        - [x] if user attempts to go to different page when dataset is not loaded, show warning
+    - dockerize
+        - [x] create dockerfile / .dockerignore
 - algos
     - [ ] add more blocking algos
     - [ ] add other ML algos
@@ -52,10 +57,9 @@
     - [ ] mysql database
 - parallelize (ray / dask)
     - [ ] parallelize blocks? 
-- [ ] dockerize
 - output
-    - [ ] predictions page
-    - [ ] download option
+    - [x] predictions page
+    - [x] download option
 - record linkage option
 
 ## quickstart

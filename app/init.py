@@ -34,12 +34,12 @@ class Init:
     def setup_dedupe(self, df):
         self.d = Dedupe(df=df, trainer=Active())
         self.idxmat = self.d._get_candidates()
-        X = self.d.distance.get_distmat(
+        self.X = self.d.distance.get_distmat(
             self.d.df, 
             self.d.df2, 
             self.d.attributes, 
             self.d.attributes2, 
             self.idxmat
         )
-        self.d.trainer.initialize(X)
+        self.d.trainer.initialize(self.X)
         return self.d, self.idxmat
