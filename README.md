@@ -44,8 +44,8 @@
         - [ ] upload labels option
         - [ ] download labels option
     - bugs
-        - [ ] retrain requires at least one sample in each class
-        - [ ] with each hard refresh, cached samples is popped
+        - [x] retrain requires at least one sample in each class
+        - [x] with each hard refresh, cached samples is popped
         - [x] redirect to load page if dataset is not loaded
         - [x] if user attempts to go to different page when dataset is not loaded, show warning
     - dockerize
