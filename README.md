@@ -21,7 +21,7 @@
 
 - app / active learning
     - general
-        - [ ] handle different column names
+        - [x] handle different column names
     - learn
         - [x] labelled samples dataframe interactive table
         - [x] previous / next / edit options for learning samples
