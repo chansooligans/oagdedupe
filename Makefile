@@ -16,4 +16,4 @@ build:
 	docker build -t deduper:latest .
 
 docker-run:
-	docker run -t -d --rm --name deduper -p 8007:8080 deduper 
+	docker run -t -d --rm --name deduper -p 8080:8081 deduper 
