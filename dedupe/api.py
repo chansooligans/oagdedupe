@@ -74,7 +74,7 @@ class Dedupe(BaseModel):
 
     def _get_candidates(self) -> np.array:
         """get candidate pairs"""
-        block_maps = self.blocker.get_block_maps(df=self.df)
+        block_maps = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
         
         return self.blocker.dedupe_get_candidates(
             block_maps
@@ -106,7 +106,7 @@ class RecordLinkage(Dedupe, BaseModel):
         "get candidate pairs"
         
         block_maps1, block_maps2 = [
-            self.blocker.get_block_maps(df=_)
+            self.blocker.get_block_maps(df=_, attributes=self.attributes)
             for _ in [self.df, self.df2]
         ]
         

@@ -20,6 +20,8 @@
 ## to-do:
 
 - app / active learning
+    - general
+        - [ ] handle different column names
     - learn
         - [x] labelled samples dataframe interactive table
         - [x] previous / next / edit options for learning samples
@@ -30,6 +32,7 @@
         - [x] if previous submit is revised, update json
         - [x] re-implenet active-dict to not relearn from already-learned samples
         - [ ] prettier presentation of counter in learn page
+        - [ ] how are label="unknown" getting handled?
     - datasets
         - [x] show cached files on load page
         - [x] if no file is selected, use first in glob

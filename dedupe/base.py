@@ -7,7 +7,7 @@ class BaseBlocker(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_block_maps(self):
+    def get_block_maps(self, df, attributes):
         return
 
 class BaseBlockAlgo(metaclass=ABCMeta):
