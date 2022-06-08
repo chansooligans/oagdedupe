@@ -11,7 +11,7 @@
 3. docker build -t deduper:latest .
 
 # Run
-4. docker run -t -d --rm --name deduper -p 8007:8080 deduper 
+4. docker run -t -d --rm --name deduper -p 8080:8081 deduper 
 5. Go to http://127.0.0.1:8080/load
 
 (test dataset will be pre-loaded)
