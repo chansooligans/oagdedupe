@@ -22,5 +22,5 @@ COPY . .
 RUN poetry install $(test "$YOUR_ENV" == production && echo "--no-dev") --no-interaction --no-ansi
 
 RUN mkdir -p cache
-COPY test.csv cache/.
+COPY tests/test.csv cache/.
 CMD ["make", "serve"]
