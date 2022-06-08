@@ -12,10 +12,9 @@
 
 # Run
 4. docker run -t -d --rm --name deduper -p 8007:8080 deduper 
+5. Go to http://127.0.0.1:8080/load
 
-# Test Datset
-5. Go to http://127.0.0.1:8008/load
-6. Import "test.csv" from this repo
+(test dataset will be pre-loaded)
 ```
 
 ## to-do:
