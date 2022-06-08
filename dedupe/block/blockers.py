@@ -83,21 +83,22 @@ class TestBlocker(BaseBlocker, BlockerMixin):
             intersections=[
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute="name"),
-                        Pair(BlockAlgo=FirstLetter(), attribute="addr"),
+                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[1]),
                     ]
                 ),
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute="name"),
-                        Pair(BlockAlgo=FirstLetterLastToken(), attribute="name"),
+                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=FirstLetterLastToken(), attribute=self.attributes[0]),
                     ]
                 ),
             ]
         )
 
-    def get_block_maps(self, df) -> List[dict]:
+    def get_block_maps(self, df, attributes) -> List[dict]:
         "returns list of intersection block maps"
+        self.attributes = attributes
         return [
             IntersectionBlock(df=df, intersection=intersection).block_maps()
             for intersection in self.config.intersections
