@@ -8,16 +8,27 @@ from flask import (
     url_for,
 )
 
+def get_samples(samples, idxmat, labelled):
+    selected_idx = samples[0]
+    if selected_idx in labelled:
+        selected_idx = samples[1]
+        samples.popleft()
+    idxl,idxr = idxmat[selected_idx]
+    return selected_idx, idxl, idxr
+
 @app.route('/learn', methods=["GET","POST"])
 @app.route('/learn/<int:idxl>-<int:idxr>', methods=["GET","POST"])
 def active_learn(idxl=None,idxr=None):
 
     if not hasattr(app.init, "d"):
-        app.init._load_dataset(app.cached_files[0], app.lab)
+        return redirect('/load/nodata')
 
     if idxl is None or idxr is None:
-        selected_idx = app.init.d.trainer.samples[app.lab._type].popleft()
-        idxl,idxr = app.init.idxmat[selected_idx]
+        selected_idx, idxl, idxr = get_samples(
+            samples=app.init.d.trainer.samples[app.lab._type], 
+            idxmat=app.init.idxmat, 
+            labelled=app.lab.labelled
+        )
     else:
         selected_idx = app.init.idxmat.tolist().index([idxl,idxr])
 
@@ -68,5 +79,5 @@ def retrain():
             return "success"
         except Exception as e:
             print(e)
-            app.init.setup_dedupe(app.init.df)
+            app.init.d.trainer.initialize(app.init.X)
             return "success"

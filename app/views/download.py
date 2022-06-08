@@ -5,13 +5,17 @@ from flask import (
     render_template, 
     request,   
     session,
-    send_file
+    send_file,
+    redirect
 )
 
 import io
 
 @app.route('/results', methods=["GET", "POST"])
 def results():
+
+    if not hasattr(app.init, "d"):
+        return redirect('/load/nodata')
 
     return render_template(
         'results.html'

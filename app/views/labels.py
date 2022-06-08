@@ -5,13 +5,14 @@ import os
 from flask import (
     render_template, 
     request,
+    redirect
 )
 
 @app.route('/labels', methods=["GET","POST"])
 def load_labels(idxl=None,idxr=None):
 
     if not hasattr(app.init, "d"):
-        app.init._load_dataset(app.cached_files[0], app.lab)
+        return redirect('/load/nodata')
 
     if len(app.lab.labels) > 0:
         df = pd.DataFrame(app.lab.labels).T[[

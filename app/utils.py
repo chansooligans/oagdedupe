@@ -26,6 +26,10 @@ class Labels:
         return counter
 
     @property
+    def labelled(self):
+        return [int(x["idxmat_idx"]) for x in self.labels.values()]
+
+    @property
     def _type(self):
         if (self.meta["Yes"] >= 5) & (self.meta["No"] >= 5) :
             return "uncertain"

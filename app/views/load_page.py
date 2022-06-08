@@ -24,8 +24,17 @@ def upload_file():
 
 @app.route('/', methods=["GET","POST"])    
 @app.route('/load', methods=["GET","POST"])
-def load_page():
-    return render_template(
-        'load.html', 
-        entries=app.cached_files
-    )
+@app.route('/load/<status>', methods=["GET","POST"])
+def load_page(status=None):
+    if status == "nodata":
+        return render_template(
+            'load.html', 
+            nodata="",
+            entries=app.cached_files
+        )
+    else:
+        return render_template(
+            'load.html', 
+            nodata="display:none;",
+            entries=app.cached_files,
+        )
