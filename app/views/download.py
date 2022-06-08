@@ -1,15 +1,13 @@
 from .. import app
-
-from . import utils
+from .. import utils
 
 from flask import (
     render_template, 
-    request,
-    redirect,
-    url_for,   
+    request,   
     session,
     send_file
 )
+
 import io
 
 @app.route('/results', methods=["GET", "POST"])

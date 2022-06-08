@@ -39,6 +39,13 @@
     - data 
         - [ ] handling multiple csv files
         - [x] select previously uploaded file
+    - cached labelled samples
+        - [x] clear cache option
+        - [ ] upload labels option
+        - [ ] download labels option
+    - bugs
+        - [ ] retrain requires at least one sample in each class
+        - [ ] with each hard refresh, cached samples is popped
 - algos
     - [ ] add more blocking algos
     - [ ] add other ML algos
@@ -51,7 +58,6 @@
     - [ ] predictions page
     - [ ] download option
 - record linkage option
-- gitlab mirror
 
 ## quickstart
 

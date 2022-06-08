@@ -63,5 +63,10 @@ def retrain():
     print("retraining")
     app.init.d.trainer.labels = app.lab.labels
     if request.method == "GET":
-        app.init.d.trainer.retrain()
-        return "success"
+        try:
+            app.init.d.trainer.retrain()
+            return "success"
+        except Exception as e:
+            print(e)
+            app.init.setup_dedupe(app.init.df)
+            return "success"

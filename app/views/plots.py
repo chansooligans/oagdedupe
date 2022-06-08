@@ -1,14 +1,7 @@
 from .. import app
+from .. import utils
 
-from . import utils
-
-from flask import (
-    render_template, 
-    request,
-    redirect,
-    url_for,   
-)
-from werkzeug.utils import secure_filename
+from flask import render_template
 
 @app.route('/plots', methods=["GET","POST"])
 def load_plots():
