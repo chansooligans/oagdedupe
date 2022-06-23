@@ -15,6 +15,7 @@ import io
 def results():
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     return render_template(

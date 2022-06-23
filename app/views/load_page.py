@@ -13,10 +13,16 @@ def upload_file():
     """
     action in response to submit button on "/load" page
     """
-    print("uploading")
+
     if request.method == 'POST':
+
         if request.files['file']:
+            
             f = request.files['file']
+            
+            app.logger.info(f"loading {f}")
+            app.logger.info(f"saving copy to: {app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
+
             app.init._load_dataset(
                 request.files.get('file'), 
                 app.lab
@@ -27,6 +33,7 @@ def upload_file():
             )
         else:
             f = request.form.get('dataset-hidden-selection')
+            app.logger.info(f"loading file from cache: {f}")
             app.init._load_dataset(
                 request.form.get('dataset-hidden-selection'), 
                 app.lab

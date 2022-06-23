@@ -13,6 +13,7 @@ from flask import (
 def load_labels(idxl=None,idxr=None):
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     df = utils.labels_to_df(app.lab.labels)
