@@ -3,13 +3,14 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
+from dedupe import mixin
 
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-
+import ray
 
 @dataclass
 class BaseModel(metaclass=ABCMeta):
@@ -74,9 +75,11 @@ class Dedupe(BaseModel):
         """get candidate pairs"""
         block_maps = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
 
-        return self.blocker.dedupe_get_candidates(
+        idxmat = mixin.dedupe_get_candidates.remote(
             block_maps
         )
+
+        return ray.get(idxmat)
 
 
 @dataclass

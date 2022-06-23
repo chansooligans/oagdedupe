@@ -2,7 +2,23 @@ from typing import List
 from dataclasses import dataclass
 import itertools
 import numpy as np
+import ray
 
+@ray.remote
+def dedupe_get_candidates(block_maps) -> np.array:
+    """dedupe: convert union (list of block maps) to candidate pairs
+
+    returns a Nx2 array containing candidate pairs
+    """
+    return np.unique(
+        [
+            x
+            for block_map in block_maps
+            for ids in block_map.values()
+            for x in itertools.combinations(ids, 2)
+        ],
+        axis=0
+    )
 
 @dataclass
 class BlockerMixin:
@@ -19,21 +35,6 @@ class BlockerMixin:
             else:
                 result = [x + [y] for x in result for y in item]
         return result
-
-    def dedupe_get_candidates(self, block_maps) -> np.array:
-        """dedupe: convert union (list of block maps) to candidate pairs
-
-        returns a Nx2 array containing candidate pairs
-        """
-        return np.unique(
-            [
-                x
-                for block_map in block_maps
-                for ids in block_map.values()
-                for x in itertools.combinations(ids, 2)
-            ],
-            axis=0
-        )
 
     def joint_keys(self, dict1, dict2):
         return [name for name in set(dict1).intersection(set(dict2))]
