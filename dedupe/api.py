@@ -53,8 +53,8 @@ class Dedupe(BaseModel):
 
         idxmat, scores, y = self.fit()
         return self.cluster.get_df_cluster(
-            matches=idxmat[y == "Yes"].astype(int), 
-            scores=scores[y == "No"],
+            matches=idxmat[y == 1].astype(int), 
+            scores=scores[y == 1],
             rl=False
         )
 
