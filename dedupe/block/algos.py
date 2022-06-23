@@ -1,19 +1,42 @@
 from dedupe.base import BaseBlockAlgo
 
-
-class FirstLetter(BaseBlockAlgo):
-
-    def get_block(self, field) -> str:
-        return field.replace(' ', '')[:1]
+from dataclasses import dataclass
+import re
 
 
-class FirstTwoLetters(BaseBlockAlgo):
-
-    def get_block(self, field) -> str:
-        return field.replace(' ', '')[:2]
-
-
-class FirstLetterLastToken(BaseBlockAlgo):
+@dataclass
+class FirstNLetters(BaseBlockAlgo):
+    N:int
 
     def get_block(self, field) -> str:
-        return field.split(' ')[-1].replace(' ', '')[:1]
+        return field.replace(' ', '')[:self.N]
+
+
+@dataclass
+class FirstNLettersLastToken(BaseBlockAlgo):
+    N:int
+
+    def get_block(self, field) -> str:
+        return field.split(' ')[-1].replace(' ', '')[:self.N]
+
+
+@dataclass
+class LastNLetters(BaseBlockAlgo):
+    N:int
+
+    def get_block(self, field) -> str:
+        return field.replace(' ', '')[-self.N:]
+
+
+@dataclass
+class NumbersOnly(BaseBlockAlgo):
+
+    def get_block(self, field) -> str:
+        return re.sub("[^0-9]", "", field)
+
+
+class ExactMatch(BaseBlockAlgo):
+
+    def get_block(self, field) -> str:
+        return field
+
