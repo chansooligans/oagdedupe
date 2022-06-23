@@ -52,6 +52,7 @@ class Active(BaseTrain):
         return {
             int(x["idxmat_idx"]):x["label"] 
             for x in self.labels.values()
+            if x["label"] in ["Yes", "No"]
         }
 
     def retrain(self):

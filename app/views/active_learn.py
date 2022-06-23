@@ -80,4 +80,4 @@ def retrain():
         except Exception as e:
             print(e)
             app.init.d.trainer.initialize(app.init.X)
-            return "success"
+            return "re-initialize"

@@ -1,5 +1,8 @@
 # dedupe  
 
+- new draft of dedupe tool i helped develop with the research and analytics departement of the ny state office of the attorney general
+- partly a learning project and hopefully an easy-to-use, powerful entity resolution tool for general public to use
+
 ## Run with Docker
 
 ```
@@ -43,6 +46,7 @@
         - [ ] handling multiple csv files
         - [x] select previously uploaded file
     - cached labelled samples
+        - [ ] cache file name should be hash of dataset name
         - [x] clear cache option
         - [ ] upload labels option
         - [ ] download labels option
@@ -53,6 +57,8 @@
         - [x] if user attempts to go to different page when dataset is not loaded, show warning
     - dockerize
         - [x] create dockerfile / .dockerignore
+    - logs
+        - [] flask api logging
 - algos
     - [ ] add more blocking algos
     - [ ] add other ML algos
