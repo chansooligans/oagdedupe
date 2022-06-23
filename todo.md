@@ -44,11 +44,11 @@
     - dockerize
         - [x] create dockerfile / .dockerignore
     - misc
-        - [] flask api logging
-        - [] linting
+        - [x] flask api logging
+        - [x] linting
     - refactor
 - algos
-    - [ ] add more blocking algos
+    - [x] add more blocking algos
     - [ ] add other ML algos
 - sql
     - [ ] mysql database
