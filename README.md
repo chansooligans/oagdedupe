@@ -22,6 +22,14 @@
 
 ## quickstart
 
+#### install dependencies with poetry:
+
+install poetry if needed: https://python-poetry.org/docs/#installation
+
+```
+poetry install
+```
+
 #### fake datasets for testing:
 
 ```
@@ -60,6 +68,7 @@ df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 #### record linkage:
 
 ```
+import pandas as pd
 from dedupe.api import RecordLinkage
 rl = RecordLinkage(df=df, df2=df2, attributes=None, attributes2=None)
 predsx, predsy = rl.predict()
@@ -79,3 +88,36 @@ pd.merge(
 |  1 | Norma Fisher    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
 |  2 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisher     | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |
 |  3 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
+
+
+#### manual blocking specifications:
+
+Suppose you want to specificy your own blocking schemes. And you want to use 
+two "intersections" of blocking algos: 
+    - (1) compare all instances where records share first letter of name AND 
+    first letter of address
+    - (2) compare all instances where records share first letter of the last 
+    token of name AND first letter of name
+
+Each intersection may contain at least one blocking algo.   
+
+The goal is to identify the intersections that yields the most true positives, 
+while minimizing the # of possible comparisons.  
+
+See `dedupe.block.algos` for all blocking algo options.
+
+```
+from dedupe.api import Dedupe
+from dedupe.block import blockers 
+from dedupe.block import algos
+
+manual_blocker = blockers.ManualBlocker([
+    [(algos.FirstNLetters(N=1), "name"), (algos.FirstNLetters(N=1), "addr")],
+    [(algos.FirstNLettersLastToken(N=1), "name"), (algos.FirstNLetters(N=1), "name")],
+])
+
+d = Dedupe(df=df, attributes=None, blocker=manual_blocker)
+preds = d.predict()
+
+df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
+```

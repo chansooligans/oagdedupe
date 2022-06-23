@@ -1,7 +1,7 @@
 from dedupe.base import BaseBlocker
 from dedupe.mixin import BlockerMixin
 from dedupe.block.groups import Union, Intersection, Pair
-from dedupe.block.algos import FirstLetter, FirstLetterLastToken
+from dedupe.block import algos
 from dedupe.base import BaseBlockAlgo
 
 from typing import List, Set, Dict, Tuple
@@ -82,14 +82,14 @@ class TestBlocker(BaseBlocker, BlockerMixin):
             intersections=[
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[1]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[1]),
                     ]
                 ),
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
-                        Pair(BlockAlgo=FirstLetterLastToken(), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLettersLastToken(N=1), attribute=self.attributes[0]),
                     ]
                 ),
             ]
@@ -116,8 +116,29 @@ class NoBlocker(BaseBlocker, BlockerMixin):
 
 @dataclass
 class ManualBlocker(BaseBlocker, BlockerMixin):
-    def get_block_maps(self):
-        return
+    user_config: List[List[dict]]
+
+    @property
+    def config(self) -> Union:
+        return Union(
+            intersections=[
+                Intersection(
+                    [
+                        Pair(BlockAlgo=pair[0], attribute=pair[1])
+                        for pair in intersection
+                    ]
+                )
+                for intersection in self.user_config
+            ]
+        )
+
+    def get_block_maps(self, df, attributes) -> List[dict]:
+        "returns list of intersection block maps"
+        self.attributes = attributes
+        return [
+            IntersectionBlock(df=df, intersection=intersection).block_maps()
+            for intersection in self.config.intersections
+        ]
 
 
 @dataclass
