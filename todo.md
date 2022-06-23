@@ -44,7 +44,7 @@
     - dockerize
         - [x] create dockerfile / .dockerignore
     - misc
-        - [] flask api logging
+        - [x] flask api logging
         - [] linting
     - refactor
 - algos

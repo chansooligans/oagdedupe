@@ -32,10 +32,19 @@ class Active(BaseTrain):
 
     def train(self, X, init=False, labels=None):
         X_scaled = StandardScaler().fit_transform(X)
-        self.clf = SVC(kernel="linear", C=100, probability=True)
+        self.clf = SVC(
+            kernel="linear", 
+            C=100, 
+            probability=True
+        )
         if init==True:
-            self.clf.fit(X_scaled, self.init_y(len(X)))
+            print(self.init_y(len(X)))
+            self.clf.fit(
+                X_scaled, 
+                self.init_y(len(X))
+            )
         else:
+            print(labels)
             self.clf.fit(X_scaled, labels)
         return self.clf
 
