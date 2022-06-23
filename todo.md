@@ -38,7 +38,7 @@
         - [x] if user attempts to go to different page when dataset is not loaded, show warning
         - [] if user does not select a file in /load, then submit errors; it should alert that file was not selected
         - [] if user does not select an option in /learn, then submit errors; it should alert that file was not selected
-        - [] make sure order of labels is consistent between .predict() and .predict_proba() and that probabilities 
+        - [x] make sure order of labels is consistent between .predict() and .predict_proba() and that probabilities 
         are always probability of "Yes"
 
     - dockerize
