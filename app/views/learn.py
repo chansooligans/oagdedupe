@@ -2,6 +2,7 @@ from .. import app
 from .. import utils
 
 import pandas as pd
+import logging
 from flask import (
     render_template, 
     request,
@@ -29,6 +30,7 @@ def get_samples(samples, idxmat, labelled):
     """
     selected_idx = samples[0]
     if selected_idx in labelled:
+        app.logger.info(f"{selected_idx} already labelled; proceeding to next candidate")
         selected_idx = samples[1]
         samples.popleft()
     idxl,idxr = idxmat[selected_idx]
@@ -78,6 +80,7 @@ def learn(idxl=None,idxr=None):
     """
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     if idxl is None:
@@ -119,13 +122,13 @@ def retrain():
     if there are inadequate # of samples (e.g. all have same class), then 
     re-initializes model (train using full data with random assignment)
     """
-    print("retraining")
+    app.logger.info("retraining")
     app.init.d.trainer.labels = app.lab.labels
     if request.method == "GET":
         try:
             app.init.d.trainer.retrain()
             return "success"
         except Exception as e:
-            print(e)
+            app.logger.error(e)
             app.init.d.trainer.initialize(app.init.X)
             return "re-initialize"

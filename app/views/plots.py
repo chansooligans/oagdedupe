@@ -10,6 +10,7 @@ from flask import (
 def load_plots():
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     scatterplt, kdeplot = utils.get_plots(

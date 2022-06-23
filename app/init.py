@@ -15,7 +15,6 @@ class Init:
         self.cache_path = cache_path
 
     def _load_dataset(self, datset_filename, lab):
-        print("initializing")
         self.lab = lab
         self.datset_filename = datset_filename
         self.df = pd.read_csv(self.datset_filename)
