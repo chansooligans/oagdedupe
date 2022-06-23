@@ -7,6 +7,9 @@ from collections import defaultdict
 import pandas as pd
 
 class Init:
+    """
+    Object used to initialize deduper algorithm and files for labelled samples
+    """
 
     def __init__(self, cache_path):
         self.cache_path = cache_path
@@ -32,6 +35,17 @@ class Init:
                 json.dump({}, f)
 
     def setup_dedupe(self, df):
+        """
+        sets up the deduper algorithm
+        
+        idxmat: 
+            array of pairs of record IDs where each pair is a candidate for comparison
+        X: 
+            array of distances: 
+            first element contains the string distances between record A and record B  
+            if record A and record B are compared on 2 attributes (e.g. name and address)  
+            this element is length 2, containing distances between their names and addresses
+        """
         self.d = Dedupe(df=df, trainer=Active())
         self.idxmat = self.d._get_candidates()
         self.X = self.d.distance.get_distmat(
