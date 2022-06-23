@@ -1,12 +1,8 @@
-from typing import List, Union, Any, Set, Optional, Dict
+from typing import List
 from dataclasses import dataclass
 import itertools
-
 import numpy as np
-from multiprocessing import Pool
-from tqdm import tqdm
 
-from dedupe.utils import timing
 
 @dataclass
 class BlockerMixin:
@@ -18,10 +14,10 @@ class BlockerMixin:
         """cartesian product of all vectors in lists"""
         result = [[]]
         for item in lists:
-            if nodupes == True:
-                result = [x+[y] for x in result for y in item if x != [y]]
+            if nodupes:
+                result = [x + [y] for x in result for y in item if x != [y]]
             else:
-                result = [x+[y] for x in result for y in item]
+                result = [x + [y] for x in result for y in item]
         return result
 
     def dedupe_get_candidates(self, block_maps) -> np.array:
@@ -62,6 +58,7 @@ class BlockerMixin:
             axis=0
         )
 
+
 @dataclass
 class DistanceMixin:
     """
@@ -73,16 +70,16 @@ class DistanceMixin:
             df2 = df
         if attributes2 is None:
             attributes2 = attributes
-        
+
         return {
-            attribute:np.concatenate(
+            attribute: np.concatenate(
                 (
-                    np.array(df[[attribute]].iloc[indices[:,0]]),
-                    np.array(df2[[attribute2]].iloc[indices[:,1]])
+                    np.array(df[[attribute]].iloc[indices[:, 0]]),
+                    np.array(df2[[attribute2]].iloc[indices[:, 1]])
                 ),
                 axis=1
             )
-            for attribute,attribute2 in zip(attributes,attributes2)
+            for attribute, attribute2 in zip(attributes, attributes2)
         }
 
     def get_chunks(self, lst, n):
@@ -90,15 +87,14 @@ class DistanceMixin:
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
-
     def p_distances(self, comparisons):
-        
+
         # try:
         #     # split block_map into chunks for parallel processing
         #     chunksize = 80
         #     comparisons_split = self.get_chunks(lst=comparisons, n=chunksize)
         #     n_chunks = np.ceil(len(comparisons)/chunksize)
-            
+
         #     # parallel process with progress bar
         #     p = Pool(self.ncores)
         #     results = []
@@ -121,7 +117,7 @@ class DistanceMixin:
 
     def get_distmat(self, df, df2, attributes, attributes2, indices) -> np.array:
         """for each candidate pair and attribute, compute distances"""
-        
+
         print(f"making {indices.shape[0]} comparions")
         comparisons = self.get_comparisons(df, df2, attributes, attributes2, indices)
 

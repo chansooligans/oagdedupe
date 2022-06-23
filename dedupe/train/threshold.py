@@ -1,9 +1,10 @@
+from dedupe.base import BaseTrain
+
 from dataclasses import dataclass
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 
-from dedupe.base import BaseTrain
 
 @dataclass
 class TestTrain(BaseTrain):
@@ -24,7 +25,8 @@ class TestTrain(BaseTrain):
         return self.clf
 
     def fit(self, X):
-        return self.clf.predict_proba(self.X_scaled)[:,1], self.clf.predict(self.X_scaled)
+        return self.clf.predict_proba(self.X_scaled)[:, 1], self.clf.predict(self.X_scaled)
+
 
 @dataclass
 class Threshold(BaseTrain):
@@ -39,6 +41,5 @@ class Threshold(BaseTrain):
 
     def fit(self, X):
         means = X.mean(axis=1)
-        labels = np.where(means>self.threshold, 1, 0)
+        labels = np.where(means > self.threshold, 1, 0)
         return means, labels
-

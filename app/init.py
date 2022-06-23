@@ -1,10 +1,10 @@
 from pathlib import Path
 import os
 import json
-from dedupe.api import Dedupe, RecordLinkage
+from dedupe.api import Dedupe
 from dedupe.train.active import Active
-from collections import defaultdict
 import pandas as pd
+
 
 class Init:
     """
@@ -23,8 +23,8 @@ class Init:
 
     def setup_cache(self):
         os.makedirs(self.cache_path, exist_ok=True) 
-        label_path =  Path(f"{self.cache_path}/samples.json")
-        meta_path =  Path(f"{self.cache_path}/meta.json") 
+        label_path = Path(f"{self.cache_path}/samples.json")
+        meta_path = Path(f"{self.cache_path}/meta.json") 
         if not label_path.is_file():
             with open(f"{self.cache_path}/samples.json", "w") as f:
                 json.dump({}, f)
@@ -36,7 +36,7 @@ class Init:
     def setup_dedupe(self, df):
         """
         sets up the deduper algorithm
-        
+
         idxmat: 
             array of pairs of record IDs where each pair is a candidate for comparison
         X: 

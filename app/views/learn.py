@@ -1,14 +1,13 @@
 from .. import app
 from .. import utils
 
-import pandas as pd
-import logging
 from flask import (
     render_template, 
     request,
     redirect,
     url_for,
 )
+
 
 def get_samples(samples, idxmat, labelled):
     """
@@ -33,10 +32,11 @@ def get_samples(samples, idxmat, labelled):
         app.logger.info(f"{selected_idx} already labelled; proceeding to next candidate")
         selected_idx = samples[1]
         samples.popleft()
-    idxl,idxr = idxmat[selected_idx]
+    idxl, idxr = idxmat[selected_idx]
     return selected_idx, idxl, idxr
 
-def add_labelled_sample(lab,idxl,idxr,selected_idx,score):
+
+def add_labelled_sample(lab, idxl, idxr, selected_idx, score):
     """
     saves newly labelled sample
 
@@ -52,13 +52,13 @@ def add_labelled_sample(lab,idxl,idxr,selected_idx,score):
         probability of match
     """
     lab.labels[f"{idxl}-{idxr}"] = {
-        "idl":f"{idxl}",
-        "idr":f"{idxr}",
-        "idxmat_idx":f"{selected_idx}",
-        "score":score,
-        "label":request.form["btnradio"],
-        "type":lab._type,
-        "revise":f"<a href=/learn/{idxl}-{idxr}>edit</a>"
+        "idl": f"{idxl}",
+        "idr": f"{idxr}",
+        "idxmat_idx": f"{selected_idx}",
+        "score": score,
+        "label": request.form["btnradio"],
+        "type": lab._type,
+        "revise": f"<a href=/learn/{idxl}-{idxr}>edit</a>"
     }
     if f"{idxl}-{idxr}" not in lab.labels.keys():
         lab.meta[request.form["btnradio"]] += 1
@@ -66,15 +66,16 @@ def add_labelled_sample(lab,idxl,idxr,selected_idx,score):
     lab.save()
     return redirect(url_for('learn'))
 
-@app.route('/learn', methods=["GET","POST"])
-@app.route('/learn/<int:idxl>-<int:idxr>', methods=["GET","POST"])
-def learn(idxl=None,idxr=None):
+
+@app.route('/learn', methods=["GET", "POST"])
+@app.route('/learn/<int:idxl>-<int:idxr>', methods=["GET", "POST"])
+def learn(idxl=None, idxr=None):
     """
     loads the "/learn" page
 
     when form is submitted with an option ("yes", "no", "uncertain"); 
     submits POST request to update samples json in cache
-    
+
     if user is directed to "/learn/<int:idxl>-<int:idxr>", then loads 
     comparison of entities with ID idxl and idxr
     """
@@ -90,11 +91,11 @@ def learn(idxl=None,idxr=None):
             labelled=app.lab.labelled
         )
     else:
-        selected_idx = app.init.idxmat.tolist().index([idxl,idxr])
+        selected_idx = app.init.idxmat.tolist().index([idxl, idxr])
 
     score = round(app.init.d.trainer.scores[selected_idx], 4)
     df = utils.labels_to_df(app.lab.labels)
-    
+
     if request.method == "POST":
         add_labelled_sample(
             lab=app.lab,
@@ -113,6 +114,7 @@ def learn(idxl=None,idxr=None):
         label_df=df.to_html(index=False, escape=False),
         meta=app.lab.meta,
     )
+
 
 @app.route('/retrain', methods=["GET"])
 def retrain():

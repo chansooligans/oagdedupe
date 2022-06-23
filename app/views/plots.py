@@ -6,7 +6,8 @@ from flask import (
     redirect
 )
 
-@app.route('/plots', methods=["GET","POST"])
+
+@app.route('/plots', methods=["GET", "POST"])
 def load_plots():
 
     if not hasattr(app.init, "d"):
