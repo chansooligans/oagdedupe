@@ -7,6 +7,7 @@ from dedupe.base import BaseBlockAlgo
 from typing import List, Set, Dict, Tuple
 from dataclasses import dataclass
 from functools import cached_property
+from collections import defaultdict
 import pandas as pd
 
 
@@ -29,9 +30,9 @@ class PairBlock(BlockerMixin):
         """converts blocks to dictionary where keys are blocks and values are 
         set of unique idx
         """
-        attribute_blocks = {}
+        attribute_blocks = defaultdict(set)
         for _id, block in self.blocks:
-            attribute_blocks.setdefault(block, set()).add(_id)
+            attribute_blocks[block].add(_id)
 
         return attribute_blocks
 
