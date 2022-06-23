@@ -1,4 +1,5 @@
 from .. import app
+from .. import utils
 
 import pandas as pd
 import os
@@ -14,12 +15,7 @@ def load_labels(idxl=None,idxr=None):
     if not hasattr(app.init, "d"):
         return redirect('/load/nodata')
 
-    if len(app.lab.labels) > 0:
-        df = pd.DataFrame(app.lab.labels).T[[
-            "idl", "idr", "label", "revise"
-        ]]
-    else:
-        df = pd.DataFrame(app.lab.labels).T
+    df = utils.labels_to_df(app.lab.labels)
 
     return render_template(
         'labels.html', 

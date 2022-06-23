@@ -5,8 +5,12 @@ from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 
 class Labels:
+    """
+    Object used to handle labelled samples
+    """
 
     def __init__(self, cache_path):
         self.cache_path = cache_path
@@ -76,3 +80,14 @@ def get_plots(X, scores, attributes):
 
 def html_input(c):
     return '<input name="{}" value="{{}}" />'.format(c)
+
+def labels_to_df(labels):
+    """
+    df of labels to print on page
+    """
+    if len(labels) > 0:
+        return pd.DataFrame(labels).T[[
+            "idl", "idr", "label", "revise"
+        ]]
+    else:
+        return pd.DataFrame(labels).T

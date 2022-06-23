@@ -21,6 +21,6 @@ from .views import (
     load_page,
     plots,
     download,
-    active_learn,
+    learn,
     labels,
 )
