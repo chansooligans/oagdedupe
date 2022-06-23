@@ -1,15 +1,14 @@
-from typing import List, Union, Any, Set, Optional, Dict, Tuple
-from dataclasses import dataclass
-from functools import cached_property
-
-import pandas as pd
-
 from dedupe.base import BaseBlocker
 from dedupe.mixin import BlockerMixin
 from dedupe.block.groups import Union, Intersection, Pair
 from dedupe.block.algos import FirstLetter, FirstLetterLastToken
 from dedupe.base import BaseBlockAlgo
-from dedupe.utils import timing
+
+from typing import List, Set, Dict, Tuple
+from dataclasses import dataclass
+from functools import cached_property
+import pandas as pd
+
 
 @dataclass
 class PairBlock(BlockerMixin):

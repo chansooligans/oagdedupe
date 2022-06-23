@@ -1,8 +1,10 @@
 """tools for intersections of method-attribute pairs
 """
+from dedupe.base import BaseBlockAlgo
+
 from dataclasses import dataclass
 from typing import List, FrozenSet
-from dedupe.base import BaseBlockAlgo
+
 
 @dataclass(frozen=True)
 class Pair:
@@ -13,6 +15,7 @@ class Pair:
 
     def __str__(self) -> str:
         return f"{self.BlockAlgo.__name__}-{self.attribute}"
+
 
 @dataclass
 class Intersection:
@@ -28,6 +31,7 @@ class Intersection:
 
     def __str__(self) -> str:
         return " and ".join(sorted([str(pair) for pair in self.set_pairs]))
+
 
 @dataclass
 class Union:

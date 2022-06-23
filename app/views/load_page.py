@@ -8,7 +8,8 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-@app.route('/uploader', methods = ['POST'])
+
+@app.route('/uploader', methods=['POST'])
 def upload_file():
     """
     action in response to submit button on "/load" page
@@ -17,9 +18,9 @@ def upload_file():
     if request.method == 'POST':
 
         if request.files['file']:
-            
+
             f = request.files['file']
-            
+
             app.logger.info(f"loading {f}")
             app.logger.info(f"saving copy to: {app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
 
@@ -40,6 +41,7 @@ def upload_file():
             )
 
     return redirect(url_for('learn'))
+
 
 @app.route('/')    
 @app.route('/load')

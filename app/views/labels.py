@@ -1,7 +1,6 @@
 from .. import app
 from .. import utils
 
-import pandas as pd
 import os
 from flask import (
     render_template, 
@@ -9,8 +8,9 @@ from flask import (
     redirect
 )
 
-@app.route('/labels', methods=["GET","POST"])
-def load_labels(idxl=None,idxr=None):
+
+@app.route('/labels', methods=["GET", "POST"])
+def load_labels(idxl=None, idxr=None):
 
     if not hasattr(app.init, "d"):
         app.logger.error("need to load dataset first")
@@ -23,6 +23,7 @@ def load_labels(idxl=None,idxr=None):
         label_df=df.to_html(index=False, escape=False),
         meta=app.lab.meta,
     )
+
 
 @app.route('/reset', methods=["GET", "POST"])
 def reset():
