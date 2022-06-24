@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
+import ray
 
 
 @dataclass
@@ -25,6 +26,7 @@ class BaseModel(metaclass=ABCMeta):
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     fp: str = "/home/csong/cs_github/deduper/cache"
+    cpu: int = 2
 
     @abstractmethod
     def predict(self):
@@ -47,6 +49,8 @@ class Dedupe(BaseModel):
     def __post_init__(self):
         if self.attributes is None:
             self.attributes = self.df.columns
+        if not ray.is_initialized():
+            ray.init(num_cpus=self.cpus)
 
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""

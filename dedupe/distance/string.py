@@ -13,7 +13,6 @@ def ray_distance(pairs):
         for pair in pairs
     ]
 
-
 class AllJaro(BaseDistance, DistanceMixin):
     "needs work: update to allow user to specify attribute-algorithm pairs"
 
