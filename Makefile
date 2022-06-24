@@ -4,6 +4,8 @@ tests_all:
 	poetry run pytest -v
 
 serve:
+	mkdir -p cache
+	cp tests/test.csv cache/
 	poetry run python run.py
 
 reset:

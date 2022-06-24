@@ -121,3 +121,7 @@ preds = d.predict()
 
 df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 ```
+
+## quickstart dashboard without docker
+
+run `make serve`
