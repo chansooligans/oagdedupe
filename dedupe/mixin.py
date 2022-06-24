@@ -2,7 +2,8 @@ from typing import List
 from dataclasses import dataclass
 import itertools
 import numpy as np
-
+from tqdm import tqdm
+import logging
 
 @dataclass
 class BlockerMixin:
@@ -25,15 +26,15 @@ class BlockerMixin:
 
         returns a Nx2 array containing candidate pairs
         """
-        return np.unique(
-            [
-                x
-                for block_map in block_maps
-                for ids in block_map.values()
-                for x in itertools.combinations(ids, 2)
-            ],
-            axis=0
-        )
+        
+        logging.info("get unique candidates")
+        candidates = set()
+        for block_map in tqdm(block_maps):
+            for ids in block_map.values():
+                for x in itertools.combinations(ids, 2):
+                    candidates.add(x)
+        
+        return np.array(list(candidates))
 
     def joint_keys(self, dict1, dict2):
         return [name for name in set(dict1).intersection(set(dict2))]

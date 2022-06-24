@@ -26,18 +26,7 @@ class PairBlock(BlockerMixin):
         """Uses blocking algo on attributes to get list of tuples 
         containing idx and block
         """
-        return [(i, self.BlockAlgo.get_block(x)) for i, x in enumerate(self.v.tolist())]
-
-    def get_attribute_blocks(self) -> Dict[str, Set[int]]:
-        """converts blocks to dictionary where keys are blocks and values are 
-        set of unique idx
-        """
-        logging.info(f"block algo: {repr(self.BlockAlgo)}")
-        attribute_blocks = defaultdict(set)
-        for _id, block in tqdm(self.blocks):
-            attribute_blocks[block].add(_id)
-
-        return attribute_blocks
+        return [self.BlockAlgo.get_block(x) for x in self.v.tolist()]
 
 
 @dataclass
@@ -49,30 +38,25 @@ class IntersectionBlock(BlockerMixin):
     intersection: Intersection
 
     @cached_property
-    def blocks(self) -> List[PairBlock]:
+    def pair_blocks(self) -> List[PairBlock]:
         """Create PairBlock for each pair in intersection configuration
         """
         return [
             PairBlock(
                 v=self.df[pair.attribute], BlockAlgo=pair.BlockAlgo
-            ).get_attribute_blocks()
+            ).blocks
             for pair in self.intersection.pairs
         ]
 
-    def block_maps(self) -> Dict[tuple, tuple]:
-        """Merges a list of PairBlock dictionaries by getting the intersection of keys.
-        Then getting the union of values (indices).
+    def block_maps(self) -> Dict[str, Set[int]]:
+        """converts blocks to dictionary where keys are blocks and values are 
+        set of unique idx
         """
-
         logging.info(f"intersection: {repr(self.intersection)}")
-        key_list = self.product([item.keys() for item in self.blocks])
-        block_map = {}
-        for keys in tqdm(key_list):
-            block_map[tuple(keys)] = tuple(
-                set.intersection(*[block[key] for key, block in zip(keys, self.blocks)])
-            )
-        return block_map
-
+        attribute_blocks = defaultdict(set)
+        for _id, block in tqdm(enumerate(zip(*self.pair_blocks))):
+            attribute_blocks[block].add(_id)
+        return attribute_blocks
 
 @dataclass
 class TestBlocker(BaseBlocker, BlockerMixin):
