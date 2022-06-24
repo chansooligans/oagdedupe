@@ -45,7 +45,11 @@ class Init:
             if record A and record B are compared on 2 attributes (e.g. name and address)  
             this element is length 2, containing distances between their names and addresses
         """
-        self.d = Dedupe(df=df, trainer=Active())
+        self.d = Dedupe(
+            df=df, 
+            trainer=Active(), 
+            # cpus=4
+        )
         self.idxmat = self.d._get_candidates()
         self.X = self.d.distance.get_distmat(
             self.d.df, 

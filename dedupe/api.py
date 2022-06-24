@@ -26,7 +26,7 @@ class BaseModel(metaclass=ABCMeta):
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     fp: str = "/home/csong/cs_github/deduper/cache"
-    cpu: int = 2
+    cpus: int = 1
 
     @abstractmethod
     def predict(self):
@@ -49,7 +49,7 @@ class Dedupe(BaseModel):
     def __post_init__(self):
         if self.attributes is None:
             self.attributes = self.df.columns
-        if not ray.is_initialized():
+        if (self.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.cpus)
 
     def predict(self) -> pd.DataFrame:

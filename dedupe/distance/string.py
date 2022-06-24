@@ -13,7 +13,7 @@ def ray_distance(pairs):
     ]
 
 
-class AllJaro(BaseDistance, DistanceMixin):
+class RayAllJaro(BaseDistance, DistanceMixin):
     "needs work: update to allow user to specify attribute-algorithm pairs"
 
     def distance(self, pairs):
@@ -24,6 +24,21 @@ class AllJaro(BaseDistance, DistanceMixin):
         ])
         return [
             x for sublist in res for x in sublist
+        ]
+
+    def config(self):
+        """
+        returns dict mapping each column to distance calculation
+        """
+        return dict
+
+class AllJaro(BaseDistance, DistanceMixin):
+    "needs work: update to allow user to specify attribute-algorithm pairs"
+
+    def distance(self, pairs):
+        return [
+            jaro_winkler_similarity(pair[0], pair[1])
+            for pair in pairs
         ]
 
     def config(self):

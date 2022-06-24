@@ -27,7 +27,7 @@ def load_labels(idxl=None, idxr=None):
 
 @app.route('/reset', methods=["GET", "POST"])
 def reset():
-    print("resetting")
+    app.logger.info("need to load dataset first")
     if request.method == "GET":
         os.remove(f"{app.config['UPLOAD_FOLDER']}/samples.json")
         os.remove(f"{app.config['UPLOAD_FOLDER']}/meta.json")

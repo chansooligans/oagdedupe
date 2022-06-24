@@ -85,6 +85,7 @@ def learn(idxl=None, idxr=None):
         return redirect('/load/nodata')
 
     if idxl is None:
+        app.logger.info(f"comparison type: {app.lab._type}")
         selected_idx, idxl, idxr = get_samples(
             samples=app.init.d.trainer.samples[app.lab._type], 
             idxmat=app.init.idxmat, 
@@ -97,6 +98,7 @@ def learn(idxl=None, idxr=None):
     df = utils.labels_to_df(app.lab.labels)
 
     if request.method == "POST":
+        app.logger.info(f"adding selected label: {app.lab}")
         add_labelled_sample(
             lab=app.lab,
             idxl=idxl,
@@ -124,13 +126,13 @@ def retrain():
     if there are inadequate # of samples (e.g. all have same class), then 
     re-initializes model (train using full data with random assignment)
     """
-    app.logger.info("retraining")
     app.init.d.trainer.labels = app.lab.labels
     if request.method == "GET":
-        try:
+        if (app.lab.meta["Yes"] >= 5) & (app.lab.meta["No"] >= 5):
+            app.logger.info("retraining")
             app.init.d.trainer.retrain()
             return "success"
-        except Exception as e:
-            app.logger.error(e)
+        else:
+            app.logger.info("not enough samples, re-initializing with random labels")
             app.init.d.trainer.initialize(app.init.X)
             return "re-initialize"

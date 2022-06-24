@@ -36,12 +36,17 @@ class Labels:
 
     @property
     def _type(self):
-        if (self.meta["Yes"] >= 5) & (self.meta["No"] >= 5):
-            return "uncertain"
-        elif (self.meta["high"] >= 5):
-            return "low"
-        else:
+        if self.meta["high"] <= 5:
             return "high"
+        elif self.meta["low"] <= 5:
+            return "low"
+        if self.meta["Yes"] - self.meta["No"] > 10:
+            return "low"
+        elif self.meta["No"] - self.meta["Yes"] > 10:
+            return "high"
+        else:
+            return "uncertain"
+        
 
     def save(self):
         with open(f"{self.cache_path}/samples.json", "w") as f:
