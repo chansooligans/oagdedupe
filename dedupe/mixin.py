@@ -87,34 +87,6 @@ class DistanceMixin:
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
-    def p_distances(self, comparisons):
-
-        # try:
-        #     # split block_map into chunks for parallel processing
-        #     chunksize = 80
-        #     comparisons_split = self.get_chunks(lst=comparisons, n=chunksize)
-        #     n_chunks = np.ceil(len(comparisons)/chunksize)
-
-        #     # parallel process with progress bar
-        #     p = Pool(self.ncores)
-        #     results = []
-
-        #     # pmap_chunk is number of chunks sent to each processor at a time and should be multiple of chunksize
-        #     pmap_chunk=min(480, int(n_chunks))
-        #     for _ in tqdm(p.imap(self.distance, comparisons_split, chunksize=pmap_chunk), total=n_chunks):
-        #         results.append(_)
-        #         pass
-        # except KeyboardInterrupt:
-        #     p.terminate()
-        #     p.join()
-        # else:
-        #     p.close()
-        #     p.join()
-        # if results:
-        #     return np.concatenate(results)
-
-        return self.distance(comparisons)
-
     def get_distmat(self, df, df2, attributes, attributes2, indices) -> np.array:
         """for each candidate pair and attribute, compute distances"""
 
@@ -122,6 +94,6 @@ class DistanceMixin:
         comparisons = self.get_comparisons(df, df2, attributes, attributes2, indices)
 
         return np.column_stack([
-            self.p_distances(comparisons[attribute])
+            self.distance(comparisons[attribute])
             for attribute in attributes
         ])
