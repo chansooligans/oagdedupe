@@ -6,7 +6,7 @@ import re
 
 @dataclass
 class FirstNLetters(BaseBlockAlgo):
-    N:int
+    N: int
 
     def get_block(self, field) -> str:
         return field.replace(' ', '')[:self.N]
@@ -14,7 +14,7 @@ class FirstNLetters(BaseBlockAlgo):
 
 @dataclass
 class FirstNLettersLastToken(BaseBlockAlgo):
-    N:int
+    N: int
 
     def get_block(self, field) -> str:
         return field.split(' ')[-1].replace(' ', '')[:self.N]
@@ -22,7 +22,7 @@ class FirstNLettersLastToken(BaseBlockAlgo):
 
 @dataclass
 class LastNLetters(BaseBlockAlgo):
-    N:int
+    N: int
 
     def get_block(self, field) -> str:
         return field.replace(' ', '')[-self.N:]
@@ -39,4 +39,3 @@ class ExactMatch(BaseBlockAlgo):
 
     def get_block(self, field) -> str:
         return field
-

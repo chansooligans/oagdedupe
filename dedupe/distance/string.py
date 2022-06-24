@@ -1,7 +1,6 @@
 from dedupe.base import BaseDistance
 from dedupe.mixin import DistanceMixin
 
-from dataclasses import dataclass
 from jellyfish import jaro_winkler_similarity
 import ray
 
@@ -12,6 +11,7 @@ def ray_distance(pairs):
         jaro_winkler_similarity(pair[0], pair[1])
         for pair in pairs
     ]
+
 
 class AllJaro(BaseDistance, DistanceMixin):
     "needs work: update to allow user to specify attribute-algorithm pairs"
