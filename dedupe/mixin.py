@@ -2,23 +2,7 @@ from typing import List
 from dataclasses import dataclass
 import itertools
 import numpy as np
-import ray
 
-@ray.remote
-def dedupe_get_candidates(block_maps) -> np.array:
-    """dedupe: convert union (list of block maps) to candidate pairs
-
-    returns a Nx2 array containing candidate pairs
-    """
-    return np.unique(
-        [
-            x
-            for block_map in block_maps
-            for ids in block_map.values()
-            for x in itertools.combinations(ids, 2)
-        ],
-        axis=0
-    )
 
 @dataclass
 class BlockerMixin:
@@ -35,6 +19,21 @@ class BlockerMixin:
             else:
                 result = [x + [y] for x in result for y in item]
         return result
+
+    def dedupe_get_candidates(self, block_maps) -> np.array:
+        """dedupe: convert union (list of block maps) to candidate pairs
+
+        returns a Nx2 array containing candidate pairs
+        """
+        return np.unique(
+            [
+                x
+                for block_map in block_maps
+                for ids in block_map.values()
+                for x in itertools.combinations(ids, 2)
+            ],
+            axis=0
+        )
 
     def joint_keys(self, dict1, dict2):
         return [name for name in set(dict1).intersection(set(dict2))]
@@ -88,34 +87,6 @@ class DistanceMixin:
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
-    def p_distances(self, comparisons):
-
-        # try:
-        #     # split block_map into chunks for parallel processing
-        #     chunksize = 80
-        #     comparisons_split = self.get_chunks(lst=comparisons, n=chunksize)
-        #     n_chunks = np.ceil(len(comparisons)/chunksize)
-
-        #     # parallel process with progress bar
-        #     p = Pool(self.ncores)
-        #     results = []
-
-        #     # pmap_chunk is number of chunks sent to each processor at a time and should be multiple of chunksize
-        #     pmap_chunk=min(480, int(n_chunks))
-        #     for _ in tqdm(p.imap(self.distance, comparisons_split, chunksize=pmap_chunk), total=n_chunks):
-        #         results.append(_)
-        #         pass
-        # except KeyboardInterrupt:
-        #     p.terminate()
-        #     p.join()
-        # else:
-        #     p.close()
-        #     p.join()
-        # if results:
-        #     return np.concatenate(results)
-
-        return self.distance(comparisons)
-
     def get_distmat(self, df, df2, attributes, attributes2, indices) -> np.array:
         """for each candidate pair and attribute, compute distances"""
 
@@ -123,6 +94,6 @@ class DistanceMixin:
         comparisons = self.get_comparisons(df, df2, attributes, attributes2, indices)
 
         return np.column_stack([
-            self.p_distances(comparisons[attribute])
+            self.distance(comparisons[attribute])
             for attribute in attributes
         ])

@@ -3,14 +3,13 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
-from dedupe import mixin
 
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-import ray
+
 
 @dataclass
 class BaseModel(metaclass=ABCMeta):
@@ -22,7 +21,7 @@ class BaseModel(metaclass=ABCMeta):
     attributes: Optional[List[str]] = None
     attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
-    distance: Optional[BaseDistance] = AllJaro(ncores=2)
+    distance: Optional[BaseDistance] = AllJaro()
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     fp: str = "/home/csong/cs_github/deduper/cache"
@@ -75,11 +74,9 @@ class Dedupe(BaseModel):
         """get candidate pairs"""
         block_maps = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
 
-        idxmat = mixin.dedupe_get_candidates.remote(
+        return self.blocker.dedupe_get_candidates(
             block_maps
         )
-
-        return ray.get(idxmat)
 
 
 @dataclass
