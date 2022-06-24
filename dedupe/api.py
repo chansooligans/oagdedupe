@@ -10,7 +10,9 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import ray
-
+import logging
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
 
 @dataclass
 class BaseModel(metaclass=ABCMeta):
@@ -56,6 +58,8 @@ class Dedupe(BaseModel):
         """get clusters of matches and return cluster IDs"""
 
         idxmat, scores, y = self.fit()
+
+        logging.info("get clusters")
         return self.cluster.get_df_cluster(
             matches=idxmat[y == 1].astype(int), 
             scores=scores[y == 1],
@@ -67,17 +71,24 @@ class Dedupe(BaseModel):
 
         idxmat = self._get_candidates()
 
+        logging.info("get distance matrix")
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
 
+        logging.info("learning")
         self.trainer.learn(self.df, X, idxmat)
+
+        logging.info("make predictions")
         scores, y = self.trainer.fit(X)
 
         return idxmat, scores, y
 
     def _get_candidates(self) -> np.array:
         """get candidate pairs"""
+        
+        logging.info("get block maps")
         block_maps = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
 
+        logging.info("get candidate pairs")
         return self.blocker.dedupe_get_candidates(
             block_maps
         )

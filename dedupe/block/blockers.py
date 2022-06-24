@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from functools import cached_property
 from collections import defaultdict
 import pandas as pd
+import logging
+from tqdm import tqdm
 
 
 @dataclass
@@ -30,8 +32,9 @@ class PairBlock(BlockerMixin):
         """converts blocks to dictionary where keys are blocks and values are 
         set of unique idx
         """
+        logging.info(f"block algo: {repr(self.BlockAlgo)}")
         attribute_blocks = defaultdict(set)
-        for _id, block in self.blocks:
+        for _id, block in tqdm(self.blocks):
             attribute_blocks[block].add(_id)
 
         return attribute_blocks
@@ -61,9 +64,10 @@ class IntersectionBlock(BlockerMixin):
         Then getting the union of values (indices).
         """
 
+        logging.info(f"intersection: {repr(self.intersection)}")
         key_list = self.product([item.keys() for item in self.blocks])
         block_map = {}
-        for keys in key_list:
+        for keys in tqdm(key_list):
             block_map[tuple(keys)] = tuple(
                 set.intersection(*[block[key] for key, block in zip(keys, self.blocks)])
             )
