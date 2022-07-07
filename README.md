@@ -3,23 +3,6 @@
 - new draft of dedupe tool i helped develop with the research and analytics departement of the ny state office of the attorney general
 - partly a learning project and hopefully an easy-to-use, powerful entity resolution tool for general public to use
 
-## Run with Docker
-
-```
-# First, clone the repo
-1. git clone https://github.com/chansooligans/deduper.git
-2. cd deduper
-
-# Build Docker image
-3. docker build -t deduper:latest .
-
-# Run
-4. docker run -t -d --rm --name deduper -p 8080:8081 deduper 
-5. Go to http://127.0.0.1:8080/load
-
-(test dataset will be pre-loaded)
-```
-
 ## quickstart
 
 #### install dependencies with poetry:
@@ -120,6 +103,24 @@ d = Dedupe(df=df, attributes=None, blocker=manual_blocker)
 preds = d.predict()
 
 df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
+```
+
+
+## Run Flask APP with Docker
+
+```
+# First, clone the repo
+1. git clone https://github.com/chansooligans/deduper.git
+2. cd deduper
+
+# Build Docker image
+3. docker build -t deduper:latest .
+
+# Run
+4. docker run -t -d --rm --name deduper -p 8080:8081 deduper 
+5. Go to http://127.0.0.1:8080/load
+
+(test dataset will be pre-loaded)
 ```
 
 ## quickstart dashboard without docker
