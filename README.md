@@ -104,25 +104,3 @@ preds = d.predict()
 
 df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 ```
-
-
-## Run Flask APP with Docker
-
-```
-# First, clone the repo
-1. git clone https://github.com/chansooligans/deduper.git
-2. cd deduper
-
-# Build Docker image
-3. docker build -t deduper:latest .
-
-# Run
-4. docker run -t -d --rm --name deduper -p 8080:8081 deduper 
-5. Go to http://127.0.0.1:8080/load
-
-(test dataset will be pre-loaded)
-```
-
-## quickstart dashboard without docker
-
-run `make serve`
