@@ -22,6 +22,9 @@ Werkzeug = "^2.1.2"
 Faker = "^13.12.1"
 flake8 = "^4.0.1"
 ray = "^1.13.0"
+modAL = "^0.4.1"
+pigeon-jupyter = "^0.1.0"
+superintendent = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 

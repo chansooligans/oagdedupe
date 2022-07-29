@@ -4,8 +4,17 @@ from functools import cached_property
 
 import pandas as pd
 import numpy as np
-from sklearn.svm import SVC
-from sklearn.preprocessing import StandardScaler
+from modAL.models import ActiveLearner
+from functools import partial
+from modAL.batch import uncertainty_batch_sampling
+from sklearn.ensemble import RandomForestClassifier
+
+from superintendent import ClassLabeller
+import pandas as pd
+from IPython import display
+import json
+import time
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(rc={'figure.figsize':(11.7,8.27)})
@@ -13,104 +22,102 @@ sns.set(rc={'figure.figsize':(11.7,8.27)})
 from dedupe.base import BaseTrain
 
 @dataclass
-class Active(BaseTrain):
+class ActiveJupyter(BaseTrain):
     """
     Model to implement active learning
     """
 
     def __post_init__(self):
-        self.samples = defaultdict(str)
-        self.labels = defaultdict(str)
-        self.active_dict = defaultdict(int)
+        
+        # Pre-set our batch sampling to retrieve 3 samples at a time.
+        self.BATCH_SIZE = 5
+        preset_batch = partial(uncertainty_batch_sampling, n_instances=self.BATCH_SIZE)
 
-    def initialize(self, X):
-        self.X = X
-        self.train(self.X, init=True)
-        self.scores, self.y = self.fit(self.X)
-
-    def init_y(self, size):
-        return np.random.choice([0,1],size=size, replace=True)
-
-    def train(self, X, init=False, labels=None):
-        X_scaled = StandardScaler().fit_transform(X)
-        self.clf = SVC(kernel="linear", C=100, probability=True)
-        if init==True:
-            self.clf.fit(X_scaled, self.init_y(len(X)))
-        else:
-            self.clf.fit(X_scaled, labels)
-        return self.clf
-
-    def get_samples(self):
-        self.dfX = (
-            pd.DataFrame(self.X)
-            .assign(scores=self.scores,y=self.y,uncertain=abs(self.scores-0.5))
-            .reset_index()
-            .sort_values("scores")
+        # initializing the learner
+        self.clf = ActiveLearner(
+            estimator=RandomForestClassifier(),
+            query_strategy=preset_batch,
         )
 
-        unlabelled = self.dfX.loc[~self.dfX["index"].isin(self.active_dict.keys()),"index"]
 
-        self.samples["lowest"] = unlabelled[:5].values
-        self.samples["highest"] = unlabelled[-5:].values
+    def learn(self, df, X, idxmat):
 
-        self.samples["uncertain"] = self.dfX.sort_values("uncertain").loc[
-            ~self.dfX["index"].isin(self.active_dict.keys()),"index"
-        ][:5].values
+        y = np.repeat(0,len(X))
+        X_pool = X.copy()
+        
+        finished = False 
+        while finished == False:
+            
+            # Pool-based sampling
+            query_index, query_instance = self.clf.query(X_pool)
 
-    def active_learn(self, _type, candidates, df):
-        self.labels[_type] = []
-        for a,b in candidates[self.samples[_type],:]:
-            while True:
-                try:
-                    userinput = int(input(f"{df.loc[a]} \n\n {df.loc[b]}"))
-                except ValueError:
-                    print("Needs to be 1 or 0")
-                    continue
-                else:
+            learn_X = pd.concat([
+                (
+                    df
+                    .loc[idxmat[query_index,0]]
+                    .reset_index()
+                    .set_axis(["id_l","name_l","addr_l"], axis=1)
+                ),
+                (
+                    df
+                    .loc[idxmat[query_index,1]]
+                    .reset_index()
+                    .set_axis(["id_r","name_r","addr_r"], axis=1)
+                )
+            ], axis=1).to_dict("records")
+            
+            i = 0
+            n = len(learn_X)
+            new_labels = []
+            while i < n:
+                
+                print(json.dumps(
+                    learn_X[i],
+                    sort_keys=True,
+                    indent=4
+                ))
+
+                time.sleep(1)
+
+                user_label = str(
+                    input("Enter 1 (match), 2 (non-match), 3 (skip), or enter 'exit'")
+                ).lower()
+
+                main_options = {
+                    "1":1,
+                    "2":0,
+                    "3":"skip",
+                }
+
+                if user_label == "exit":
+                    finished = True
                     break
-            self.labels[_type].append(userinput)
+                elif user_label in ["1", "2", "3"]:
+                    user_label = main_options[user_label]
+                    i+=1
+                elif user_label == "p":
+                    i = max(i-1,0)
+                else:
+                    user_label = "skip"
+                    i+=1
 
-    def update_active_dict(self,_type):
-        if _type == "uncertain":
-            indices = list(self.samples["uncertain"])
-            labels = self.labels["uncertain"] 
-        else:
-            indices = list(self.samples["lowest"]) + list(self.samples["highest"])
-            labels = self.labels["lowest"] + self.labels["highest"]
-        for idx,lab in zip(indices, labels):
-            self.active_dict[idx] = lab
+                new_labels.append(user_label)
 
-    def retrain(self):
-        self.train(
-            self.X[list(self.active_dict.keys()),:], 
-            init=False, 
-            labels=list(self.active_dict.values())
-        )
-        self.scores, self.y = self.fit(self.X)
+            lablled_idx = []
+            labels = []
+            for i,label in enumerate(new_labels):
+                if label != "skip":
+                    lablled_idx.append(query_index[i])
+                    labels.append(label)
 
-    def run(self,candidates, df ,_type="lowhigh"):
-        self.get_samples()
-        if _type == "lowhigh":
-            for x in ["lowest","highest"]:
-                self.active_learn(x, candidates, df)
-        else:
-            self.active_learn("uncertain", candidates, df)
-        self.update_active_dict(_type)
-        self.retrain()
-        plt.figure()
-        sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.scores)
-        plt.figure()
-        sns.scatterplot(self.X[:,0],self.X[:,1], hue=self.y)
-        plt.show()
+            self.clf.teach(X=X_pool[lablled_idx], y=labels)
 
-    def learn(self, df, X, candidates):
-        self.initialize(X)
-        self.run(candidates=candidates, df = df, _type="lowhigh")
-        user_continue = True
-        while user_continue:
-            self.run(candidates=candidates, df = df, _type="uncertain")
-            user_continue = input()
+            X_pool = np.delete(X_pool, query_index, axis=0)
+
+            plt.figure()
+            sns.scatterplot(X[:,0], X[:,1], self.clf.predict(X))
+            plt.show()
+        
 
     def fit(self, X):
-        X = StandardScaler().fit_transform(X)
-        return self.clf.predict_proba(X)[:,1], self.clf.predict(X)
+        return self.clf.predict_proba(X),self.clf.predict(X)
