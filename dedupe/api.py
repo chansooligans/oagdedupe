@@ -75,7 +75,7 @@ class Dedupe(BaseModel):
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
 
         logging.info("learning")
-        self.trainer.learn(self.df, X, idxmat)
+        self.trainer.learn(self.df, X, idxmat, self.attributes)
 
         logging.info("make predictions")
         scores, y = self.trainer.fit(X)

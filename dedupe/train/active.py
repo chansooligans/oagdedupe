@@ -42,7 +42,7 @@ class Active(BaseTrain):
         )
 
 
-    def query(self, df, X, idxmat, queried):
+    def query(self, df, X, idxmat, queried, attributes):
         
         query_index, query_instance = self.clf.query(np.delete(X, queried, axis=0))
         query_index = np.delete(self.indices, queried, axis=0)[query_index]
@@ -52,13 +52,13 @@ class Active(BaseTrain):
                     df
                     .loc[idxmat[query_index,0]]
                     .reset_index(drop=True)
-                    .set_axis(["name_l","addr_l"], axis=1)
+                    .set_axis([f"{c}_l" for c in attributes], axis=1)
                 ),
                 (
                     df
                     .loc[idxmat[query_index,1]]
                     .reset_index(drop=True)
-                    .set_axis(["name_r","addr_r"], axis=1)
+                    .set_axis([f"{c}_r" for c in attributes], axis=1)
                 )
             ], axis=1
         )
