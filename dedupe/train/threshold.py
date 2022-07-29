@@ -18,7 +18,7 @@ class TestTrain(BaseTrain):
     def y(self):
         return np.array([1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1])
 
-    def learn(self, df, X, candidates):
+    def learn(self, df, X, candidates, attributes):
         self.X_scaled = StandardScaler().fit_transform(X)
         self.clf = SVC(kernel="linear", C=100, probability=True)
         self.clf.fit(self.X_scaled, self.y)
@@ -36,7 +36,7 @@ class Threshold(BaseTrain):
     """
     threshold: float = 0.8
 
-    def learn(self, df, X, candidates):
+    def learn(self, df, X, candidates, attributes):
         return
 
     def fit(self, X):

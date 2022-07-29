@@ -102,7 +102,7 @@ class Active(BaseTrain):
             queried = list()
         return queried
 
-    def learn(self, df, X, idxmat):
+    def learn(self, df, X, idxmat, attributes):
 
         self.indices = np.array(range(len(X)))
 
@@ -113,7 +113,7 @@ class Active(BaseTrain):
  
         while True:
             
-            query_index = self.query(df, X, idxmat, queried)
+            query_index = self.query(df, X, idxmat, queried, attributes)
             
             resp = input("Click enter once batch complete. Enter 'exit' to finish learning.")
 
