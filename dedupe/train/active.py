@@ -22,7 +22,7 @@ sns.set(rc={'figure.figsize':(11.7,8.27)})
 from dedupe.base import BaseTrain
 
 @dataclass
-class ActiveJupyter(BaseTrain):
+class Active(BaseTrain):
     """
     Model to implement active learning
     """
@@ -63,7 +63,7 @@ class ActiveJupyter(BaseTrain):
             ], axis=1
         )
         samples['idx'] = query_index
-        samples["label"] = ""
+        samples["label"] = 0
         samples = samples[
             ["label"]+[x for x in samples.columns if x != "label"]
         ]
@@ -121,11 +121,6 @@ class ActiveJupyter(BaseTrain):
                 break
             
             queried = self.update_model(X)
-
-            plt.figure()
-            sns.scatterplot(X[:,0], X[:,1], self.clf.predict(X))
-            plt.show()
-        
-
+            
     def fit(self, X):
         return self.clf.predict_proba(X),self.clf.predict(X)

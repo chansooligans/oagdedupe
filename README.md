@@ -104,3 +104,19 @@ preds = d.predict()
 
 df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 ```
+
+#### active learning
+
+```
+# streamlit for labelling
+streamlit run app/app.py --server.port 8089
+
+# model
+from dedupe.api import Dedupe
+from dedupe.train.active import Active
+d = Dedupe(
+    df=df, 
+    trainer=Active(cache_fp="../cache/test.csv"),
+)
+preds = d.predict()
+```

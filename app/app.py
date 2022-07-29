@@ -5,6 +5,9 @@ import pandas as pd
 from glob import glob
 
 df = pd.read_csv('cache/test.csv')
+
+st.write("1: match | 2: not a match | 0: not labelled")
+
 grid_return = AgGrid(
     df, 
     editable=True,
