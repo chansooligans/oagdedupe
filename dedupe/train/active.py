@@ -9,11 +9,11 @@ from functools import partial
 from modAL.batch import uncertainty_batch_sampling
 from sklearn.ensemble import RandomForestClassifier
 
-from superintendent import ClassLabeller
 import pandas as pd
 from IPython import display
 import json
 import time
+import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -26,6 +26,7 @@ class ActiveJupyter(BaseTrain):
     """
     Model to implement active learning
     """
+    cache_fp:str = "../cache/test.csv"
 
     def __post_init__(self):
         
@@ -37,82 +38,89 @@ class ActiveJupyter(BaseTrain):
         self.clf = ActiveLearner(
             estimator=RandomForestClassifier(),
             query_strategy=preset_batch,
+
         )
 
 
-    def learn(self, df, X, idxmat):
-
-        y = np.repeat(0,len(X))
-        X_pool = X.copy()
+    def query(self, df, X, idxmat, queried):
         
-        finished = False 
-        while finished == False:
-            
-            # Pool-based sampling
-            query_index, query_instance = self.clf.query(X_pool)
+        query_index, query_instance = self.clf.query(np.delete(X, queried, axis=0))
+        query_index = np.delete(self.indices, queried, axis=0)[query_index]
 
-            learn_X = pd.concat([
+        samples = pd.concat([
                 (
                     df
                     .loc[idxmat[query_index,0]]
-                    .reset_index()
-                    .set_axis(["id_l","name_l","addr_l"], axis=1)
+                    .reset_index(drop=True)
+                    .set_axis(["name_l","addr_l"], axis=1)
                 ),
                 (
                     df
                     .loc[idxmat[query_index,1]]
-                    .reset_index()
-                    .set_axis(["id_r","name_r","addr_r"], axis=1)
+                    .reset_index(drop=True)
+                    .set_axis(["name_r","addr_r"], axis=1)
                 )
-            ], axis=1).to_dict("records")
+            ], axis=1
+        )
+        samples['idx'] = query_index
+        samples["label"] = ""
+        samples = samples[
+            ["label"]+[x for x in samples.columns if x != "label"]
+        ]
+        
+        if os.path.exists(self.cache_fp):
+            samples.to_csv(
+                self.cache_fp, 
+                mode='a',
+                header=False,
+                index=False
+            )
+        else:
+            samples.to_csv(
+                self.cache_fp, 
+                index=False
+            )
+
+        return query_index
+
+    @cached_property
+    def output_map(self):
+        return {
+            1:1,
+            2:0
+        }
+
+
+    def update_model(self, X):
+        if os.path.exists(self.cache_fp):
+            samples = pd.read_csv(self.cache_fp).drop_duplicates()
+            samples = samples.loc[samples["label"].isin([1,2])]
+            samples["label"] = samples["label"].map(self.output_map)
+            queried = list(samples["idx"].values)
+            self.clf.teach(X=X[queried], y=samples["label"].values)
+        else:
+            queried = list()
+        return queried
+
+    def learn(self, df, X, idxmat):
+
+        self.indices = np.array(range(len(X)))
+
+        if os.path.exists(self.cache_fp):
+            queried = self.update_model(X)
+        else:
+            queried = list()
+ 
+        while True:
             
-            i = 0
-            n = len(learn_X)
-            new_labels = []
-            while i < n:
-                
-                print(json.dumps(
-                    learn_X[i],
-                    sort_keys=True,
-                    indent=4
-                ))
+            query_index = self.query(df, X, idxmat, queried)
+            
+            resp = input("Click enter once batch complete. Enter 'exit' to finish learning.")
 
-                time.sleep(1)
-
-                user_label = str(
-                    input("Enter 1 (match), 2 (non-match), 3 (skip), or enter 'exit'")
-                ).lower()
-
-                main_options = {
-                    "1":1,
-                    "2":0,
-                    "3":"skip",
-                }
-
-                if user_label == "exit":
-                    finished = True
-                    break
-                elif user_label in ["1", "2", "3"]:
-                    user_label = main_options[user_label]
-                    i+=1
-                elif user_label == "p":
-                    i = max(i-1,0)
-                else:
-                    user_label = "skip"
-                    i+=1
-
-                new_labels.append(user_label)
-
-            lablled_idx = []
-            labels = []
-            for i,label in enumerate(new_labels):
-                if label != "skip":
-                    lablled_idx.append(query_index[i])
-                    labels.append(label)
-
-            self.clf.teach(X=X_pool[lablled_idx], y=labels)
-
-            X_pool = np.delete(X_pool, query_index, axis=0)
+            if resp == "exit":
+                break
+            
+            queried = self.update_model(X)
 
             plt.figure()
             sns.scatterplot(X[:,0], X[:,1], self.clf.predict(X))
