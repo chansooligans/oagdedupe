@@ -19,9 +19,9 @@ class Active(BaseTrain):
     """
 
     def __post_init__(self):
-        self.labels = {}
         self.samples = defaultdict(str)
-        self.sorted_scores = defaultdict(list)
+        self.labels = defaultdict(str)
+        self.active_dict = defaultdict(int)
 
     def initialize(self, X):
         self.X = X
@@ -40,13 +40,6 @@ class Active(BaseTrain):
             self.clf.fit(X_scaled, labels)
         return self.clf
 
-    def alternate_low_high(self, low):
-        high = low[::-1]
-        lowhigh = [None] * (len(low) + len(high))
-        lowhigh[::2] = low
-        lowhigh[1::2] = high
-        return lowhigh
-
     def get_samples(self):
         self.dfX = (
             pd.DataFrame(self.X)
@@ -54,22 +47,38 @@ class Active(BaseTrain):
             .reset_index()
             .sort_values("scores")
         )
-        
-        self.sorted_scores["init"] = self.alternate_low_high(self.dfX["scores"].values)
-        self.sorted_scores["uncertain"] = self.dfX.sort_values("uncertain")["scores"].values
 
         unlabelled = self.dfX.loc[~self.dfX["index"].isin(self.active_dict.keys()),"index"]
-        self.samples["init"] = self.alternate_low_high(unlabelled.values)
+
+        self.samples["lowest"] = unlabelled[:5].values
+        self.samples["highest"] = unlabelled[-5:].values
+
         self.samples["uncertain"] = self.dfX.sort_values("uncertain").loc[
             ~self.dfX["index"].isin(self.active_dict.keys()),"index"
-        ].values
+        ][:5].values
 
-    @property
-    def active_dict(self):
-        return {
-            int(x["c_index"]):x["label"] 
-            for x in self.labels.values()
-        }
+    def active_learn(self, _type, candidates, df):
+        self.labels[_type] = []
+        for a,b in candidates[self.samples[_type],:]:
+            while True:
+                try:
+                    userinput = int(input(f"{df.loc[a]} \n\n {df.loc[b]}"))
+                except ValueError:
+                    print("Needs to be 1 or 0")
+                    continue
+                else:
+                    break
+            self.labels[_type].append(userinput)
+
+    def update_active_dict(self,_type):
+        if _type == "uncertain":
+            indices = list(self.samples["uncertain"])
+            labels = self.labels["uncertain"] 
+        else:
+            indices = list(self.samples["lowest"]) + list(self.samples["highest"])
+            labels = self.labels["lowest"] + self.labels["highest"]
+        for idx,lab in zip(indices, labels):
+            self.active_dict[idx] = lab
 
     def retrain(self):
         self.train(
