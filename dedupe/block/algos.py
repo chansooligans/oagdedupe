@@ -1,25 +1,41 @@
-"""general tools for blocking methods
-"""
-
-from dataclasses import dataclass
-from typing import Any, Callable, Set, Tuple, Sequence, Union
-import pandas as pd
-import re
-
 from dedupe.base import BaseBlockAlgo
 
-class FirstLetter(BaseBlockAlgo):
+from dataclasses import dataclass
+import re
+
+
+@dataclass
+class FirstNLetters(BaseBlockAlgo):
+    N: int
 
     def get_block(self, field) -> str:
-        return field.replace(' ', '')[:1]
+        return field.replace(' ', '')[:self.N]
 
-class FirstTwoLetters(BaseBlockAlgo):
 
-    def get_block(self, field) -> str:
-        return field.replace(' ', '')[:2]
-        
-class FirstLetterLastToken(BaseBlockAlgo):
+@dataclass
+class FirstNLettersLastToken(BaseBlockAlgo):
+    N: int
 
     def get_block(self, field) -> str:
-        return field.split(' ')[-1].replace(' ', '')[:1]
+        return field.split(' ')[-1].replace(' ', '')[:self.N]
 
+
+@dataclass
+class LastNLetters(BaseBlockAlgo):
+    N: int
+
+    def get_block(self, field) -> str:
+        return field.replace(' ', '')[-self.N:]
+
+
+@dataclass
+class NumbersOnly(BaseBlockAlgo):
+
+    def get_block(self, field) -> str:
+        return re.sub("[^0-9]", "", field)
+
+
+class ExactMatch(BaseBlockAlgo):
+
+    def get_block(self, field) -> str:
+        return field

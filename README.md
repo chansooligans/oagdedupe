@@ -1,71 +1,17 @@
 # dedupe  
 
-## Run with Docker
-
-```
-# First, clone the repo
-1. git clone https://github.com/chansooligans/deduper.git
-2. cd deduper
-
-# Build Docker image
-3. docker build -t deduper:latest .
-
-# Run
-4. docker run -t -d --rm --name deduper -p 8080:8081 deduper 
-5. Go to http://127.0.0.1:8080/load
-
-(test dataset will be pre-loaded)
-```
-
-## to-do:
-
-- app / active learning
-    - general
-        - [x] handle different column names
-    - learn
-        - [x] labelled samples dataframe interactive table
-        - [x] previous / next / edit options for learning samples
-        - [x] reformat active learning sample cards to be text instead of json
-        - [x] show which dataset is being used    
-        - [x] link to cards from dataframe
-            - [x] ability to pass parameter to learn/<idl>-<idr> route
-        - [x] if previous submit is revised, update json
-        - [x] re-implenet active-dict to not relearn from already-learned samples
-        - [ ] prettier presentation of counter in learn page
-        - [ ] how are label="unknown" getting handled?
-    - datasets
-        - [x] show cached files on load page
-        - [x] if no file is selected, use first in glob
-    - plots
-        - [ ] ability to select features
-        - [x] axis labels
-    - data 
-        - [ ] handling multiple csv files
-        - [x] select previously uploaded file
-    - cached labelled samples
-        - [x] clear cache option
-        - [ ] upload labels option
-        - [ ] download labels option
-    - bugs
-        - [x] retrain requires at least one sample in each class
-        - [x] with each hard refresh, cached samples is popped
-        - [x] redirect to load page if dataset is not loaded
-        - [x] if user attempts to go to different page when dataset is not loaded, show warning
-    - dockerize
-        - [x] create dockerfile / .dockerignore
-- algos
-    - [ ] add more blocking algos
-    - [ ] add other ML algos
-- sql
-    - [ ] mysql database
-- parallelize (ray / dask)
-    - [ ] parallelize blocks? 
-- output
-    - [x] predictions page
-    - [x] download option
-- record linkage option
+- new draft of dedupe tool i helped develop with the research and analytics departement of the ny state office of the attorney general
+- partly a learning project and hopefully an easy-to-use, powerful entity resolution tool for general public to use
 
 ## quickstart
+
+#### install dependencies with poetry:
+
+install poetry if needed: https://python-poetry.org/docs/#installation
+
+```
+poetry install
+```
 
 #### fake datasets for testing:
 
@@ -105,6 +51,7 @@ df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 #### record linkage:
 
 ```
+import pandas as pd
 from dedupe.api import RecordLinkage
 rl = RecordLinkage(df=df, df2=df2, attributes=None, attributes2=None)
 predsx, predsy = rl.predict()
@@ -124,3 +71,36 @@ pd.merge(
 |  1 | Norma Fisher    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
 |  2 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisher     | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |
 |  3 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
+
+
+#### manual blocking specifications:
+
+Suppose you want to specificy your own blocking schemes. And you want to use 
+two "intersections" of blocking algos: 
+    - (1) compare all instances where records share first letter of name AND 
+    first letter of address
+    - (2) compare all instances where records share first letter of the last 
+    token of name AND first letter of name
+
+Each intersection may contain at least one blocking algo.   
+
+The goal is to identify the intersections that yields the most true positives, 
+while minimizing the # of possible comparisons.  
+
+See `dedupe.block.algos` for all blocking algo options.
+
+```
+from dedupe.api import Dedupe
+from dedupe.block import blockers 
+from dedupe.block import algos
+
+manual_blocker = blockers.ManualBlocker([
+    [(algos.FirstNLetters(N=1), "name"), (algos.FirstNLetters(N=1), "addr")],
+    [(algos.FirstNLettersLastToken(N=1), "name"), (algos.FirstNLetters(N=1), "name")],
+])
+
+d = Dedupe(df=df, attributes=None, blocker=manual_blocker)
+preds = d.predict()
+
+df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
+```

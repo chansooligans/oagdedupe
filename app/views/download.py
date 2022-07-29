@@ -1,5 +1,4 @@
 from .. import app
-from .. import utils
 
 from flask import (
     render_template, 
@@ -11,15 +10,18 @@ from flask import (
 
 import io
 
+
 @app.route('/results', methods=["GET", "POST"])
 def results():
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     return render_template(
         'results.html'
     )
+
 
 @app.route('/download', methods=["GET"]) 
 def download_csv():
@@ -30,14 +32,14 @@ def download_csv():
             app.init.d.trainer.X
         )
         df_clusters = app.init.d.cluster.get_df_cluster(
-            matches=app.init.idxmat[y=="Yes"].astype(int), 
-            scores=scores[y=="No"],
+            matches=app.init.idxmat[y == "Yes"].astype(int), 
+            scores=scores[y == "No"],
             rl=False
         )
         df_final = app.init.df.merge(
             df_clusters,
-            left_index = True,
-            right_on = "id"
+            left_index=True,
+            right_on="id"
         ).sort_values('cluster')
 
         session["df"] = df_final.to_csv(index=False, header=True)

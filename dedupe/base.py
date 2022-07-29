@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Union, Any, Optional, Dict
-from dataclasses import dataclass
+
 
 class BaseBlocker(metaclass=ABCMeta):
     """ Abstract base class for all blockers to inherit
@@ -10,6 +9,7 @@ class BaseBlocker(metaclass=ABCMeta):
     def get_block_maps(self, df, attributes):
         return
 
+
 class BaseBlockAlgo(metaclass=ABCMeta):
     """ Abstract base class for all blocking algos to inherit
     """
@@ -18,12 +18,10 @@ class BaseBlockAlgo(metaclass=ABCMeta):
     def get_block(self):
         return
 
+
 class BaseDistance(metaclass=ABCMeta):
     """ Abstract base class for all distance configurations to inherit
     """
-
-    def __init__(self, ncores):
-        self.ncores = ncores
 
     @abstractmethod
     def distance(self):
@@ -33,6 +31,7 @@ class BaseDistance(metaclass=ABCMeta):
     def config(self):
         return
 
+
 class BaseTrain(metaclass=ABCMeta):
     """ Abstract base class for all training algos to inherit
     """
@@ -40,6 +39,7 @@ class BaseTrain(metaclass=ABCMeta):
     @abstractmethod
     def fit(self):
         return
+
 
 class BaseCluster(metaclass=ABCMeta):
     """ Abstract base class for all clustering algos to inherit

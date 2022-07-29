@@ -1,6 +1,6 @@
 from .. import app
+from .. import utils
 
-import pandas as pd
 import os
 from flask import (
     render_template, 
@@ -8,18 +8,15 @@ from flask import (
     redirect
 )
 
-@app.route('/labels', methods=["GET","POST"])
-def load_labels(idxl=None,idxr=None):
+
+@app.route('/labels', methods=["GET", "POST"])
+def load_labels(idxl=None, idxr=None):
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
-    if len(app.lab.labels) > 0:
-        df = pd.DataFrame(app.lab.labels).T[[
-            "idl", "idr", "label", "revise"
-        ]]
-    else:
-        df = pd.DataFrame(app.lab.labels).T
+    df = utils.labels_to_df(app.lab.labels)
 
     return render_template(
         'labels.html', 
@@ -27,9 +24,10 @@ def load_labels(idxl=None,idxr=None):
         meta=app.lab.meta,
     )
 
+
 @app.route('/reset', methods=["GET", "POST"])
 def reset():
-    print("resetting")
+    app.logger.info("need to load dataset first")
     if request.method == "GET":
         os.remove(f"{app.config['UPLOAD_FOLDER']}/samples.json")
         os.remove(f"{app.config['UPLOAD_FOLDER']}/meta.json")

@@ -1,15 +1,17 @@
-from typing import List, Union, Any, Set, Optional, Dict, Tuple
-from dataclasses import dataclass
-from functools import cached_property
-
-import pandas as pd
-
 from dedupe.base import BaseBlocker
 from dedupe.mixin import BlockerMixin
 from dedupe.block.groups import Union, Intersection, Pair
-from dedupe.block.algos import FirstLetter, FirstLetterLastToken
+from dedupe.block import algos
 from dedupe.base import BaseBlockAlgo
-from dedupe.utils import timing
+
+from typing import List, Set, Dict, Tuple
+from dataclasses import dataclass
+from functools import cached_property
+from collections import defaultdict
+import pandas as pd
+import logging
+from tqdm import tqdm
+
 
 @dataclass
 class PairBlock(BlockerMixin):
@@ -24,17 +26,7 @@ class PairBlock(BlockerMixin):
         """Uses blocking algo on attributes to get list of tuples 
         containing idx and block
         """
-        return [(i, self.BlockAlgo.get_block(x)) for i, x in enumerate(self.v.tolist())]
-
-    def get_attribute_blocks(self) -> Dict[str, Set[int]]:
-        """converts blocks to dictionary where keys are blocks and values are 
-        set of unique idx
-        """
-        attribute_blocks = {}
-        for _id, block in self.blocks:
-            attribute_blocks.setdefault(block, set()).add(_id)
-
-        return attribute_blocks
+        return [self.BlockAlgo.get_block(x) for x in self.v.tolist()]
 
 
 @dataclass
@@ -46,29 +38,25 @@ class IntersectionBlock(BlockerMixin):
     intersection: Intersection
 
     @cached_property
-    def blocks(self) -> List[PairBlock]:
+    def pair_blocks(self) -> List[PairBlock]:
         """Create PairBlock for each pair in intersection configuration
         """
         return [
             PairBlock(
                 v=self.df[pair.attribute], BlockAlgo=pair.BlockAlgo
-            ).get_attribute_blocks()
+            ).blocks
             for pair in self.intersection.pairs
         ]
 
-    def block_maps(self) -> Dict[tuple, tuple]:
-        """Merges a list of PairBlock dictionaries by getting the intersection of keys.
-        Then getting the union of values (indices).
+    def block_maps(self) -> Dict[str, Set[int]]:
+        """converts blocks to dictionary where keys are blocks and values are 
+        set of unique idx
         """
-
-        key_list = self.product([item.keys() for item in self.blocks])
-        block_map = {}
-        for keys in key_list:
-            block_map[tuple(keys)] = tuple(
-                set.intersection(*[block[key] for key, block in zip(keys, self.blocks)])
-            )
-        return block_map
-
+        logging.info(f"intersection: {repr(self.intersection)}")
+        attribute_blocks = defaultdict(set)
+        for _id, block in tqdm(enumerate(zip(*self.pair_blocks))):
+            attribute_blocks[block].add(_id)
+        return attribute_blocks
 
 @dataclass
 class TestBlocker(BaseBlocker, BlockerMixin):
@@ -83,14 +71,14 @@ class TestBlocker(BaseBlocker, BlockerMixin):
             intersections=[
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[1]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[1]),
                     ]
                 ),
                 Intersection(
                     [
-                        Pair(BlockAlgo=FirstLetter(), attribute=self.attributes[0]),
-                        Pair(BlockAlgo=FirstLetterLastToken(), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLetters(N=1), attribute=self.attributes[0]),
+                        Pair(BlockAlgo=algos.FirstNLettersLastToken(N=1), attribute=self.attributes[0]),
                     ]
                 ),
             ]
@@ -117,8 +105,29 @@ class NoBlocker(BaseBlocker, BlockerMixin):
 
 @dataclass
 class ManualBlocker(BaseBlocker, BlockerMixin):
-    def get_block_maps(self):
-        return
+    user_config: List[List[dict]]
+
+    @property
+    def config(self) -> Union:
+        return Union(
+            intersections=[
+                Intersection(
+                    [
+                        Pair(BlockAlgo=pair[0], attribute=pair[1])
+                        for pair in intersection
+                    ]
+                )
+                for intersection in self.user_config
+            ]
+        )
+
+    def get_block_maps(self, df, attributes) -> List[dict]:
+        "returns list of intersection block maps"
+        self.attributes = attributes
+        return [
+            IntersectionBlock(df=df, intersection=intersection).block_maps()
+            for intersection in self.config.intersections
+        ]
 
 
 @dataclass

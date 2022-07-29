@@ -1,10 +1,9 @@
-from typing import List, Union, Any, Optional, Dict
-from dataclasses import dataclass
+from dedupe.base import BaseCluster
 
+from dataclasses import dataclass
 import networkx as nx
 import pandas as pd
 
-from dedupe.base import BaseCluster
 
 @dataclass
 class ConnectedComponents(BaseCluster):
@@ -17,16 +16,21 @@ class ConnectedComponents(BaseCluster):
 
         returns: pd.DataFrame for Dedupe or pair of pd.DataFrame for RecordLinkage
         """
-        
+
         df_clusters = self.get_connected_components(matches, scores)
         df_clusters["x"] = df_clusters["id"].str.contains("x")
-        df_clusters["id"] = df_clusters["id"].str.replace("x|y","", regex=True).astype(float).astype(int)
+        df_clusters["id"] = (
+            df_clusters["id"]
+            .str.replace("x|y", "", regex=True)
+            .astype(float)
+            .astype(int)
+        )
 
-        if rl == False:
-            return df_clusters[["id","cluster"]]
+        if not rl:
+            return df_clusters[["id", "cluster"]]
         else:
             return [
-                df_clusters.loc[df_clusters["x"]==rl_type, ["id","cluster"]]
+                df_clusters.loc[df_clusters["x"] == rl_type, ["id", "cluster"]]
                 for rl_type in [True, False]
             ]
 
@@ -36,9 +40,9 @@ class ConnectedComponents(BaseCluster):
         """
         g = nx.Graph()
         g.add_weighted_edges_from([
-                tuple([f"{match[0]}x",f"{match[1]}y",score]) 
-                for match,score in zip(matches,scores)
-            ])
+            tuple([f"{match[0]}x", f"{match[1]}y", score]) 
+            for match, score in zip(matches, scores)
+        ])
         conn_comp = list(nx.connected_components(g))
         clusters = [
             {"cluster": clusteridx, "id": rec_id}

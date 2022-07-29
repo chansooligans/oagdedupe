@@ -6,10 +6,12 @@ from flask import (
     redirect
 )
 
-@app.route('/plots', methods=["GET","POST"])
+
+@app.route('/plots', methods=["GET", "POST"])
 def load_plots():
 
     if not hasattr(app.init, "d"):
+        app.logger.error("need to load dataset first")
         return redirect('/load/nodata')
 
     scatterplt, kdeplot = utils.get_plots(

@@ -8,24 +8,52 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-@app.route('/uploader', methods = ['GET', 'POST'])
+
+@app.route('/uploader', methods=['POST'])
 def upload_file():
-    print("uploading")
+    """
+    action in response to submit button on "/load" page
+    """
+
     if request.method == 'POST':
+
         if request.files['file']:
+
             f = request.files['file']
-            app.init._load_dataset(request.files.get('file'), app.lab)
-            app.init.df.to_csv(f"{app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}", index=False)
+
+            app.logger.info(f"loading {f}")
+            app.logger.info(f"saving copy to: {app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}")
+
+            app.init._load_dataset(
+                request.files.get('file'), 
+                app.lab
+            )
+            app.init.df.to_csv(
+                f"{app.config['UPLOAD_FOLDER']}/{secure_filename(f.filename)}", 
+                index=False
+            )
         else:
             f = request.form.get('dataset-hidden-selection')
-            app.init._load_dataset(request.form.get('dataset-hidden-selection'), app.lab)
+            app.logger.info(f"loading file from cache: {f}")
+            app.init._load_dataset(
+                request.form.get('dataset-hidden-selection'), 
+                app.lab
+            )
 
-    return redirect(url_for('active_learn'))
+    return redirect(url_for('learn'))
 
-@app.route('/', methods=["GET","POST"])    
-@app.route('/load', methods=["GET","POST"])
-@app.route('/load/<status>', methods=["GET","POST"])
+
+@app.route('/')    
+@app.route('/load')
+@app.route('/load/<status>')
 def load_page(status=None):
+    """
+    loads the "/load" page;
+
+    if user attempts to go to a different page without having loaded a dataset, 
+    user is directed to "load/nodata", which is simply the "/load" page 
+    with an alert, notifying user they need to load a dataset first
+    """
     if status == "nodata":
         return render_template(
             'load.html', 
