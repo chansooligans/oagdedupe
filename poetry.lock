@@ -1105,7 +1105,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <3.11"
-content-hash = "743f818cf0e9863309886c1e6516a00c1c05dffea73c62f2d4e062aeaee6c478"
+content-hash = "691afa0082533a3116b9796511c6861b042bb4bfa07c28a9bf9f87c3f2696f1e"
 
 [metadata.files]
 aiosignal = [
