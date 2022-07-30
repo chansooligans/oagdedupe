@@ -6,8 +6,9 @@ import pandas as pd
 import numpy as np
 from modAL.models import ActiveLearner
 from functools import partial
-from modAL.batch import uncertainty_batch_sampling
+from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
+
 
 import pandas as pd
 from IPython import display
@@ -30,21 +31,17 @@ class Active(BaseTrain):
 
     def __post_init__(self):
         
-        # Pre-set our batch sampling to retrieve 3 samples at a time.
-        self.BATCH_SIZE = 5
-        preset_batch = partial(uncertainty_batch_sampling, n_instances=self.BATCH_SIZE)
 
         # initializing the learner
         self.clf = ActiveLearner(
             estimator=RandomForestClassifier(),
-            query_strategy=preset_batch,
-
+            query_strategy=uncertainty_sampling
         )
 
 
     def query(self, df, X, idxmat, queried, attributes):
         
-        query_index, query_instance = self.clf.query(np.delete(X, queried, axis=0))
+        query_index, query_instance = self.clf.query(np.delete(X, queried, axis=0), n_instances=5)
         query_index = np.delete(self.indices, queried, axis=0)[query_index]
 
         samples = pd.concat([
