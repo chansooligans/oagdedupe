@@ -5,7 +5,6 @@ from functools import cached_property
 import pandas as pd
 import numpy as np
 from modAL.models import ActiveLearner
-from functools import partial
 from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
 
@@ -101,6 +100,8 @@ class Active(BaseTrain):
 
     def learn(self, df, X, idxmat, attributes):
 
+        # initialize
+        self.clf.teach(np.repeat(1, len(attributes)).reshape(1, -1), [1])
         self.indices = np.array(range(len(X)))
 
         if os.path.exists(self.cache_fp):
