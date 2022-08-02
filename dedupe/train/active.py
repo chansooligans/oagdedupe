@@ -8,12 +8,12 @@ from modAL.models import ActiveLearner
 from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
 
-
 import pandas as pd
 from IPython import display
 import json
 import time
 import os
+import joblib
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -26,17 +26,18 @@ class Active(BaseTrain):
     """
     Model to implement active learning
     """
-    cache_fp:str = "../cache/test.csv"
+    active_model_fp:str 
+    cache_fp:str # "../cache/test.csv"
 
     def __post_init__(self):
         
-
         # initializing the learner
         self.clf = ActiveLearner(
             estimator=RandomForestClassifier(),
             query_strategy=uncertainty_sampling
         )
 
+        self.clf.estimator = joblib.load(self.active_model_fp)
 
     def query(self, df, X, idxmat, queried, attributes):
         
@@ -119,6 +120,9 @@ class Active(BaseTrain):
                 break
             
             queried = self.update_model(X)
+
+        # save model
+        joblib.dump(self.clf.estimator, self.active_model_fp)
             
     def fit(self, X):
         return self.clf.predict_proba(X),self.clf.predict(X)

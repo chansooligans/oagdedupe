@@ -4,6 +4,9 @@ from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 
+import sqlite3
+from sqlalchemy import create_engine
+
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
@@ -27,8 +30,8 @@ class BaseModel(metaclass=ABCMeta):
     distance: Optional[BaseDistance] = AllJaro()
     trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
-    fp: str = "/home/csong/cs_github/deduper/cache"
     cpus: int = 1
+    cache_fp: str = None
 
     @abstractmethod
     def predict(self):
@@ -73,6 +76,23 @@ class Dedupe(BaseModel):
 
         logging.info("get distance matrix")
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
+
+        (
+            self.df[self.attributes]
+            .reset_index()
+            .rename({"index":"idx"},axis=1)
+            .to_sql("df", con=engine, if_exists="replace", index=False)
+        )
+        (
+            pd.DataFrame(X)
+            .to_sql("distances", con=engine, if_exists="replace", index=False)
+        )
+        (
+            pd.DataFrame(idxmat, columns=["idxl","idxr"])
+            .reset_index()
+            .rename({"index":"idx"},axis=1)
+            .to_sql("idxmat", con=engine, if_exists="replace", index=False)
+        )
 
         logging.info("learning")
         self.trainer.learn(self.df, X, idxmat, self.attributes)
