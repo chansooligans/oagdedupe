@@ -32,4 +32,4 @@ label-studio:
 	heartexlabs/label-studio:latest label-studio
 
 fast-api:
-	python dedupe/fastapi/main.py --model /mnt/Research.CF/References\ \&\ Training/Satchel/dedupe_rl/active_models/test_df.pkl --cache ../../cache/test.db
+	python dedupe/fastapi/main.py --model /mnt/Research.CF/References\ \&\ Training/Satchel/dedupe_rl/active_models/test_df.pkl --cache /home/csong/cs_github/deduper/cache/test.db

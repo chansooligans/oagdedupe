@@ -30,7 +30,7 @@ class Model():
         self.active_model_fp = active_model_fp
 
         logging.info(f'reading database: {self.cache_fp}')
-        self.engine = create_engine(f"sqlite:///{cache_fp}", echo=False)
+        self.engine = create_engine(f"sqlite:///{cache_fp}", echo=True)
 
         self.active_model_fp = active_model_fp
         if os.path.exists(self.active_model_fp):
