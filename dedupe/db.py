@@ -1,11 +1,13 @@
 from dataclasses import dataclass
+from functools import cached_property
 from sqlalchemy import create_engine
 import pandas as pd
 
 class CreateDB:
 
-    def __init__(self, cache_fp:str):
-        self.engine = create_engine(f"sqlite:///{cache_fp}", echo=False)
+    @cached_property
+    def engine(self):
+        return create_engine(f"sqlite:///{self.cache_fp}", echo=False)
 
     def create_tables(self, X, idxmat, attributes):
         

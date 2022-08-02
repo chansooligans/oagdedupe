@@ -1,15 +1,20 @@
+from dedupe.api import utils as u
+
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 from pydantic import BaseModel
 from typing import List
-from modAL.models import ActiveLearner
-from modAL.uncertainty import uncertainty_sampling
+
 import joblib 
-import numpy as np
 import pandas as pd
 import uvicorn
-from sqlalchemy import create_engine
-
 import argparse
+import logging
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+# e.g.
+# python main.py --model /mnt/Research.CF/References\ \&\ Training/Satchel/dedupe_rl/active_models/nc_benchmark_10k.pkl --cache ../../cache/test.db
 parser = argparse.ArgumentParser(description="""Fast API for a dedupe active learning model""")
 parser.add_argument(
     '--model',
@@ -21,52 +26,33 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-# e.g.
-# python main.py --model /mnt/Research.CF/References\ \&\ Training/Satchel/dedupe_rl/active_models/nc_benchmark_10k.pkl --cache ../../cache/test.db
-
-# %% [markdown]
-"""
-# Initialize
-"""
-
-# %%
-active_model_fp = args.model
-cache_fp = args.cache
-
-engine = create_engine(f"sqlite:///{cache_fp}", echo=False)
-X = pd.read_sql_query("select * from distances", con=engine)
-attributes = list(
-    pd.read_sql_query("select * from df limit 1", con=engine)
-    .drop("idx",axis=1).columns
-)
-
-clf = ActiveLearner(
-    estimator=joblib.load(active_model_fp),
-    query_strategy=uncertainty_sampling
-)
-
-clf.teach(np.repeat(1, len(attributes)).reshape(1, -1), [1])
-
-
-# %% [markdown]
-"""
-# API
-"""
-
-# %%
-class Query(BaseModel):
-    query_index: List[int]
-    samples: dict
-
+m = u.Model()
 app = FastAPI()
+
+def custom_openapi():
+
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title="Dedupe",
+        version="2.0.0",
+        routes=app.routes,
+    )
+
+    app.openapi_schema = openapi_schema
+
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 @app.get("/samples")
 async def get_samples(n_instances:int=5):
 
-    ignore_idx = list(pd.read_sql("SELECT distinct idx FROM labels", con=engine)["idx"].values)
-    X_subset = X.drop(ignore_idx, axis=0)
+    ignore_idx = list(pd.read_sql("SELECT distinct idx FROM labels", con=m.engine)["idx"].values)
+    X_subset = m.X.drop(ignore_idx, axis=0)
     
-    subset_idx, _ = clf.query(
+    subset_idx, _ = m.clf.query(
         X_subset, 
         n_instances=n_instances
     )
@@ -90,10 +76,10 @@ async def get_samples(n_instances:int=5):
                 ON t1.idxl = t2.idx
             LEFT JOIN df t3
                 ON t1.idxr = t3.idx
-            """, con=engine
+            """, con=m.engine
         ).drop("idx",axis=1)
 
-    samples.columns = [x+"_l" for x in attributes] + [x+"_r" for x in attributes]
+    samples.columns = [x+"_l" for x in m.attributes] + [x+"_r" for x in m.attributes]
     samples["label"] = None
 
     return dict({
@@ -102,10 +88,10 @@ async def get_samples(n_instances:int=5):
     })
 
 @app.post("/submit")
-async def submit_labels(labels: Query):
+async def submit_labels(labels: u.Query):
     samples = pd.DataFrame(labels.samples)
     samples["idx"] = labels.query_index
-    samples.to_sql("labels", con=engine, if_exists="append", index=False)
+    samples.to_sql("labels", con=m.engine, if_exists="append", index=False)
 
 @app.post("/train")
 async def train():
@@ -113,10 +99,10 @@ async def train():
     df = pd.read_sql("""
         SELECT idx,label FROM labels
         WHERE label in (0, 1)
-    """, con=engine).drop_duplicates()
+    """, con=m.engine).drop_duplicates()
 
-    clf.teach(
-        X = X.loc[list(df["idx"])],
+    m.clf.teach(
+        X = m.X.loc[list(df["idx"])],
         y = df["label"]
     )
 
@@ -125,19 +111,21 @@ async def get_labels():
     
     df = pd.read_sql("""
         SELECT * FROM labels
-    """, con=engine).drop_duplicates()
+    """, con=m.engine).drop_duplicates()
 
     return df.to_dict()
 
 @app.post("/predict")
 async def predict():
+
+    logging.info(f"save model to {m.active_model_fp}")
+    joblib.dump(m.clf.estimator, m.active_model_fp)
     
     return dict({
-        "predict_proba":clf.predict_proba(X).reshape(1,-1).tolist()[0],
-        "predict":clf.predict(X).tolist()
+        "predict_proba":m.clf.predict_proba(m.X).reshape(1,-1).tolist()[0],
+        "predict":m.clf.predict(m.X).tolist()
     })
 
-
 if __name__=="__main__":
-    uvicorn.run(app,host="127.0.0.1",port=8000)
+    uvicorn.run(app,host="172.22.39.26",port=8000)
     

@@ -5,7 +5,6 @@ from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.db import CreateDB
 
-import sqlite3
 from sqlalchemy import create_engine
 import requests
 import json
@@ -15,6 +14,7 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import ray
+import gc
 import logging
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -30,10 +30,9 @@ class BaseModel(metaclass=ABCMeta):
     attributes2: Optional[List[str]] = None
     blocker: Optional[BaseBlocker] = TestBlocker()
     distance: Optional[BaseDistance] = AllJaro()
-    trainer: Optional[BaseTrain] = Threshold(threshold=0.85)
     cluster: Optional[BaseCluster] = ConnectedComponents()
     cpus: int = 1
-    cache_fp: str = None
+    cache_fp: str = "database.db"
 
     @abstractmethod
     def predict(self):
@@ -53,7 +52,7 @@ class BaseModel(metaclass=ABCMeta):
 
 
 @dataclass
-class Dedupe(BaseModel):
+class Dedupe(BaseModel, CreateDB):
     """General dedupe block, inherits from BaseModel.
     """
 
@@ -87,7 +86,7 @@ class Dedupe(BaseModel):
         idxmat = np.array(pd.read_sql_query(f"""
             SELECT idxl, idxr
             FROM idxmat
-        """, con=self.db.engine
+        """, con=self.engine
         ))
 
         return idxmat, scores, y
@@ -100,8 +99,12 @@ class Dedupe(BaseModel):
         logging.info("get distance matrix")
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
 
-        self.db = CreateDB(cache_fp=self.cache_fp)
-        self.db.create_tables(X=X, idxmat=idxmat, attributes=self.attributes)
+        logging.info("building SQLite database")
+        self.create_tables(X=X, idxmat=idxmat, attributes=self.attributes)
+
+        # free memory from ram
+        del X, idxmat
+        gc.collect()
 
     def _get_candidates(self) -> np.array:
         """get candidate pairs"""

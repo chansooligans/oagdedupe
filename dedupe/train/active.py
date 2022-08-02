@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -9,9 +8,6 @@ from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
 
 import pandas as pd
-from IPython import display
-import json
-import time
 import os
 import joblib
 
