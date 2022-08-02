@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from sqlalchemy import create_engine
 import pandas as pd
+import logging
 
 class CreateDB:
 
@@ -11,6 +12,9 @@ class CreateDB:
 
     def create_tables(self, X, idxmat, attributes):
         
+        logging.info("building database")
+
+        logging.info("building df")
         (
             self.df[attributes]
             .reset_index()
@@ -18,11 +22,13 @@ class CreateDB:
             .to_sql("df", con=self.engine, if_exists="replace", index=False)
         )
 
+        logging.info("building distances")
         (
             pd.DataFrame(X)
             .to_sql("distances", con=self.engine, if_exists="replace", index=False)
         )
 
+        logging.info("building idxmat")
         (
             pd.DataFrame(idxmat, columns=["idxl","idxr"])
             .reset_index()
@@ -30,13 +36,15 @@ class CreateDB:
             .to_sql("idxmat", con=self.engine, if_exists="replace", index=False)
         )
 
-        self.engine.execute("DROP TABLE IF EXISTS query_index")
-        self.engine.execute("""
-            CREATE TABLE query_index (
-                idx VARCHAR(255) NOT NULL
-            )
-        """)
+        # logging.info("building query_index")
+        # self.engine.execute("DROP TABLE IF EXISTS query_index")
+        # self.engine.execute("""
+        #     CREATE TABLE query_index (
+        #         idx VARCHAR(255) NOT NULL
+        #     )
+        # """)
 
+        logging.info("building labels")
         self.engine.execute("DROP TABLE IF EXISTS labels")
         self.engine.execute(f"""
             CREATE TABLE labels (

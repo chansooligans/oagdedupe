@@ -1,6 +1,5 @@
-from dedupe.base import BaseBlocker, BaseDistance, BaseTrain, BaseCluster
+from dedupe.base import BaseBlocker, BaseDistance, BaseCluster
 from dedupe.block.blockers import TestBlocker
-from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.db import CreateDB

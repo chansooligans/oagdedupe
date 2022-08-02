@@ -1,4 +1,4 @@
-from dedupe.api import utils as u
+from dedupe.fastapi import utils as u
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
@@ -26,7 +26,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-m = u.Model()
+m = u.Model(cache_fp=args.cache, active_model_fp=args.model)
 app = FastAPI()
 
 def custom_openapi():
@@ -106,7 +106,7 @@ async def train():
         y = df["label"]
     )
 
-@app.post("/get_labels")
+@app.get("/get_labels")
 async def get_labels():
     
     df = pd.read_sql("""
@@ -115,7 +115,7 @@ async def get_labels():
 
     return df.to_dict()
 
-@app.post("/predict")
+@app.get("/predict")
 async def predict():
 
     logging.info(f"save model to {m.active_model_fp}")

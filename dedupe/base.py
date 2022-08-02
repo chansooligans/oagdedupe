@@ -32,15 +32,6 @@ class BaseDistance(metaclass=ABCMeta):
         return
 
 
-class BaseTrain(metaclass=ABCMeta):
-    """ Abstract base class for all training algos to inherit
-    """
-
-    @abstractmethod
-    def fit(self):
-        return
-
-
 class BaseCluster(metaclass=ABCMeta):
     """ Abstract base class for all clustering algos to inherit
     """
