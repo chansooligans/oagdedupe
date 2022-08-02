@@ -1,19 +1,28 @@
-# %%
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
-
 from modAL.models import ActiveLearner
 from modAL.uncertainty import uncertainty_sampling
 import joblib 
-
 import numpy as np
 import pandas as pd
-
-import json
-from json import JSONEncoder
 import uvicorn
-active_model_fp = "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/active_models"
+from sqlalchemy import create_engine
+
+import argparse
+parser = argparse.ArgumentParser(description="""Fast API for a dedupe active learning model""")
+parser.add_argument(
+    '--model',
+    help='optional model file path to pre-load a model'
+)
+parser.add_argument(
+    '--cache',
+    help='optional cache file path to pre-load a model; else creates cache folder in main repository'
+)
+args = parser.parse_args()
+
+# e.g.
+# python main.py --model /mnt/Research.CF/References\ \&\ Training/Satchel/dedupe_rl/active_models/nc_benchmark_10k.pkl --cache ../../cache/test.db
 
 # %% [markdown]
 """
@@ -21,21 +30,23 @@ active_model_fp = "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/acti
 """
 
 # %%
-import sqlite3
-from sqlalchemy import create_engine
-cache_fp="../../cache/test.db"
+active_model_fp = args.model
+cache_fp = args.cache
+
 engine = create_engine(f"sqlite:///{cache_fp}", echo=False)
-
 X = pd.read_sql_query("select * from distances", con=engine)
-
-attributes = ["givenname","surname","suburb","postcode"]
+attributes = list(
+    pd.read_sql_query("select * from df limit 1", con=engine)
+    .drop("idx",axis=1).columns
+)
 
 clf = ActiveLearner(
-    estimator=joblib.load(f"{active_model_fp}/nc_benchmark_10k.pkl"),
+    estimator=joblib.load(active_model_fp),
     query_strategy=uncertainty_sampling
 )
 
 clf.teach(np.repeat(1, len(attributes)).reshape(1, -1), [1])
+
 
 # %% [markdown]
 """
@@ -50,7 +61,7 @@ class Query(BaseModel):
 app = FastAPI()
 
 @app.get("/samples")
-async def get_samples(n_instances=5, response_model=Query):
+async def get_samples(n_instances:int=5):
 
     ignore_idx = list(pd.read_sql("SELECT distinct idx FROM labels", con=engine)["idx"].values)
     X_subset = X.drop(ignore_idx, axis=0)
@@ -118,10 +129,15 @@ async def get_labels():
 
     return df.to_dict()
 
+@app.post("/predict")
+async def predict():
+    
+    return dict({
+        "predict_proba":clf.predict_proba(X).reshape(1,-1).tolist()[0],
+        "predict":clf.predict(X).tolist()
+    })
+
 
 if __name__=="__main__":
     uvicorn.run(app,host="127.0.0.1",port=8000)
     
-# %%
-
-# %%

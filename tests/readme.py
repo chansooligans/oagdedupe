@@ -21,23 +21,6 @@ df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
 
 # %% [markdown]
 """
-# Record Linkage
-"""
-
-# %%
-import pandas as pd
-from dedupe.api import RecordLinkage
-rl = RecordLinkage(df=df, df2=df2, attributes=None, attributes2=None)
-predsx, predsy = rl.predict()
-
-pd.merge(
-    df.merge(predsx, left_index=True, right_on="id"),
-    df2.merge(predsy, left_index=True, right_on="id"),
-    on="cluster",
-)
-
-# %% [markdown]
-"""
 # Manual Blocker
 """
 from dedupe.api import Dedupe

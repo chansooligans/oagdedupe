@@ -3,10 +3,12 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.train.threshold import Threshold
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
+from dedupe.db import CreateDB
 
 import sqlite3
 from sqlalchemy import create_engine
-
+import requests
+import json
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Tuple
 from dataclasses import dataclass
@@ -41,6 +43,10 @@ class BaseModel(metaclass=ABCMeta):
     def fit(self):
         return
 
+    @abstractmethod    
+    def train(self):
+        return
+
     @abstractmethod
     def _get_candidates(self):
         return
@@ -69,7 +75,24 @@ class Dedupe(BaseModel):
             rl=False
         )
 
+
     def fit(self) -> Tuple[np.array, np.array, np.array]:
+        """learn p(match)"""
+
+        contents = requests.post("http://127.0.0.1:8000/predict")
+        results = json.loads(contents.content)
+        scores = results["predict_proba"]
+        y = results["predict"]
+
+        idxmat = np.array(pd.read_sql_query(f"""
+            SELECT idxl, idxr
+            FROM idxmat
+        """, con=self.db.engine
+        ))
+
+        return idxmat, scores, y
+
+    def train(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
 
         idxmat = self._get_candidates()
@@ -77,30 +100,8 @@ class Dedupe(BaseModel):
         logging.info("get distance matrix")
         X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
 
-        (
-            self.df[self.attributes]
-            .reset_index()
-            .rename({"index":"idx"},axis=1)
-            .to_sql("df", con=engine, if_exists="replace", index=False)
-        )
-        (
-            pd.DataFrame(X)
-            .to_sql("distances", con=engine, if_exists="replace", index=False)
-        )
-        (
-            pd.DataFrame(idxmat, columns=["idxl","idxr"])
-            .reset_index()
-            .rename({"index":"idx"},axis=1)
-            .to_sql("idxmat", con=engine, if_exists="replace", index=False)
-        )
-
-        logging.info("learning")
-        self.trainer.learn(self.df, X, idxmat, self.attributes)
-
-        logging.info("make predictions")
-        scores, y = self.trainer.fit(X)
-
-        return idxmat, scores, y
+        self.db = CreateDB(cache_fp=self.cache_fp)
+        self.db.create_tables(X=X, idxmat=idxmat, attributes=self.attributes)
 
     def _get_candidates(self) -> np.array:
         """get candidate pairs"""
@@ -114,36 +115,36 @@ class Dedupe(BaseModel):
         )
 
 
-@dataclass
-class RecordLinkage(Dedupe, BaseModel):
-    """General record linkage block, inherits from BaseModel.
-    """
+# @dataclass
+# class RecordLinkage(Dedupe, BaseModel):
+#     """General record linkage block, inherits from BaseModel.
+#     """
 
-    def __post_init__(self):
-        if (self.attributes is None) & (self.attributes2 is None):
-            unq_cols = list(set(self.df.columns).intersection(self.df2.columns))
-            self.attributes = self.attributes2 = unq_cols
-        elif self.attributes2 is None:
-            self.attributes2 = self.attributes
+#     def __post_init__(self):
+#         if (self.attributes is None) & (self.attributes2 is None):
+#             unq_cols = list(set(self.df.columns).intersection(self.df2.columns))
+#             self.attributes = self.attributes2 = unq_cols
+#         elif self.attributes2 is None:
+#             self.attributes2 = self.attributes
 
-    def predict(self) -> pd.DataFrame:
-        """get clusters of matches and return cluster IDs"""
+#     def predict(self) -> pd.DataFrame:
+#         """get clusters of matches and return cluster IDs"""
 
-        idxmat, scores, y = self.fit()
-        return self.cluster.get_df_cluster(
-            matches=idxmat[y == 1].astype(int), 
-            scores=scores[y == 1],
-            rl=True
-        )
+#         idxmat, scores, y = self.fit()
+#         return self.cluster.get_df_cluster(
+#             matches=idxmat[y == 1].astype(int), 
+#             scores=scores[y == 1],
+#             rl=True
+#         )
 
-    def _get_candidates(self) -> np.array:
-        "get candidate pairs"
+#     def _get_candidates(self) -> np.array:
+#         "get candidate pairs"
 
-        block_maps1, block_maps2 = [
-            self.blocker.get_block_maps(df=_, attributes=self.attributes)
-            for _ in [self.df, self.df2]
-        ]
+#         block_maps1, block_maps2 = [
+#             self.blocker.get_block_maps(df=_, attributes=self.attributes)
+#             for _ in [self.df, self.df2]
+#         ]
 
-        return self.blocker.rl_get_candidates(
-            block_maps1, block_maps2
-        )
+#         return self.blocker.rl_get_candidates(
+#             block_maps1, block_maps2
+#         )

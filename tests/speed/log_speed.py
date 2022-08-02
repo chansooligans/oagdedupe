@@ -1,5 +1,6 @@
 # %%
-from dedupe.api import Dedupe, RecordLinkage
+from dedupe.api import Dedupe
+# from dedupe.api import RecordLinkage
 from dedupe.block.blockers import NoBlocker
 from dedupe.datasets.fake import df, df2
 from dedupe.api import Dedupe
