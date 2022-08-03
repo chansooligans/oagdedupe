@@ -70,3 +70,6 @@ scratch/
 
 # Misc
 .DS_Store
+
+# Dedupe
+.dedupe

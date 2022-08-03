@@ -13,10 +13,15 @@ from sqlalchemy import create_engine
 import os
 import logging
 
-# assign the customized OpenAPI schema
+
 class Query(BaseModel):
     query_index: List[int]
     samples: dict
+
+class Annotation(BaseModel):
+    action: str
+    annotation: dict
+    project: dict
 
 class Model():
 
@@ -60,3 +65,50 @@ class Model():
         clf.teach(np.repeat(1, len(self.attributes)).reshape(1, -1), [1])
         return clf
 
+    def train(self):
+        df = pd.read_sql("""
+            SELECT idx,label FROM labels
+            WHERE label in (0, 1)
+        """, con=self.engine).drop_duplicates()
+
+        self.clf.teach(
+            X = self.X.loc[list(df["idx"])],
+            y = df["label"]
+        )
+
+    def get_samples(self, n_instances=5):
+
+        ignore_idx = list(pd.read_sql("SELECT distinct idx FROM labels", con=self.engine)["idx"].values)
+        X_subset = self.X.drop(ignore_idx, axis=0)
+        
+        subset_idx, _ = self.clf.query(
+            X_subset, 
+            n_instances=n_instances
+        )
+
+        query_index = X_subset.index[subset_idx]
+
+        samples = pd.read_sql_query(f"""
+                WITH samples AS (
+                    SELECT * 
+                    FROM idxmat
+                    WHERE idx IN ({",".join([
+                        str(x)
+                        for x in query_index
+                    ])})
+                )
+                SELECT 
+                    t2.*,
+                    t3.*
+                FROM samples t1
+                LEFT JOIN df t2
+                    ON t1.idxl = t2.idx
+                LEFT JOIN df t3
+                    ON t1.idxr = t3.idx
+                """, con=self.engine
+            ).drop("idx",axis=1)
+
+        samples.columns = [x+"_l" for x in self.attributes] + [x+"_r" for x in self.attributes]
+        samples["label"] = None
+
+        return query_index, samples
