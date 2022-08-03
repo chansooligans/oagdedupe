@@ -27,3 +27,11 @@ class Config:
     def fast_api_url(self):
         return f"""{self.host}:{self.config["FAST_API"]["PORT"]}"""
 
+    @property
+    def model_fp(self):
+        return self.config["MAIN"]["MODEL_FILEPATH"]
+
+    @property
+    def cache_fp(self):
+        return self.config["MAIN"]["CACHE_FILEPATH"]
+

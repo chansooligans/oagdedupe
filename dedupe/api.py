@@ -3,8 +3,7 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.db import CreateDB
-from dedupe.config import Config
-config = Config()
+from dedupe import config
 
 from sqlalchemy import create_engine
 import requests

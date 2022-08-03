@@ -3,8 +3,7 @@ from dataclasses import dataclass
 import requests
 import json
 import pandas as pd
-from dedupe.config import Config
-config = Config()
+from dedupe import config
 
 @dataclass
 class Projects:
@@ -116,19 +115,3 @@ class LabelStudioAPI(
 ):
     url = config.ls_url
     headers = {"Authorization":f"""Token {config.ls_api_key}"""}
-
-
-# # %%
-# lsapi = LabelStudioAPI()
-# annotations = lsapi.get_all_annotations(project_id=10)
-# tasks = [
-#     [annotations[x['id']]] + list(x['data']["item"].values())
-#     for x in lsapi.get_tasks(project_id=10)["tasks"]
-#     if x["id"] in annotations.keys()
-# ]
-# df = pd.DataFrame(tasks, columns = ["label", "name_l", "addr_l", "name_r", "addr_r", "idx"])
-
-# # %%
-# df
-
-# # %%

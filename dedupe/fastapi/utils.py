@@ -15,9 +15,9 @@ import logging
 
 from dedupe.labelstudio.api import LabelStudioAPI
 
-# class Query(BaseModel):
-#     query_index: List[int]
-#     samples: dict
+class Query(BaseModel):
+    query_index: List[int]
+    samples: dict
 
 class Annotation(BaseModel):
     action: str
@@ -25,6 +25,9 @@ class Annotation(BaseModel):
     project: dict
 
 class LabelStudioConnection:
+
+    def __init__(self):
+        self.lsapi = LabelStudioAPI()
 
     def generate_new_samples(self):
         """
@@ -76,6 +79,7 @@ class Model(LabelStudioConnection):
         cache_fp:str = "database.db",
         active_model_fp:str = "model.pkl"
         ):
+        super().__init__()
 
         self.cache_fp = cache_fp
         self.active_model_fp = active_model_fp
@@ -89,8 +93,6 @@ class Model(LabelStudioConnection):
             logging.info(f'reading model: {self.active_model_fp}')
         else:
             self.estimator = RandomForestClassifier()
-
-        self.lsapi = LabelStudioAPI()
     
     @cached_property
     def X(self):

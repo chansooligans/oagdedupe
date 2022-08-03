@@ -1,34 +1,21 @@
 from dedupe.fastapi import utils as u
 from dedupe.fastapi import app
+from dedupe import config
 
 import pandas as pd
 import joblib 
 import uvicorn
-import argparse
 import logging
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
-from dedupe.config import Config
-config = Config()
-
-# args
-parser = argparse.ArgumentParser(description="""Fast API for a dedupe active learning model""")
-parser.add_argument(
-    '--model',
-    help='optional model file path to pre-load a model'
-)
-parser.add_argument(
-    '--cache',
-    help='optional cache file path to pre-load a model; else creates cache folder in main repository'
-)
-args = parser.parse_args()
-
-m = u.Model(cache_fp=args.cache, active_model_fp=args.model)
+# api
+m = u.Model(cache_fp=config.cache_fp, active_model_fp=config.model_fp)
 
 @app.on_event("startup")
 async def startup():
     """
+    On Startup
     Check for project. If project does not exist, create project.
     Check for tasks. If tasks do not exist, submit tasks.
     """
