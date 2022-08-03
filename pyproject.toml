@@ -28,6 +28,7 @@ streamlit-aggrid = "^0.2.3"
 fastapi = {extras = ["all"], version = "^0.79.0"}
 SQLAlchemy = "^1.4.39"
 label-studio-sdk = "^0.0.14"
+diagrams = "^0.21.1"
 
 [tool.poetry.dev-dependencies]
 
