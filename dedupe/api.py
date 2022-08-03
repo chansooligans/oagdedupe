@@ -77,10 +77,10 @@ class Dedupe(BaseModel, CreateDB):
     def fit(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
         
-        contents = requests.post(f"{config.fast_api_url}/predict")
+        contents = requests.get(f"{config.fast_api_url}/predict")
         results = json.loads(contents.content)
-        scores = results["predict_proba"]
-        y = results["predict"]
+        scores = np.array(results["predict_proba"])
+        y = np.array(results["predict"])
 
         idxmat = np.array(pd.read_sql_query(f"""
             SELECT idxl, idxr
@@ -88,7 +88,7 @@ class Dedupe(BaseModel, CreateDB):
         """, con=self.engine
         ))
 
-        return idxmat, scores, y
+        return idxmat, scores, np.array(y)
 
     def train(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""

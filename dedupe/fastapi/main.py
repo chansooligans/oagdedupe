@@ -3,6 +3,7 @@ from dedupe.fastapi import app
 from dedupe import config
 from typing import Union
 
+import time
 import pandas as pd
 import joblib 
 import uvicorn
@@ -10,7 +11,11 @@ import logging
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
-m = u.Model(cache_fp=config.cache_fp, active_model_fp=config.model_fp)
+while u.url_checker(config.ls_url) == False:
+    logging.info("waiting for label studio...")
+    time.sleep(3)
+
+m = u.Model()
 
 @app.on_event("startup")
 async def startup():
@@ -19,8 +24,8 @@ async def startup():
 @app.get("/predict")
 async def predict():
 
-    logging.info(f"save model to {m.active_model_fp}")
-    joblib.dump(m.clf.estimator, m.active_model_fp)
+    logging.info(f"save model to {config.model_fp}")
+    joblib.dump(m.clf.estimator, config.model_fp)
     
     return dict({
         "predict_proba":m.clf.predict_proba(m.X).reshape(1,-1).tolist()[0],

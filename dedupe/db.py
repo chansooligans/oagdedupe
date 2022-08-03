@@ -41,7 +41,7 @@ class CreateDB:
         self.engine.execute("DROP TABLE IF EXISTS query_index")
         self.engine.execute("""
             CREATE TABLE query_index (
-                idx VARCHAR(255) NOT NULL
+                idx int NOT NULL
             )
         """)
 

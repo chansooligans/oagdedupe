@@ -20,6 +20,14 @@ class Config:
         return self.config["LABEL_STUDIO"]["API_KEY"]
 
     @property
+    def ls_title(self):
+        return self.config["LABEL_STUDIO"]["TITLE"]
+
+    @property
+    def ls_description(self):
+        return self.config["LABEL_STUDIO"]["DESCRIPTION"]
+
+    @property
     def fast_api_port(self):
         return self.config["FAST_API"]["PORT"]
     
@@ -34,4 +42,5 @@ class Config:
     @property
     def cache_fp(self):
         return self.config["MAIN"]["CACHE_FILEPATH"]
+
 

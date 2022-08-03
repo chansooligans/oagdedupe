@@ -22,10 +22,18 @@ d = Dedupe(
     blocker=manual_blocker
 )
 
-d.train()
+# d.train()
 
-# %% [markdown]
-"""
-then start label-studio
-then start fastapi
-"""
+# %%
+preds = d.predict()
+
+# %%
+preds["cluster"].value_counts()
+# %%
+df.merge(
+    preds,
+    left_index=True,
+    right_on="id"
+).sort_values('cluster').query("cluster==1")
+
+# %%

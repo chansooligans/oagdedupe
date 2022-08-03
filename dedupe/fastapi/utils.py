@@ -6,6 +6,7 @@ from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
 
 from functools import cached_property
+import requests
 import joblib 
 import numpy as np
 import pandas as pd
@@ -30,35 +31,49 @@ class LabelStudioConnection:
     def __init__(self):
         self.lsapi = LabelStudioAPI()
 
+    def check_project_exists(self):
+        for proj in self.lsapi.list_projects()["results"]:
+            if proj["title"] == self.title:
+                return proj
+        return False
+
+    def setup_project(self):
+        proj = self.check_project_exists()
+        if not proj:
+            new_proj = self.lsapi.create_project(title=self.title, description=self.description)
+            return new_proj
+        return proj
+
+    def post_tasks(self):
+        query_index, df = self.get_samples(n_instances=10)
+        df["idx"] = query_index
+        df[["idx"]].to_sql("query_index", con=self.engine, if_exists="append", index=False)
+        self.lsapi.post_tasks(df=df, project_id=self.proj["id"])
+        return
+        
     def generate_new_samples(self):
         """
         1. listens for labelstudio with specified project title
         2. pulls count of incomplete tasks
         3. if count is < n; pull new samples
         """
-        for proj in self.lsapi.list_projects()["results"]:
-            if proj["title"] == "new project":
-                break
-        
-        tasks = self.lsapi.get_tasks(project_id=proj["id"])
-        n_incomplete = tasks["total"] - tasks["total_annotations"]
-        
-        if  n_incomplete < 5:
 
-            # train and get new samples
-            self.get_labels()
-            self.train()
+        if self.proj["task_number"] is None:
+            self.post_tasks()
+        else:
+            tasks = self.lsapi.get_tasks(project_id=self.proj["id"])
+            n_incomplete = tasks["total"] - tasks["total_annotations"]
+            if  n_incomplete < 5:
+                # train and get new samples
+                self.get_annotations()
+                self.train()
+                self.post_tasks()
 
-            query_index, df = self.get_samples(n_instances=20)
-            df["idx"] = query_index
-            df[["idx"]].to_sql("query_index", con=self.engine, if_exists="append", index=False)
-            self.lsapi.post_tasks(df=df)
-
-    def get_labels(self):
-        annotations = self.lsapi.get_all_annotations(project_id=10)
+    def get_annotations(self):
+        annotations = self.lsapi.get_all_annotations(project_id=self.proj["id"])
         tasks = [
             [annotations[x['id']]] + list(x['data']["item"].values())
-            for x in self.lsapi.get_tasks(project_id=10)["tasks"]
+            for x in self.lsapi.get_tasks(project_id=self.proj["id"])["tasks"]
             if x["id"] in annotations.keys()
         ]
         df = pd.DataFrame(tasks, columns = ["label"] + self.attributes_l_r + ["idx"])
@@ -86,11 +101,17 @@ class Model(LabelStudioConnection):
             logging.info(f'reading model: {config.model_fp}')
         else:
             self.estimator = RandomForestClassifier()
+
+        # check for new project; create if not exist
+        self.title = config.ls_title
+        self.description = config.ls_description
+        self.proj = self.setup_project()
+        if not self.lsapi.get_webhooks():
+            self.lsapi.post_webhook(project_id=self.proj["id"])
     
     @cached_property
     def X(self):
         return pd.read_sql_query("select * from distances", con=self.engine)
-
 
     @cached_property
     def attributes(self):
@@ -159,3 +180,12 @@ class Model(LabelStudioConnection):
 
         return query_index, samples
 
+def url_checker(url):
+    try:
+        get = requests.get(url)
+        if get.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False

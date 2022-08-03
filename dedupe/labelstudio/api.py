@@ -34,7 +34,8 @@ class Projects:
             """
         }
         
-        requests.post(f"{self.url}/api/projects", headers=self.headers, data=new_project)
+        resp = requests.post(f"{self.url}/api/projects", headers=self.headers, data=new_project)
+        return json.loads(resp.content)
 
 @dataclass
 class Tasks:
@@ -53,10 +54,10 @@ class Tasks:
         df["idx"] = query_index
         return df
 
-    def post_tasks(self, df):
+    def post_tasks(self, df, project_id):
         for _,row in df.iterrows():
             query = {
-                "project":10,
+                "project":project_id,
                 "data":json.dumps({"item":row.to_dict()})
             }
 
