@@ -3,6 +3,8 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.db import CreateDB
+from dedupe.config import Config
+config = Config()
 
 from sqlalchemy import create_engine
 import requests
@@ -76,8 +78,8 @@ class Dedupe(BaseModel, CreateDB):
 
     def fit(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
-
-        contents = requests.post("http://127.0.0.1:8000/predict")
+        
+        contents = requests.post(f"{config.fast_api_url}/predict")
         results = json.loads(contents.content)
         scores = results["predict_proba"]
         y = results["predict"]

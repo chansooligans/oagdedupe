@@ -15,7 +15,7 @@ manual_blocker = blockers.ManualBlocker([
 
 attributes = ["name", "addr"]
 
-cache_fp="../../cache/test.db"
+cache_fp="../cache/test.db"
 
 d = Dedupe(
     df=df, 
@@ -26,16 +26,19 @@ d = Dedupe(
 
 d.train()
 
-# %%
-from dedupe.fastapi import utils as u
+# %% [markdown]
+"""
+then start label-studio
+then start fastapi
+"""
+
 
 # %%
-active_model_fp = "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/active_models/test_df.pkl" 
-cache_fp = "/home/csong/cs_github/deduper/cache/test.db"
-model = u.Model(cache_fp=cache_fp, active_model_fp=active_model_fp)
-# %%
-model.X
-# %%
-import pandas as pd
-pd.read_sql("SELECT 1",con=model.engine)
+# from dedupe.fastapi import utils as u
+# import pandas as pd
+# active_model_fp = "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/active_models/test_df.pkl" 
+# cache_fp = "/home/csong/cs_github/deduper/cache/test.db"
+# model = u.Model(cache_fp=cache_fp, active_model_fp=active_model_fp)
+# pd.read_sql("SELECT * from query_index",con=model.engine)["idx"]
+# test = pd.read_sql("SELECT * from labels",con=model.engine)
 # %%

@@ -36,13 +36,13 @@ class CreateDB:
             .to_sql("idxmat", con=self.engine, if_exists="replace", index=False)
         )
 
-        # logging.info("building query_index")
-        # self.engine.execute("DROP TABLE IF EXISTS query_index")
-        # self.engine.execute("""
-        #     CREATE TABLE query_index (
-        #         idx VARCHAR(255) NOT NULL
-        #     )
-        # """)
+        logging.info("building query_index")
+        self.engine.execute("DROP TABLE IF EXISTS query_index")
+        self.engine.execute("""
+            CREATE TABLE query_index (
+                idx VARCHAR(255) NOT NULL
+            )
+        """)
 
         logging.info("building labels")
         self.engine.execute("DROP TABLE IF EXISTS labels")

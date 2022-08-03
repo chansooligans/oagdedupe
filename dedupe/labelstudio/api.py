@@ -67,8 +67,27 @@ class Tasks:
 @dataclass
 class Annotations:
 
-    def get_annotations(self):
-        return
+    def get_annotation(self, task_id):
+        return json.loads(
+            requests.get(f"{self.url}/api/tasks/{task_id}/annotations/", headers=self.headers).content
+        )
+
+    def get_all_annotations(self,project_id):
+        task_ids = [x["id"] for x in self.get_tasks(project_id=project_id)["tasks"]]
+        return {
+            task_id:self.latest_annotation(
+                self.get_annotation(task_id=task_id)
+            )
+            for task_id in task_ids
+            if self.get_annotation(task_id=task_id)
+        }
+
+    def latest_annotation(self, annotations):
+        return sorted(
+            annotations, 
+            key=lambda d:d["created_at"]
+        )[0]["result"][0]["value"]["choices"][0]
+
 
 @dataclass
 class Webhooks:
@@ -80,7 +99,7 @@ class Webhooks:
     def post_webhook(self, project_id):
         query = {
             "project":project_id,
-            "url":"http://172.22.39.26:8000/payload",
+            "url":f"{config.fast_api_url}/payload",
             "send_payload":True,
             "is_active":True,
             "actions":["ANNOTATION_CREATED", "ANNOTATION_UPDATED"]
@@ -98,3 +117,18 @@ class LabelStudioAPI(
     url = config.ls_url
     headers = {"Authorization":f"""Token {config.ls_api_key}"""}
 
+
+# # %%
+# lsapi = LabelStudioAPI()
+# annotations = lsapi.get_all_annotations(project_id=10)
+# tasks = [
+#     [annotations[x['id']]] + list(x['data']["item"].values())
+#     for x in lsapi.get_tasks(project_id=10)["tasks"]
+#     if x["id"] in annotations.keys()
+# ]
+# df = pd.DataFrame(tasks, columns = ["label", "name_l", "addr_l", "name_r", "addr_r", "idx"])
+
+# # %%
+# df
+
+# # %%

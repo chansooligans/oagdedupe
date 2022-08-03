@@ -13,17 +13,63 @@ from sqlalchemy import create_engine
 import os
 import logging
 
+from dedupe.labelstudio.api import LabelStudioAPI
 
-class Query(BaseModel):
-    query_index: List[int]
-    samples: dict
+# class Query(BaseModel):
+#     query_index: List[int]
+#     samples: dict
 
 class Annotation(BaseModel):
     action: str
     annotation: dict
     project: dict
 
-class Model():
+class LabelStudioConnection:
+
+    def generate_new_samples(self):
+        """
+        1. listens for labelstudio with specified project title
+        2. pulls count of incomplete tasks
+        3. if count is < n; pull new samples
+        """
+        for proj in self.lsapi.list_projects()["results"]:
+            if proj["title"] == "new project":
+                break
+        
+        tasks = self.lsapi.get_tasks(project_id=proj["id"])
+        n_incomplete = tasks["total"] - tasks["total_annotations"]
+        
+        if  n_incomplete < 5:
+
+            # train and get new samples
+            self.get_labels()
+            self.train()
+
+            query_index, df = self.get_samples(n_instances=20)
+            df["idx"] = query_index
+            df[["idx"]].to_sql("query_index", con=self.engine, if_exists="append", index=False)
+            self.lsapi.post_tasks(df=df)
+
+    def get_labels(self):
+        annotations = self.lsapi.get_all_annotations(project_id=10)
+        tasks = [
+            [annotations[x['id']]] + list(x['data']["item"].values())
+            for x in self.lsapi.get_tasks(project_id=10)["tasks"]
+            if x["id"] in annotations.keys()
+        ]
+        df = pd.DataFrame(tasks, columns = ["label"] + self.attributes_l_r + ["idx"])
+        df["label"] = df["label"].map(self.label_map)
+        df.to_sql("labels", con=self.engine, if_exists="append", index=False)
+
+    @property
+    def label_map(self):
+        return {
+            "Match":1,
+            "Not a Match":0,
+            "Uncertain":2
+        }
+
+class Model(LabelStudioConnection):
 
     def __init__(
         self, 
@@ -43,6 +89,8 @@ class Model():
             logging.info(f'reading model: {self.active_model_fp}')
         else:
             self.estimator = RandomForestClassifier()
+
+        self.lsapi = LabelStudioAPI()
     
     @cached_property
     def X(self):
@@ -55,6 +103,10 @@ class Model():
             pd.read_sql_query("select * from df limit 1", con=self.engine)
             .drop("idx",axis=1).columns
         )
+
+    @property
+    def attributes_l_r(self):
+        return [x+"_l" for x in self.attributes] + [x+"_r" for x in self.attributes]
 
     @cached_property
     def clf(self):
@@ -78,7 +130,7 @@ class Model():
 
     def get_samples(self, n_instances=5):
 
-        ignore_idx = list(pd.read_sql("SELECT distinct idx FROM labels", con=self.engine)["idx"].values)
+        ignore_idx = list(pd.read_sql("SELECT distinct idx FROM query_index", con=self.engine)["idx"].values)
         X_subset = self.X.drop(ignore_idx, axis=0)
         
         subset_idx, _ = self.clf.query(
@@ -108,7 +160,7 @@ class Model():
                 """, con=self.engine
             ).drop("idx",axis=1)
 
-        samples.columns = [x+"_l" for x in self.attributes] + [x+"_r" for x in self.attributes]
-        samples["label"] = None
+        samples.columns = self.attributes_l_r
 
         return query_index, samples
+
