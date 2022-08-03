@@ -14,7 +14,7 @@ with Diagram("Dedupe", show=False):
 
     with Cluster("Active Learning Loop"):
         sql = SQL("SQLite db")
-        model = Python("Model") 
+        model = Custom("Model", "img/modAl.png") 
         preprocess >> model 
         preprocess >> sql 
 
@@ -28,6 +28,7 @@ with Diagram("Dedupe", show=False):
     preprocess >> streamlit
     model >> streamlit
 
-    fastapi >> Storage("Predictions")
+    networkX = Custom("NetworkX", "img/networkX.png")
+    fastapi >> networkX >> Storage("Predictions")
     
 # %%
