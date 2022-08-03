@@ -32,7 +32,6 @@ class BaseModel(metaclass=ABCMeta):
     distance: Optional[BaseDistance] = AllJaro()
     cluster: Optional[BaseCluster] = ConnectedComponents()
     cpus: int = 1
-    cache_fp: str = "database.db"
 
     @abstractmethod
     def predict(self):

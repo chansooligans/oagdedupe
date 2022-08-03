@@ -14,6 +14,7 @@ import os
 import logging
 
 from dedupe.labelstudio.api import LabelStudioAPI
+from dedupe import config
 
 class Query(BaseModel):
     query_index: List[int]
@@ -74,23 +75,15 @@ class LabelStudioConnection:
 
 class Model(LabelStudioConnection):
 
-    def __init__(
-        self, 
-        cache_fp:str = "database.db",
-        active_model_fp:str = "model.pkl"
-        ):
+    def __init__(self):
         super().__init__()
 
-        self.cache_fp = cache_fp
-        self.active_model_fp = active_model_fp
+        logging.info(f'reading database: {config.cache_fp}')
+        self.engine = create_engine(f"sqlite:///{config.cache_fp}", echo=True)
 
-        logging.info(f'reading database: {self.cache_fp}')
-        self.engine = create_engine(f"sqlite:///{cache_fp}", echo=True)
-
-        self.active_model_fp = active_model_fp
-        if os.path.exists(self.active_model_fp):
-            self.estimator = joblib.load(self.active_model_fp)
-            logging.info(f'reading model: {self.active_model_fp}')
+        if os.path.exists(config.model_fp):
+            self.estimator = joblib.load(config.model_fp)
+            logging.info(f'reading model: {config.model_fp}')
         else:
             self.estimator = RandomForestClassifier()
     

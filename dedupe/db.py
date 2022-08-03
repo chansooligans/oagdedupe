@@ -1,3 +1,4 @@
+from dedupe import config
 from dataclasses import dataclass
 from functools import cached_property
 from sqlalchemy import create_engine
@@ -8,7 +9,7 @@ class CreateDB:
 
     @cached_property
     def engine(self):
-        return create_engine(f"sqlite:///{self.cache_fp}", echo=False)
+        return create_engine(f"sqlite:///{config.cache_fp}", echo=False)
 
     def create_tables(self, X, idxmat, attributes):
         
