@@ -2007,7 +2007,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <3.11"
-content-hash = "27d0daf2c46d335fcd6002929ae484fccb435bfd91756f2fefab209c029ffd3f"
+content-hash = "f641a3972a047bdfece744ea4ff12540ca831c414b68feefaa1e6f16b643c22c"
 
 [metadata.files]
 aiosignal = [
