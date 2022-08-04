@@ -48,15 +48,16 @@ class Tasks:
 
     def get_annotations(self):
         annotations = self.lsapi.get_all_annotations(project_id=self.proj["id"])
-        tasks = [
-            [annotations[x['id']]] + list(x['data']["item"].values())
-            for x in self.lsapi.get_tasks(project_id=self.proj["id"])["tasks"]
-            if x["id"] in annotations.keys()
-        ]
-        df = pd.DataFrame(tasks, columns = ["label"] + self.attributes_l_r + ["idx"])
-        df["label"] = df["label"].map(self.label_map)
-        self.train(df)
-        df.to_sql("labels", con=self.engine, if_exists="append", index=False)
+        if annotations:
+            tasks = [
+                [annotations[x['id']]] + list(x['data']["item"].values())
+                for x in self.lsapi.get_tasks(project_id=self.proj["id"])["tasks"]
+                if x["id"] in annotations.keys()
+            ]
+            df = pd.DataFrame(tasks, columns = ["label"] + self.attributes_l_r + ["idx"])
+            df["label"] = df["label"].map(self.label_map)
+            self.train(df)
+            df.to_sql("labels", con=self.engine, if_exists="append", index=False)
 
     @property
     def label_map(self):
@@ -135,7 +136,7 @@ class Database:
     def attributes_l_r(self):
         return [x+"_l" for x in self.attributes] + [x+"_r" for x in self.attributes]
 
-class Model(Tasks, Projects):
+class Model(Database, Tasks, Projects):
 
     def __init__(self):
 

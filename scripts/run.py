@@ -22,7 +22,7 @@ d = Dedupe(
     blocker=manual_blocker
 )
 
-# d.train()
+d.train()
 
 # %%
 preds = d.predict()
