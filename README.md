@@ -23,6 +23,7 @@ DESCRIPTION = [Description of Project]
 
 [FAST_API]
 PORT = 8000
+CPUS = 15
 ```
 
 #### 2. train model
