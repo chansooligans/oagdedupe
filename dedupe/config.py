@@ -89,7 +89,7 @@ class Config:
 
     @property
     def cpus(self):
-        return self.config["FAST_API"]["CPUS"]
+        return int(self.config["FAST_API"]["CPUS"])
 
     @property
     def model_fp(self):
