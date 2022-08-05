@@ -1,12 +1,10 @@
 # dedupe  
 
-## quickstart
-
 #### 1. set up config file
 
 There are two options:
 
-(1) A global config file at ~/.dedupe/config.ini
+(1) A global config file at ~/.dedupe/config.ini  
 (2) A per-project config file at $CWD/.dedupe/config.ini, where $CWD is the folder you're running your script from (the folder where you `import dedupe`).
 
 The config file must be called `config.ini` contain:
