@@ -29,10 +29,12 @@ class Annotation(BaseModel):
 class Tasks:
 
     def generate_new_samples(self):
-        if self.proj["task_number"] is None:
+        
+        tasks = self.lsapi.get_tasks(project_id=self.proj["id"])
+
+        if len(tasks["tasks"]) == 0:
             self.post_tasks()
         else:
-            tasks = self.lsapi.get_tasks(project_id=self.proj["id"])
             n_incomplete = tasks["total"] - tasks["total_annotations"]
             if  n_incomplete < 5:
                 # train and get new samples
