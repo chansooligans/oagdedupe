@@ -5,118 +5,101 @@
 
 ## quickstart
 
-#### install dependencies with poetry:
+#### 1. set up config file
 
-install poetry if needed: https://python-poetry.org/docs/#installation
+There are two options:
 
-```
-poetry install
-```
+(1) A global config file at ~/.dedupe/config.ini
+(2) A per-project config file at $CWD/.dedupe/config.ini, where $CWD is the folder you're running your script from (the folder where you `import dedupe`).
 
-#### fake datasets for testing:
-
-```
-from dedupe.datasets.fake import df, df2
-print(df.head())
-```
-
-|    | name             | addr                                                    |
-|---:|:-----------------|:--------------------------------------------------------|
-|  0 | Norma Fisher     | 80160 Clayton Isle Apt. 513 East Linda, ND 59217        |
-|  1 | Jorge Sullivan   | 714 Mann Plaza Suite 839 Seanfurt, OK 32234             |
-|  2 | Elizabeth Woods  | 09471 Erika Curve North Megan, UT 71358                 |
-|  3 | Susan Wagner     | 339 Riley Mission Suite 515 South Brendamouth, ID 32356 |
-|  4 | Peter Montgomery | 35256 Craig Drive Apt. 098 North Davidborough, OK 16189 |
-
-#### dedupe:
+The config file must be called `config.ini` contain:
 
 ```
+[MAIN]
+HOST = http://172.22.39.26
+MODEL_FILEPATH = [path to model to load, or save if it does not exist]
+CACHE_FILEPATH = [path to store database files for SQLite and comparison pairs]
+
+[LABEL_STUDIO]
+PORT = 8001
+API_KEY = [API KEY from Label Studio interface after signing up / logging in]
+TITLE = [Title of Dedupe Project]
+DESCRIPTION = [Description of Project]
+
+[FAST_API]
+PORT = 8000
+```
+
+#### 2. train model
+
+Below is an example that dedupes `df` on `business_addr_cols`.
+
+It uses a manual blocking scheme to narrow possible comparisons.
+
+```
+from dedupe import block
 from dedupe.api import Dedupe
-d = Dedupe(df=df, attributes=None)
-preds = d.predict()
+from dedupe.distance.string import RayAllJaro
 
-df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
-```
-
-(optional: to specify columns to dedupe on, set attributes, e.g. `attributes = ["name", "addr"]`)
-
-|    | name               | addr                                                     |   id |   cluster |
-|---:|:-------------------|:---------------------------------------------------------|-----:|----------:|
-|  0 | Norma Fisher       | 80160 Clayton Isle Apt. 513 East Linda, ND 59217         |    0 |         0 |
-|  1 | Norma Fisherx      | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x        |   10 |         0 |
-|  2 | Jorge Sullivan     | 714 Mann Plaza Suite 839 Seanfurt, OK 32234              |    1 |         1 |
-|  3 | Jorge Sullivanx    | 714 Mann Plaza Suite 839 Seanfurt, OK 32234x             |   11 |         1 |
-
-
-#### record linkage:
-
-```
-import pandas as pd
-from dedupe.api import RecordLinkage
-rl = RecordLinkage(df=df, df2=df2, attributes=None, attributes2=None)
-predsx, predsy = rl.predict()
-
-pd.merge(
-    df.merge(predsx, left_index=True, right_on="id"),
-    df2.merge(predsy, left_index=True, right_on="id"),
-    on="cluster",
-)
-```
-
-(optional: to specify columns of df2 to dedupe on, use attributes2, e.g. `attributes2 = ["name", "addr"]`)
-
-|    | name_x          | addr_x                                            |   id_x |   cluster | name_y           | addr_y                                            |   id_y |
-|---:|:----------------|:--------------------------------------------------|-------:|----------:|:-----------------|:--------------------------------------------------|-------:|
-|  0 | Norma Fisher    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |         0 | Norma Fisher     | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |
-|  1 | Norma Fisher    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
-|  2 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisher     | 80160 Clayton Isle Apt. 513 East Linda, ND 59217  |      0 |
-|  3 | Norma Fisherx   | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |         0 | Norma Fisherx    | 80160 Clayton Isle Apt. 513 East Linda, ND 59217x |     10 |
-
-
-#### manual blocking specifications:
-
-Suppose you want to specificy your own blocking schemes. And you want to use 
-two "intersections" of blocking algos: 
-    - (1) compare all instances where records share first letter of name AND 
-    first letter of address
-    - (2) compare all instances where records share first letter of the last 
-    token of name AND first letter of name
-
-Each intersection may contain at least one blocking algo.   
-
-The goal is to identify the intersections that yields the most true positives, 
-while minimizing the # of possible comparisons.  
-
-See `dedupe.block.algos` for all blocking algo options.
-
-```
-from dedupe.api import Dedupe
-from dedupe.block import blockers 
-from dedupe.block import algos
-
-manual_blocker = blockers.ManualBlocker([
-    [(algos.FirstNLetters(N=1), "name"), (algos.FirstNLetters(N=1), "addr")],
-    [(algos.FirstNLettersLastToken(N=1), "name"), (algos.FirstNLetters(N=1), "name")],
+manual_blocker = block.ManualBlocker([
+    [
+        (block.FirstNLetters(N=1), "businesshousenumber"),
+        (block.FirstNLetters(N=3), "businessstreetname"), 
+        (block.FirstNLetters(N=2), "businesscity"), 
+    ],
 ])
 
-d = Dedupe(df=df, attributes=None, blocker=manual_blocker)
-preds = d.predict()
+business_addr_cols = [
+    'businesshousenumber', 'businessstreetname', 'businessapartment',
+    'businesscity', 'businessstate', 'businesszip'
+]
 
-df.merge(preds, left_index=True, right_on="id").sort_values("cluster")
-```
+df = (
+    hpd_regis_contacts[business_addr_cols]
+    .drop_duplicates()
+    .reset_index(drop=True)
+)
 
-#### active learning
-
-```
-# streamlit for labelling
-streamlit run app/app.py --server.port 8089
-
-# model
-from dedupe.api import Dedupe
-from dedupe.train.active import Active
 d = Dedupe(
     df=df, 
-    trainer=Active(cache_fp="../cache/test.csv"),
+    attributes=business_addr_cols, 
+    blocker=manual_blocker,
+    distance=RayAllJaro(), 
+    cpus=15 # parallelize distance computations
 )
-preds = d.predict()
+
+# pre-processes data and stores pre-processed data, comparisons, ID matrices in SQLite db
+d.train()
+```
+
+#### 3. start label-studio
+
+1. Create `cache` folder at `cwd`
+2. Start label-studio, e.g. on port 8089.
+3. Once label-studio is running, log in (can make up any user/pw).
+    - Go to "Account & Settings" using icon on top-right
+    - Get Access Token and copy/paste into config file under `[LABEL_STUDIO]`, "API_KEY"
+
+```
+docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
+	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
+	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
+	-v `pwd`/cache/myfiles:/label-studio/files \
+	heartexlabs/label-studio:latest label-studio
+```
+
+#### 4. start fastAPI
+
+Run `python -m dedupe.fastapi.main.py`, making sure you are in same directory as the `.dedupe` folder
+
+Then return to label-studio and start labelling. When the queue falls under 5 tasks, fastAPI will 
+update the model with labelled samples then send more tasks to review.
+
+#### 5. predictions
+
+To get predictions, simply run the `predict()` method.
+
+```
+d = Dedupe()
+d.predict()
 ```
