@@ -151,7 +151,7 @@ class Model(Database, Tasks, Projects):
             self.estimator = joblib.load(config.model_fp)
             logging.info(f'reading model: {config.model_fp}')
         else:
-            self.estimator = RandomForestClassifier()
+            self.estimator = RandomForestClassifier(config.cpus)
 
         # check for new project; create if not exist
         self.title = config.ls_title

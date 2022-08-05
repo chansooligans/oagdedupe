@@ -25,4 +25,5 @@ DESCRIPTION = [Description of Project]
 
 [FAST_API]
 PORT = 8000
+CPUS = [Number of CPUs for distance calcs and ML models]
 ```

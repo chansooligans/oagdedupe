@@ -28,6 +28,7 @@ class CreateDB:
             pd.DataFrame(X)
             .to_sql("distances", con=self.engine, if_exists="replace", index=False)
         )
+        del X
 
         logging.info("building idxmat")
         (
@@ -36,6 +37,7 @@ class CreateDB:
             .rename({"index":"idx"},axis=1)
             .to_sql("idxmat", con=self.engine, if_exists="replace", index=False)
         )
+        del idxmat
 
         logging.info("building query_index")
         self.engine.execute("DROP TABLE IF EXISTS query_index")

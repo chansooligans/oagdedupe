@@ -31,7 +31,6 @@ class BaseModel(metaclass=ABCMeta):
     blocker: Optional[BaseBlocker] = TestBlocker()
     distance: Optional[BaseDistance] = AllJaro()
     cluster: Optional[BaseCluster] = ConnectedComponents()
-    cpus: int = 1
 
     @abstractmethod
     def predict(self):
@@ -56,10 +55,12 @@ class Dedupe(BaseModel, CreateDB):
     """
 
     def __post_init__(self):
+        
         if self.attributes is None:
             self.attributes = self.df.columns
-        if (self.cpus > 1) & (not ray.is_initialized()):
-            ray.init(num_cpus=self.cpus)
+        
+        if (config.cpus > 1) & (not ray.is_initialized()):
+            ray.init(num_cpus=config.cpus)
 
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""

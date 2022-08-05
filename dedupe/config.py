@@ -55,6 +55,7 @@ class Config:
 
                 [FAST_API]
                 PORT = 8000
+                CPUS = [Number of CPUs for distance calcs and ML models]
                 """
             )
 
@@ -87,11 +88,16 @@ class Config:
         return f"""{self.host}:{self.config["FAST_API"]["PORT"]}"""
 
     @property
+    def cpus(self):
+        return self.config["FAST_API"]["CPUS"]
+
+    @property
     def model_fp(self):
         return self.config["MAIN"]["MODEL_FILEPATH"]
 
     @property
     def cache_fp(self):
         return self.config["MAIN"]["CACHE_FILEPATH"]
+
 
 
