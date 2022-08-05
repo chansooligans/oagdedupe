@@ -1,8 +1,5 @@
 # dedupe  
 
-- new draft of dedupe tool i helped develop with the research and analytics departement of the ny state office of the attorney general
-- partly a learning project and hopefully an easy-to-use, powerful entity resolution tool for general public to use
-
 ## quickstart
 
 #### 1. set up config file
