@@ -9,7 +9,7 @@ from dedupe.api import Dedupe
 from dedupe.distance.string import RayAllJaro
 from dedupe.block import blockers 
 from dedupe.block import algos
-files = glob.glob('/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*')
+files = glob.glob('/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*')[:2]
 
 df = pd.concat([
     pd.read_csv(f)
@@ -40,7 +40,7 @@ d = Dedupe(
     attributes=attributes, 
     blocker=manual_blocker,
     distance=RayAllJaro(), 
-    cpus=20
+    # cpus=20
 )
 
 d.train()
