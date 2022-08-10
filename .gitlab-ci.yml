@@ -1,0 +1,18 @@
+default:
+  image: python:3.8
+  tags:
+    - research
+
+stages: 
+  - book
+
+pages:
+  stage: book
+  needs: []
+  script:
+  - pip install .[book]
+  - jb build book
+  - cp -r ./book/_build/html public/
+  artifacts:
+    paths:
+    - public

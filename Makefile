@@ -1,4 +1,4 @@
-.PHONY: tests_all, serve, reset, clear_cache, build, docker-run, lint, label-studio
+.PHONY: tests_all, serve, reset, clear_cache, build, docker-run, lint, label-studio, book, serve
 
 tests_all:
 	poetry run pytest -v
@@ -25,3 +25,9 @@ label-studio:
 
 fast-api:
 	python dedupe/fastapi/main.py 
+
+book:
+	poetry run jb build book
+
+serve:
+	python -m http.server -d book/_build/html $(port)
