@@ -19,7 +19,13 @@ parse:
     - tasklist
     - dollarmath
 sphinx:
+  extra_extensions:
+   - sphinx.ext.autodoc
+   - sphinx.ext.napoleon
+   - autodocsumm
+   - sphinx.ext.viewcode
   config:
+    autodoc_member_order: bysource
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
     html_show_copyright: false
     nb_custom_formats:

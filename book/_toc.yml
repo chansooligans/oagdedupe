@@ -1,2 +1,12 @@
 format: jb-book
 root: contents/home
+parts:
+  - caption: Documentation
+    chapters:
+    - file: contents/documentation/dedupe/home
+      sections:
+        - file: contents/documentation/dedupe/api
+        - file: contents/documentation/dedupe/base
+        - file: contents/documentation/dedupe/config
+        - file: contents/documentation/dedupe/db
+        - file: contents/documentation/dedupe/mixin

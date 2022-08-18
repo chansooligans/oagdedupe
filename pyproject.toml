@@ -27,11 +27,12 @@ diagrams = "^0.21.1"
 Faker = "^13.15.1"
 jupyter-book = {version = "^0.13.0", optional = true}
 jupytext = {version = "^1.14.1", optional = true}
+autodocsumm = {version = "^0.2.9", optional = true}
 
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.extras]
-book=["jupyter-book", "jupytext"]
+book=["jupyter-book", "jupytext", "autodocsumm"]
 
 
 [build-system]
