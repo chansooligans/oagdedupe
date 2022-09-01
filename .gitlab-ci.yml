@@ -3,16 +3,28 @@ default:
   tags:
     - research
 
-stages: 
+stages:
+  - test
   - book
+
+test:
+  stage: test
+  needs: []
+  script:
+    - pip install .
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
 
 pages:
   stage: book
-  needs: []
+  needs: [test]
   script:
-  - pip install .[book]
-  - jb build book
-  - cp -r ./book/_build/html public/
+    - pip install .[book]
+    - jb build book
+    - cp -r ./book/_build/html public/
   artifacts:
     paths:
-    - public
+      - public

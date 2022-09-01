@@ -3,9 +3,8 @@ from dedupe.block.blockers import TestBlocker
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.db import CreateDB
-from dedupe import config
+from dedupe.settings import Settings
 
-from sqlalchemy import create_engine
 import requests
 import json
 from abc import ABCMeta, abstractmethod
@@ -16,15 +15,21 @@ import numpy as np
 import ray
 import gc
 import logging
+
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
+
 @dataclass
 class BaseModel(metaclass=ABCMeta):
-    """ Abstract base class from which all model classes inherit.
+    """Abstract base class from which all model classes inherit.
     All descendent classes must implement predict, train, and candidates methods.
     """
-    df: pd.DataFrame
+
+    """project settings"""
+    settings: Settings
+
+    df: Optional[pd.DataFrame] = None
     df2: Optional[pd.DataFrame] = None
     attributes: Optional[List[str]] = None
     attributes2: Optional[List[str]] = None
@@ -36,11 +41,11 @@ class BaseModel(metaclass=ABCMeta):
     def predict(self):
         return
 
-    @abstractmethod    
+    @abstractmethod
     def fit(self):
         return
 
-    @abstractmethod    
+    @abstractmethod
     def train(self):
         return
 
@@ -51,16 +56,17 @@ class BaseModel(metaclass=ABCMeta):
 
 @dataclass
 class Dedupe(BaseModel, CreateDB):
-    """General dedupe block, inherits from BaseModel.
-    """
+    """General dedupe block, inherits from BaseModel."""
 
     def __post_init__(self):
-        
-        if self.attributes is None:
-            self.attributes = self.df.columns
-        
-        if (config.cpus > 1) & (not ray.is_initialized()):
-            ray.init(num_cpus=config.cpus)
+
+        self.settings.sync()
+
+        # if self.attributes is None:
+        #     self.attributes = self.df.columns
+
+        if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
+            ray.init(num_cpus=self.settings.other.cpus)
 
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
@@ -69,25 +75,26 @@ class Dedupe(BaseModel, CreateDB):
 
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
-            matches=idxmat[y == 1].astype(int), 
-            scores=scores[y == 1],
-            rl=False
+            matches=idxmat[y == 1].astype(int), scores=scores[y == 1], rl=False
         )
-
 
     def fit(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
-        
-        contents = requests.get(f"{config.fast_api_url}/predict")
+
+        contents = requests.get(f"{self.settings.other.fast_api.url}/predict")
         results = json.loads(contents.content)
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = np.array(pd.read_sql_query(f"""
+        idxmat = np.array(
+            pd.read_sql_query(
+                f"""
             SELECT idxl, idxr
             FROM idxmat
-        """, con=self.engine
-        ))
+        """,
+                con=self.engine,
+            )
+        )
 
         return idxmat, scores, np.array(y)
 
@@ -97,10 +104,14 @@ class Dedupe(BaseModel, CreateDB):
         idxmat = self._get_candidates()
 
         logging.info("get distance matrix")
-        X = self.distance.get_distmat(self.df, self.df2, self.attributes, self.attributes2, idxmat)
+        X = self.distance.get_distmat(
+            self.df, self.df2, self.settings.other.attributes, self.attributes2, idxmat
+        )
 
         logging.info("building SQLite database")
-        self.create_tables(X=X, idxmat=idxmat, attributes=self.attributes)
+        self.create_tables(
+            X=X, idxmat=idxmat, attributes=self.settings.other.attributes
+        )
 
         # free memory from ram
         del X, idxmat
@@ -108,14 +119,14 @@ class Dedupe(BaseModel, CreateDB):
 
     def _get_candidates(self) -> np.array:
         """get candidate pairs"""
-        
+
         logging.info("get block maps")
-        block_maps = self.blocker.get_block_maps(df=self.df, attributes=self.attributes)
+        block_maps = self.blocker.get_block_maps(
+            df=self.df, attributes=self.settings.other.attributes
+        )
 
         logging.info("get candidate pairs")
-        return self.blocker.dedupe_get_candidates(
-            block_maps
-        )
+        return self.blocker.dedupe_get_candidates(block_maps)
 
 
 # @dataclass
@@ -135,7 +146,7 @@ class Dedupe(BaseModel, CreateDB):
 
 #         idxmat, scores, y = self.fit()
 #         return self.cluster.get_df_cluster(
-#             matches=idxmat[y == 1].astype(int), 
+#             matches=idxmat[y == 1].astype(int),
 #             scores=scores[y == 1],
 #             rl=True
 #         )
