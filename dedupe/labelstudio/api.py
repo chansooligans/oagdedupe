@@ -53,7 +53,7 @@ class Tasks:
         return json.loads(resp.content)
 
     def get_tasks_from_fastAPI(self):
-        contents = requests.get(f"{config.fast_api_url}/samples")
+        contents = requests.get(f"{self.settings.other.fast_api.url}/samples")
         query_index = json.loads(contents.content)["query_index"]
         df = pd.DataFrame(json.loads(contents.content)["samples"]).drop("label", axis=1)
         df["idx"] = query_index

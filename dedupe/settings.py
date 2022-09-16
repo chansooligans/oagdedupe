@@ -31,6 +31,15 @@ class SettingsLabelStudio(SettingsService):
 class SettingsOther(BaseModel):
     """Other project settings"""
 
+    """in-memory vs database calculations"""
+    mem: bool = False
+
+    """block learner sample size"""
+    n: int = 500
+
+    """maximum length of blocking scheme conjunctions"""
+    k: int = 3
+
     """entity attribute names"""
     attributes: Optional[List[str]] = ["name", "addr"]
 
@@ -38,7 +47,10 @@ class SettingsOther(BaseModel):
     cpus: int = 1
 
     """path to database"""
-    path_database: Path = Path("./.dedupe/default.db")
+    path_database: str = "postgresql+psycopg2://username:password@172.22.39.26:8000/db"
+
+    """database schema"""
+    db_schema: str = "dedupe"
 
     """path to model"""
     path_model: Path = Path("./.dedupe/model")

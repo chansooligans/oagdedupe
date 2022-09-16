@@ -153,7 +153,7 @@ class Model(Database, Tasks, Projects):
 
         logging.info(f"reading database: {self.settings.other.path_database}")
         self.engine = create_engine(
-            f"sqlite:///{self.settings.other.path_database}", echo=True
+            self.settings.other.path_database, echo=True
         )
 
         assert self.settings.other.path_model is not None
