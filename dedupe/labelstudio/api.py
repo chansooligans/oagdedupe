@@ -116,8 +116,7 @@ class Webhooks:
 
 @dataclass
 class LabelStudioAPI(Projects, Tasks, Annotations, Webhooks):
-
-    settings: Settings = get_settings_from_env()
+    settings: Settings
 
 
     @property

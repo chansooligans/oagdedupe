@@ -214,12 +214,20 @@ class Coverage(DynamicProgram):
         return df.loc[df.astype(str).drop_duplicates().index].sort_values("rr", ascending=False)
 
     def save(self):
+        """
+        applies "best" blocking conjunctions on "sample" data
+        save output to "comparisons"
+        """
+
         engine = create_engine(self.engine_url)
+
         schemes = self.results.loc[self.results["n_pairs"].cumsum()<100, "scheme"]
-        res = pd.concat([
+        
+        comparisons = pd.concat([
             self.get_pairs(names=x, table="blocks_sample", mem=False)  for x in schemes
         ]).drop(["blocked"], axis=1).drop_duplicates()
-        res.to_sql(
+        
+        comparisons.to_sql(
             "comparisons", 
             schema=self.schema,
             if_exists="replace", 

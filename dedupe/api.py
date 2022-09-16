@@ -1,5 +1,5 @@
 from dedupe.base import BaseDistance, BaseCluster
-from dedupe.distance.string import AllJaro
+from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
 
@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import ray
 import gc
+import sqlalchemy
 from sqlalchemy import create_engine
 import logging
 
@@ -28,7 +29,7 @@ class BaseModel(metaclass=ABCMeta):
     """project settings"""
     settings: Settings
     df: Optional[pd.DataFrame] = None
-    distance: Optional[BaseDistance] = AllJaro()
+    distance: Optional[BaseDistance] = RayAllJaro()
     cluster: Optional[BaseCluster] = ConnectedComponents()
 
     @abstractmethod
@@ -53,9 +54,6 @@ class Dedupe(BaseModel):
         self.settings.sync()
 
         self.engine = create_engine(self.settings.other.path_database)
-
-        # if self.attributes is None:
-        #     self.attributes = self.df.columns
 
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
@@ -93,14 +91,26 @@ class Dedupe(BaseModel):
     def train(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
 
-        idxmat = np.array(pd.read_sql("SELECT * FROM dedupe.comparisons", con=self.engine))
-
         logging.info("get distance matrix")
-        self.distance.get_distmat(
+        distances = self.distance.get_distmat(
+            table="comparisons",
             schema=self.settings.other.db_schema,
             engine=self.engine,
-            attributes=self.settings.other.attributes, 
-            indices=idxmat
+            attributes=self.settings.other.attributes,
         )
+
+        distances.to_sql(
+            "distances",
+            schema=self.settings.other.db_schema,
+            if_exists="replace", 
+            con=self.engine,
+            index=False,
+            dtype={
+                x:sqlalchemy.types.INTEGER()
+                for x in ["_index_l","_index_r"]
+            }
+        )
+
+        
 
 

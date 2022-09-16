@@ -40,6 +40,7 @@ class Annotation(BaseModel):
 
 
 class Tasks:
+    
     def generate_new_samples(self):
 
         tasks = self.lsapi.get_tasks(project_id=self.proj["id"])
@@ -72,8 +73,8 @@ class Tasks:
             ]
             df = pd.DataFrame(tasks, columns=["label"] + self.attributes_l_r + ["idx"])
             df["label"] = df["label"].map(self.label_map)
-            self.train(df)
             df.to_sql("labels", con=self.engine, if_exists="append", index=False)
+            self.train()
 
     @property
     def label_map(self):
@@ -135,6 +136,13 @@ class Projects:
 
 
 class Database:
+
+    def get_labels(self):
+        return pd.read_sql(
+            "SELECT * FROM labels",
+            con=self.settings.other.path_database
+        )
+
     @cached_property
     def distances(self):
         return pd.read_sql_query("select * from distances", con=self.engine)
@@ -150,7 +158,7 @@ class Model(Database, Tasks, Projects):
         self.settings = settings
         assert self.settings.other is not None
 
-        self.lsapi = LabelStudioAPI()
+        self.lsapi = LabelStudioAPI(settings=self.settings)
 
         logging.info(f"reading database: {self.settings.other.path_database}")
         self.engine = create_engine(
@@ -171,14 +179,13 @@ class Model(Database, Tasks, Projects):
         if not self.lsapi.get_webhooks():
             self.lsapi.post_webhook(project_id=self.proj["id"])
             
-
-    @cached_property
-    def clf(self):
-        clf = ActiveLearner(
+        # initialize active learner
+        self.clf = ActiveLearner(
             estimator=self.estimator, query_strategy=uncertainty_sampling
         )
-        clf.teach(np.repeat(1, len(self.settings.other.attributes)).reshape(1, -1), [1])
-        return clf
-
-    def train(self, df):
-        self.clf.teach(X=self.distances.loc[list(df["idx"])], y=df["label"])
+        self.train()
+    
+    def train(self):
+        labels=self.get_labels()
+        self.clf.teach(labels[[self.settings.other.attributes]], labels["label"])
+        

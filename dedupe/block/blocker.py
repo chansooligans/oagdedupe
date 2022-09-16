@@ -1,9 +1,14 @@
+from dedupe.base import BaseDistance
+from dedupe.distance.string import RayAllJaro
+from dedupe.settings import Settings
+from typing import List, Optional, Tuple
+
 from dataclasses import dataclass
 from typing import List
 from sqlalchemy import create_engine
 from functools import cached_property
 import logging
-from dedupe.settings import Settings
+import sqlalchemy
 
 class ForwardIndex:
     """
@@ -136,10 +141,30 @@ class Initialize(ForwardIndex):
                 SELECT * FROM negative_labels
             )
         """)
+
+        labels = self.distance.get_distmat(
+            table="labels",
+            schema=self.settings.other.db_schema,
+            engine=self.engine,
+            attributes=self.settings.other.attributes,
+        )
+
+        labels.to_sql(
+            "labels",
+            schema=self.settings.other.db_schema,
+            if_exists="replace", 
+            con=self.engine,
+            index=False,
+            dtype={
+                x:sqlalchemy.types.INTEGER()
+                for x in ["_index_l","_index_r"]
+            }
+        )
         
 @dataclass
 class Blocker(Initialize):
     settings: Settings
+    distance: Optional[BaseDistance] = RayAllJaro()
 
     def __post_init__(self):
         self.schema = self.settings.other.db_schema
