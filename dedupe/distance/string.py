@@ -49,7 +49,7 @@ class DistanceMixin:
             self.distance(comparisons[attribute])
             for attribute in attributes
         ]))
-
+        
         distances.to_sql(
             "distances",
             schema=schema,

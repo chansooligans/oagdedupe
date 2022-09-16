@@ -17,6 +17,16 @@ import logging
 from dedupe.labelstudio.api import LabelStudioAPI
 from dedupe.settings import Settings
 
+def url_checker(url):
+    try:
+        get = requests.get(url)
+        if get.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False
+
 
 class Query(BaseModel):
     query_index: List[int]
@@ -71,12 +81,10 @@ class Tasks:
 
     def get_samples(self, n_instances=5):
 
-        ignore_idx = list(
-            pd.read_sql("SELECT distinct idx FROM query_index", con=self.engine)[
-                "idx"
-            ].values
+        X_subset = (
+            self.distances
+            # .drop(ignore_idx, axis=0)
         )
-        X_subset = self.X.drop(ignore_idx, axis=0)
 
         subset_idx, _ = self.clf.query(X_subset, n_instances=n_instances)
 
@@ -128,20 +136,13 @@ class Projects:
 
 class Database:
     @cached_property
-    def X(self):
+    def distances(self):
         return pd.read_sql_query("select * from distances", con=self.engine)
-
-    @cached_property
-    def attributes(self):
-        return list(
-            pd.read_sql_query("select * from df limit 1", con=self.engine)
-            .drop("idx", axis=1)
-            .columns
-        )
 
     @property
     def attributes_l_r(self):
-        return [x + "_l" for x in self.attributes] + [x + "_r" for x in self.attributes]
+        return [x + "_l" for x in self.settings.other.attributes] + \
+            [x + "_r" for x in self.settings.other.attributes]
 
 
 class Model(Database, Tasks, Projects):
@@ -176,19 +177,8 @@ class Model(Database, Tasks, Projects):
         clf = ActiveLearner(
             estimator=self.estimator, query_strategy=uncertainty_sampling
         )
-        clf.teach(np.repeat(1, len(self.attributes)).reshape(1, -1), [1])
+        clf.teach(np.repeat(1, len(self.settings.other.attributes)).reshape(1, -1), [1])
         return clf
 
     def train(self, df):
-        self.clf.teach(X=self.X.loc[list(df["idx"])], y=df["label"])
-
-
-def url_checker(url):
-    try:
-        get = requests.get(url)
-        if get.status_code == 200:
-            return True
-        else:
-            return False
-    except Exception as e:
-        return False
+        self.clf.teach(X=self.distances.loc[list(df["idx"])], y=df["label"])

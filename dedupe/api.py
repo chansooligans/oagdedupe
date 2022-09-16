@@ -1,7 +1,6 @@
 from dedupe.base import BaseDistance, BaseCluster
 from dedupe.distance.string import AllJaro
 from dedupe.cluster.cluster import ConnectedComponents
-from dedupe.db import CreateDB
 from dedupe.settings import Settings
 
 import requests
@@ -46,7 +45,7 @@ class BaseModel(metaclass=ABCMeta):
 
 
 @dataclass
-class Dedupe(BaseModel, CreateDB):
+class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     def __post_init__(self):
@@ -94,7 +93,7 @@ class Dedupe(BaseModel, CreateDB):
     def train(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
 
-        idxmat = np.array(pd.read_sql("SELECT * FROM dedupe.coverage", con=self.engine))
+        idxmat = np.array(pd.read_sql("SELECT * FROM dedupe.comparisons", con=self.engine))
 
         logging.info("get distance matrix")
         self.distance.get_distmat(

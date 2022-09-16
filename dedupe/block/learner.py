@@ -220,7 +220,7 @@ class Coverage(DynamicProgram):
             self.get_pairs(names=x, table="blocks_sample", mem=False)  for x in schemes
         ]).drop(["blocked"], axis=1).drop_duplicates()
         res.to_sql(
-            "coverage", 
+            "comparisons", 
             schema=self.schema,
             if_exists="replace", 
             con=engine,
