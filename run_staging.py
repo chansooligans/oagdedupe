@@ -78,6 +78,14 @@ d.train()
 # %%
 from sqlalchemy import create_engine
 engine = create_engine("postgresql+psycopg2://username:password@172.22.39.26:8000/db")
+distances = pd.read_sql(
+    f"""
+        SELECT * FROM dedupe.distances
+    """, 
+    con=engine
+)
+
+# %%
 from dedupe.fastapi import utils as u
 m = u.Model(settings=settings)
 

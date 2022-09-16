@@ -13,71 +13,76 @@ class DistanceMixin:
     Mixin class for all distance computers
     """
 
-    def get_comparison_attributes(self, table, schema, engine, attributes):
-        
+    def sql_columns(self, attributes):
+        return f"""
+            {", ".join([f"t2.{x} as {x}_l" for x in list(attributes) + ["_index"]])}, 
+            {", ".join([f"t3.{x} as {x}_r" for x in list(attributes) + ["_index"]])} 
+        """
+    
+    def get_comparison_attributes(self, table, schema, attributes, engine):
+            
         if table == "comparisons":
-            return {
-                attribute: pd.read_sql(
-                    f"""
-                        SELECT t2.{attribute}, t3.{attribute}
-                        FROM {schema}.comparisons t1 
-                        LEFT JOIN {schema}.sample t2 
-                        ON t1._index_l = t2._index
-                        LEFT JOIN {schema}.sample t3 
-                        ON t1._index_r = t3._index
-                        ORDER BY t1._index_l, t1._index_r
-                    """, 
-                    con=engine
-                ).values
-                for attribute in attributes
-            }
+            return pd.read_sql(
+                f"""
+                    SELECT 
+                        {self.sql_columns(attributes=attributes)}
+                    FROM {schema}.comparisons t1 
+                    LEFT JOIN {schema}.sample t2 
+                    ON t1._index_l = t2._index
+                    LEFT JOIN {schema}.sample t3 
+                    ON t1._index_r = t3._index
+                    ORDER BY t1._index_l, t1._index_r
+                """, 
+                con=engine
+            )
+             
         elif table == "labels":
-            return {
-                attribute: pd.read_sql(
-                    f"""
-                        WITH 
-                            train AS (
-                                SELECT distinct on (_index) _index as d, *
-                                FROM {schema}.train
-                            )
-                        SELECT t2.{attribute}, t3.{attribute}
-                        FROM {schema}.labels t1 
-                        LEFT JOIN train t2 
-                        ON t1._index_l = t2._index
-                        LEFT JOIN train t3 
-                        ON t1._index_r = t3._index
-                        ORDER BY t1._index_l, t1._index_r
-                    """, 
-                    con=engine
-                ).values
-                for attribute in attributes
-            }
+            return pd.read_sql(
+                f"""
+                    WITH 
+                        train AS (
+                            SELECT distinct on (_index) _index as d, *
+                            FROM {schema}.train
+                        )
+                    SELECT 
+                        t1.label, {self.sql_columns(attributes=attributes)}
+                    FROM {schema}.labels t1 
+                    LEFT JOIN train t2 
+                    ON t1._index_l = t2._index
+                    LEFT JOIN train t3 
+                    ON t1._index_r = t3._index
+                    ORDER BY t1._index_l, t1._index_r
+                """, 
+                con=engine
+            )
 
     def get_chunks(self, lst, n):
         """Yield successive n-sized chunks from lst."""
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
-    def get_distmat(self, table, schema, engine, attributes) -> np.array:
+    def get_distmat(self, table, settings, engine) -> np.array:
         """for each candidate pair and attribute, compute distances"""
 
-        comparisons = pd.read_sql(
-            f"SELECT * FROM {schema}.{table} ORDER BY _index_l, _index_r",
-            con=engine
-        )
-        logging.info(f"making {len(comparisons)} comparions")
 
-        comparison_attributes = self.get_comparison_attributes(table, schema, engine, attributes)
+        comparison_attributes = self.get_comparison_attributes(
+            table=table, 
+            schema=settings.other.db_schema, 
+            attributes=settings.other.attributes, 
+            engine=engine, 
+        )
+
+        logging.info(f"making {len(comparison_attributes)} comparions")
 
         distances = pd.DataFrame(
             np.column_stack(
-                [comparisons.values] + 
+                [comparison_attributes.values] + 
                 [
-                    self.distance(comparison_attributes[attribute])
-                    for attribute in attributes
+                    self.distance(comparison_attributes[[f"{attribute}_l",f"{attribute}_r"]].values)
+                    for attribute in settings.other.attributes
                 ]
             ),
-            columns = list(comparisons.columns) + attributes
+            columns = list(comparison_attributes.columns) + settings.other.attributes
         )
         
         return distances

@@ -19,10 +19,12 @@ while u.url_checker(settings.other.label_studio.url) == False:
     time.sleep(3)
 
 m = u.Model(settings=settings)
+m.initialize_learner()
 
 
 @app.on_event("startup")
 async def startup():
+    m.initialize_project()
     m.generate_new_samples()
 
 

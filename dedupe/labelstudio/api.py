@@ -1,25 +1,23 @@
-# %%
+from dedupe.settings import Settings
+
 from dataclasses import dataclass
 from typing import Dict
 import requests
 import json
-import pandas as pd
-from dedupe.settings import Settings, get_settings_from_env
-
 
 @dataclass
 class Projects:
-    def list_projects(self):
+    def list_projects_from_ls(self):
         content = requests.get(f"{self.url}/api/projects", headers=self.headers)
         return json.loads(content.content)
 
-    def get_project(self, project_id):
+    def _get_project(self, project_id):
         resp = requests.get(
             f"{self.url}/api/projects/{project_id}", headers=self.headers
         )
         return json.loads(resp.content)
 
-    def create_project(
+    def create_project_on_ls(
         self, title: str = "new project", description: str = "description"
     ):
 
@@ -47,19 +45,12 @@ class Projects:
 
 @dataclass
 class Tasks:
-    def get_tasks(self, project_id):
+    def get_tasks_from_ls(self, project_id):
         query = {"project": project_id}
         resp = requests.get(f"{self.url}/api/tasks", headers=self.headers, data=query)
         return json.loads(resp.content)
 
-    # def get_tasks_from_fastAPI(self):
-    #     contents = requests.get(f"{self.settings.other.fast_api.url}/samples")
-    #     query_index = json.loads(contents.content)["query_index"]
-    #     df = pd.DataFrame(json.loads(contents.content)["samples"]).drop("label", axis=1)
-    #     df["idx"] = query_index
-    #     return df
-
-    def post_tasks(self, df, project_id):
+    def post_tasks_to_ls(self, df, project_id):
         for _, row in df.iterrows():
             query = {"project": project_id, "data": json.dumps({"item": row.to_dict()})}
 
@@ -71,25 +62,25 @@ class Tasks:
 
 @dataclass
 class Annotations:
-    def get_annotation(self, task_id):
+    def _get_annotation(self, task_id):
         return json.loads(
             requests.get(
                 f"{self.url}/api/tasks/{task_id}/annotations/", headers=self.headers
             ).content
         )
 
-    def get_all_annotations(self, project_id):
-        task_ids = [x["id"] for x in self.get_tasks(project_id=project_id)["tasks"]]
+    def _latest_annotation(self, annotations):
+        return sorted(annotations, key=lambda d: d["created_at"])[0]["result"][0][
+            "value"
+        ]["choices"][0]
+
+    def get_all_annotations_from_ls(self, project_id):
+        task_ids = [x["id"] for x in self.get_tasks_from_ls(project_id=project_id)["tasks"]]
         return {
             task_id: self.latest_annotation(self.get_annotation(task_id=task_id))
             for task_id in task_ids
             if self.get_annotation(task_id=task_id)
         }
-
-    def latest_annotation(self, annotations):
-        return sorted(annotations, key=lambda d: d["created_at"])[0]["result"][0][
-            "value"
-        ]["choices"][0]
 
 
 @dataclass
@@ -97,11 +88,11 @@ class Webhooks:
 
     settings: Settings
 
-    def get_webhooks(self):
+    def get_webhooks_from_ls(self):
         resp = requests.get(f"{self.url}/api/webhooks", headers=self.headers)
         return json.loads(resp.content)
 
-    def post_webhook(self, project_id):
+    def post_webhook_to_ls(self, project_id):
         query = {
             "project": project_id,
             "url": f"{self.settings.other.fast_api.url}/payload",
@@ -117,7 +108,6 @@ class Webhooks:
 @dataclass
 class LabelStudioAPI(Projects, Tasks, Annotations, Webhooks):
     settings: Settings
-
 
     @property
     def url(self) -> str:

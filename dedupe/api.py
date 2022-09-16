@@ -94,9 +94,8 @@ class Dedupe(BaseModel):
         logging.info("get distance matrix")
         distances = self.distance.get_distmat(
             table="comparisons",
-            schema=self.settings.other.db_schema,
             engine=self.engine,
-            attributes=self.settings.other.attributes,
+            settings=self.settings
         )
 
         distances.to_sql(

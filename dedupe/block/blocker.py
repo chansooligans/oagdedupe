@@ -144,9 +144,8 @@ class Initialize(ForwardIndex):
 
         labels = self.distance.get_distmat(
             table="labels",
-            schema=self.settings.other.db_schema,
+            settings=self.settings,
             engine=self.engine,
-            attributes=self.settings.other.attributes,
         )
 
         labels.to_sql(
