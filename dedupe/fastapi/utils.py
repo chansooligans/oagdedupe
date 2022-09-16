@@ -27,12 +27,6 @@ def url_checker(url):
     except Exception as e:
         return False
 
-
-class Query(BaseModel):
-    query_index: List[int]
-    samples: dict
-
-
 class Annotation(BaseModel):
     action: str
     annotation: dict
@@ -50,17 +44,22 @@ class Tasks:
         else:
             n_incomplete = tasks["total"] - tasks["total_annotations"]
             if n_incomplete < 5:
+                
+                # !
+                # !
+                # !
+                # INSERT CODE HERE TO RE-LEARN BLOCKS
+                # !
+                # !
+                # !
+
                 # train and get new samples
                 self.get_annotations()
                 self.post_tasks()
 
     def post_tasks(self):
-        query_index, df = self.get_samples(n_instances=10)
-        df["idx"] = query_index
-        df[["idx"]].to_sql(
-            "query_index", con=self.engine, if_exists="append", index=False
-        )
-        self.lsapi.post_tasks(df=df, project_id=self.proj["id"])
+        learning_samples = self.get_learning_samples(n_instances=10)
+        self.lsapi.post_tasks(df=learning_samples, project_id=self.proj["id"])
         return
 
     def get_annotations(self):
@@ -80,42 +79,25 @@ class Tasks:
     def label_map(self):
         return {"Match": 1, "Not a Match": 0, "Uncertain": 2}
 
-    def get_samples(self, n_instances=5):
+    def get_learning_samples(self, n_instances=5):
 
-        X_subset = (
-            self.distances
-            # .drop(ignore_idx, axis=0)
+        distances = self.get_distances()
+        samples = self.get_sample()
+
+        sample_idx, _ = self.clf.query(
+            distances[self.settings.other.attributes], 
+            n_instances=n_instances
         )
 
-        subset_idx, _ = self.clf.query(X_subset, n_instances=n_instances)
+        learning_samples = (
+            distances.loc[sample_idx, ["_index_l", "_index_r"]]
+            .merge(samples, how="left", left_on="_index_l", right_on="_index")
+            .drop(["_index"], axis=1)
+            .merge(samples, how="left", left_on="_index_r", right_on="_index", suffixes=["_l","_r"])
+            .drop(["_index","_index_l","_index_r"], axis=1)
+        )
 
-        query_index = X_subset.index[subset_idx]
-
-        samples = pd.read_sql_query(
-            f"""
-                WITH samples AS (
-                    SELECT * 
-                    FROM idxmat
-                    WHERE idx IN ({",".join([
-                        str(x)
-                        for x in query_index
-                    ])})
-                )
-                SELECT 
-                    t2.*,
-                    t3.*
-                FROM samples t1
-                LEFT JOIN df t2
-                    ON t1.idxl = t2.idx
-                LEFT JOIN df t3
-                    ON t1.idxr = t3.idx
-                """,
-            con=self.engine,
-        ).drop("idx", axis=1)
-
-        samples.columns = self.attributes_l_r
-
-        return query_index, samples
+        return learning_samples
 
 
 class Projects:
@@ -137,21 +119,30 @@ class Projects:
 
 class Database:
 
-    def get_labels(self):
+    def get_sample(self):
         return pd.read_sql(
-            "SELECT * FROM labels",
-            con=self.settings.other.path_database
+            f"SELECT * FROM {self.schema}.sample",
+            con=self.engine
         )
 
-    @cached_property
-    def distances(self):
-        return pd.read_sql_query("select * from distances", con=self.engine)
+    def get_labels(self):
+        return pd.read_sql(
+            f"SELECT * FROM {self.schema}.labels",
+            con=self.engine
+        )
 
-    @property
-    def attributes_l_r(self):
-        return [x + "_l" for x in self.settings.other.attributes] + \
-            [x + "_r" for x in self.settings.other.attributes]
-
+    def get_distances(self):
+        return pd.read_sql_query(
+            f"""
+            SELECT t1.*
+            FROM {self.schema}.distances t1
+            LEFT JOIN {self.schema}.labels t2
+                ON t1._index_l = t2._index_l
+                AND t1._index_r = t2._index_r
+            WHERE t2._index_l is null
+            """, 
+            con=self.engine
+        )
 
 class Model(Database, Tasks, Projects):
     def __init__(self, settings: Settings):
@@ -164,6 +155,8 @@ class Model(Database, Tasks, Projects):
         self.engine = create_engine(
             self.settings.other.path_database, echo=True
         )
+
+        self.schema = self.settings.other.db_schema
 
         assert self.settings.other.path_model is not None
         if self.settings.other.path_model.is_file():
@@ -187,5 +180,5 @@ class Model(Database, Tasks, Projects):
     
     def train(self):
         labels=self.get_labels()
-        self.clf.teach(labels[[self.settings.other.attributes]], labels["label"])
+        self.clf.teach(labels[self.settings.other.attributes], labels["label"])
         

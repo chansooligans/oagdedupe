@@ -52,12 +52,12 @@ class Tasks:
         resp = requests.get(f"{self.url}/api/tasks", headers=self.headers, data=query)
         return json.loads(resp.content)
 
-    def get_tasks_from_fastAPI(self):
-        contents = requests.get(f"{self.settings.other.fast_api.url}/samples")
-        query_index = json.loads(contents.content)["query_index"]
-        df = pd.DataFrame(json.loads(contents.content)["samples"]).drop("label", axis=1)
-        df["idx"] = query_index
-        return df
+    # def get_tasks_from_fastAPI(self):
+    #     contents = requests.get(f"{self.settings.other.fast_api.url}/samples")
+    #     query_index = json.loads(contents.content)["query_index"]
+    #     df = pd.DataFrame(json.loads(contents.content)["samples"]).drop("label", axis=1)
+    #     df["idx"] = query_index
+    #     return df
 
     def post_tasks(self, df, project_id):
         for _, row in df.iterrows():
@@ -130,4 +130,3 @@ class LabelStudioAPI(Projects, Tasks, Annotations, Webhooks):
         return {
             "Authorization": f"""Token {self.settings.other.label_studio.api_key}"""
         }
-

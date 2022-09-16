@@ -21,7 +21,7 @@ attributes = ["givenname", "surname", "suburb", "postcode"]
 
 
 settings = Settings(
-    name="test",  # the name of the project, a unique identifier
+    name="default",  # the name of the project, a unique identifier
     folder="./.dedupe",  # path to folder where settings and data will be saved
     other=SettingsOther(
         mem=False,
@@ -34,12 +34,13 @@ settings = Settings(
         path_model="./.dedupe/test_model",  # where to save the model
         label_studio={
             "port": 8089,  # label studio port
-            "api_key": "bc66ff77abeefc91a5fecd031fc0c238f9ad4814",  # label studio port
+            "api_key": "83e2bc3da92741aa41c272829558c596faefa745",  # label studio port
             "description": "gs test project",  # label studio description of project
         },
-        fast_api={"port": 8003},  # fast api port
+        fast_api={"port": 8090},  # fast api port
     ),
 )
+settings.save()
 
 # %%
 files = glob.glob(
@@ -77,15 +78,6 @@ d.train()
 # %%
 from sqlalchemy import create_engine
 engine = create_engine("postgresql+psycopg2://username:password@172.22.39.26:8000/db")
-pd.read_sql("""
-    SELECT *
-    FROM dedupe.distances
-""", con=engine)
-
-# %%
 from dedupe.fastapi import utils as u
 m = u.Model(settings=settings)
 
-# %%
-settings.path
-# %%

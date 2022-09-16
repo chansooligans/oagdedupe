@@ -17,7 +17,7 @@ lint:
 	flake8 --ignore W291 app --max-line-length=180
 
 label-studio:
-	docker run -it -p 8001:8080 -v `pwd`/cache/mydata:/label-studio/data \
+	docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
 	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
 	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
 	-v `pwd`/cache/myfiles:/label-studio/files \
