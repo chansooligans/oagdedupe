@@ -1,4 +1,5 @@
-from dedupe.labelstudio.api import LabelStudioAPI
+from dedupe.labelstudio.lsapi import LabelStudioAPI
+from dedupe.block import Blocker, Coverage
 from dedupe.settings import Settings
 
 from pydantic import BaseModel
@@ -32,7 +33,7 @@ class Annotation(BaseModel):
 class Projects:
 
     def _check_project_exists(self):
-        for proj in self.list_projects_from_ls()["results"]:
+        for proj in self.lsapi.list_projects_from_ls()["results"]:
             if proj["title"] == self.title:
                 return proj
         return False
@@ -40,7 +41,7 @@ class Projects:
     def _setup_project(self):
         proj = self.check_project_exists()
         if not proj:
-            new_proj = self.create_project_on_ls(
+            new_proj = self.lsapi.create_project_on_ls(
                 title=self.title, description=self.description
             )
             return new_proj
@@ -53,8 +54,8 @@ class Projects:
         self.title = self.settings.name
         self.description = self.settings.other.label_studio.description
         self.proj = self.setup_project()
-        if not self.get_webhooks_from_ls():
-            self.post_webhook_to_ls(project_id=self.proj["id"])
+        if not self.lsapi.get_webhooks_from_ls():
+            self.lsapi.post_webhook_to_ls(project_id=self.proj["id"])
 
 class Database:
 
@@ -99,20 +100,25 @@ class Tasks:
         ]
 
     def _get_annotations(self):
-        annotations = self.get_all_annotations_from_ls(project_id=self.proj["id"])
+        annotations = self.lsapi.get_all_annotations_from_ls(project_id=self.proj["id"])
         if annotations:
             tasks = [
                 [annotations[x["id"]]] + list(x["data"]["item"].values())
-                for x in self.get_tasks_from_ls(project_id=self.proj["id"])["tasks"]
+                for x in self.lsapi.get_tasks_from_ls(project_id=self.proj["id"])["tasks"]
                 if x["id"] in annotations.keys()
             ]
             df = pd.DataFrame(tasks, columns=["label"] + self.attributes_l_r)
             df["label"] = df["label"].map(self.label_map)
             df.to_sql("labels", con=self.engine, if_exists="append", index=False)
+            # !
+            # !
+            # # ALSO APPEND TO dedupe.train
+            # !
+            # !
 
     def _post_tasks(self):
         learning_samples = self._get_learning_samples(n_instances=10)
-        self.post_tasks_to_ls(df=learning_samples, project_id=self.proj["id"])
+        self.lsapi.post_tasks_to_ls(df=learning_samples, project_id=self.proj["id"])
         return
 
     def generate_new_samples(self):
@@ -121,7 +127,7 @@ class Tasks:
         if the number of tasks is less than X, re-trains models
         """
 
-        tasks = self.get_tasks_from_ls(project_id=self.proj["id"])
+        tasks = self.lsapi.get_tasks_from_ls(project_id=self.proj["id"])
 
         if len(tasks["tasks"]) == 0:
             self._post_tasks()
@@ -129,26 +135,26 @@ class Tasks:
             n_incomplete = tasks["total"] - tasks["total_annotations"]
             if n_incomplete < 5:
                 
-                # !
-                # !
-                # !
-                # INSERT CODE HERE TO RE-LEARN BLOCKS
-                # !
-                # !
-                # !
+                # draw new sample
+                self.blocker._init_sample()
+                self.cover.save()
 
                 # train and get new samples
                 self._get_annotations()
                 self._train()
                 self._post_tasks()
 
-class Model(LabelStudioAPI, Database, Tasks, Projects):
+class Model(Database, Tasks, Projects):
 
     def __init__(self, settings: Settings):
         self.settings = settings
         assert self.settings.other is not None
         assert self.settings.other.path_model is not None
         self.schema = self.settings.other.db_schema
+
+        self.lsapi = LabelStudioAPI(settings=settings)
+        self.blocker = Blocker(settings=self.settings)
+        self.coverage = Coverage(settings=self.settings)
     
     @cached_property
     def engine(self):
