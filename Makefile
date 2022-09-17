@@ -16,6 +16,10 @@ lint:
 	flake8 --ignore W291 dedupe --max-line-length=180
 	flake8 --ignore W291 app --max-line-length=180
 
+postgres:
+	. dedupe/postgres/postgres.sh;
+	python3 dedupe/postgres/postgres.py;
+
 label-studio:
 	docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
 	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \

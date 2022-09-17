@@ -3,6 +3,7 @@ import pandas as pd
 import itertools
 from sqlalchemy import create_engine
 from multiprocessing import Pool
+import logging
 
 def query(sql, engine_url):
     engine = create_engine(engine_url)
@@ -199,6 +200,7 @@ class Coverage(DynamicProgram):
     @cached_property
     def results(self):
         
+        logging.info(f"getting best conjunctions")
         p = Pool(10)
         res = p.map(
             self.getBest, 
@@ -223,6 +225,7 @@ class Coverage(DynamicProgram):
 
         schemes = self.results.loc[self.results["n_pairs"].cumsum()<100, "scheme"]
         
+        logging.info(f"saving best conjunctions")
         comparisons = pd.concat([
             self.get_pairs(names=x, table="blocks_sample", mem=False)  for x in schemes
         ]).drop(["blocked"], axis=1).drop_duplicates()

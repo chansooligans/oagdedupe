@@ -72,7 +72,7 @@ class DistanceMixin:
             engine=engine, 
         )
 
-        logging.info(f"making {len(comparison_attributes)} comparions")
+        logging.info(f"making {len(comparison_attributes)} comparions for table: {table}")
 
         distances = pd.DataFrame(
             np.column_stack(
