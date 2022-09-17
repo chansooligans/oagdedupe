@@ -34,5 +34,14 @@ engine.execute("""
     LANGUAGE plpython3u;
 """)
 
+engine.execute("""
+    CREATE FUNCTION exactmatch(s text) RETURNS text
+    AS $$
+    return s
+    $$ 
+    LANGUAGE plpython3u;
+""")
+
+
 
 

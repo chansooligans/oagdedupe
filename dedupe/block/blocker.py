@@ -21,7 +21,8 @@ class ForwardIndex:
             ("first_nchars", [2,4,6]),
             ("last_nchars", [2,4,6]),
             ("find_ngrams",[2,4,6]),
-            ("acronym", [None])
+            ("acronym", [None]),
+            ("exactmatch", [None])
         ]
 
     @cached_property
