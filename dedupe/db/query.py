@@ -10,13 +10,24 @@ class Database:
     settings: Settings
 
     def __post_init__(self):
+        self.engine_url = self.settings.other.path_database
         self.schema = self.settings.other.db_schema
         self.attributes = self.settings.other.attributes
+
+    def query(self, sql):
+        """
+        for parallel implementation, need to create separate engine 
+        for each process
+        """
+        engine = create_engine(self.engine_url)
+        res = pd.read_sql(sql, con=engine)
+        engine.dispose()
+        return res
 
     @cached_property
     def engine(self):
         return create_engine(
-            self.settings.other.path_database, echo=True
+            self.engine_url, echo=True
         )
 
     def get_labels(self):
@@ -68,9 +79,8 @@ class Database:
         """
         get all blocking schemes
         """
-        return pd.read_sql(
-            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1",
-            con=self.engine
+        return self.query(
+            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1"
         ).columns[1:]
 
     @cached_property
@@ -78,27 +88,23 @@ class Database:
         """
         sample_n used for reduction ratio computation
         """
-        return len(pd.read_sql(
-            f"SELECT * FROM {self.schema}.sample",
-            con=self.engine
+        return len(self.query(
+            f"SELECT * FROM {self.schema}.sample"
         ))
 
     @cached_property
     def tables(self):
         return {
-            "blocks_train":pd.read_sql(
-                f"SELECT * FROM {self.schema}.blocks_train", 
-                con=self.engine
+            "blocks_train":self.query(
+                f"SELECT * FROM {self.schema}.blocks_train"
             ),
-            "blocks_sample":pd.read_sql(
-                f"SELECT * FROM {self.schema}.blocks_sample", 
-                con=self.engine
+            "blocks_sample":self.query(
+                f"SELECT * FROM {self.schema}.blocks_sample"
             )
         }
 
     @cached_property
     def labels(self):
-        return pd.read_sql(
-            f"SELECT * FROM {self.schema}.labels", 
-            con=self.engine
+        return self.query(
+            f"SELECT * FROM {self.schema}.labels"
         )

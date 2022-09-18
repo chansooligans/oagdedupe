@@ -1,5 +1,7 @@
 from dedupe.db import Database
+from dedupe.settings import Settings
 
+from dataclasses import dataclass
 from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
@@ -28,41 +30,21 @@ class InvertedIndex:
         ])
 
     def inverted_index(self, names, table):
-        return pd.read_sql(
+        return self.db.query(
             f"""
             SELECT 
                 {self.signatures(names)}, 
                 ARRAY_AGG(_index ORDER BY _index asc)
             FROM {self.schema}.{table}
             GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
-            """, 
-            engine=self.engine
+            """
         )
 
-    def inverted_index_mem(self, names, table):
-        df = self.db.tables[table]
-        for x in names:
-            if "ngram" in x:
-                df = df.explode(x)
-        
-        # fast way to group:
-        arr_slice = df[["_index"]+names].sort_values(names).values
-        return pd.DataFrame(
-            [
-                (key,[_[0] for _ in list(group)]) 
-                for key,group in itertools.groupby(arr_slice, lambda x: tuple(x[1:]))
-            ],
-            columns=["signature","array_agg"]
-        )
-
-    def get_pairs(self, names, table, mem):
+    def get_pairs(self, names, table):
         """
         get inverted_index then for each array oof entity IDs, get distinct comparison pairs
         """
-        if mem == True:
-            inverted_index = self.inverted_index_mem(names, table)
-        else:
-            inverted_index = self.inverted_index(names, table)
+        inverted_index = self.inverted_index(names, table)
 
         return pd.DataFrame([ 
             y
@@ -70,7 +52,6 @@ class InvertedIndex:
             for y in list(itertools.combinations(x, 2))
         ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
 
-    
 class DynamicProgram(InvertedIndex):
     """
     for each block scheme, get the best conjunctions of lengths 1 to k using greedy approach
@@ -86,7 +67,7 @@ class DynamicProgram(InvertedIndex):
         """
 
         train_pairs, sample_pairs = [
-            self.get_pairs(names=names, table=table, mem=self.settings.other.mem)
+            self.get_pairs(names=names, table=table)
             for table in ["blocks_train","blocks_sample"]
         ]
 
@@ -145,16 +126,14 @@ class DynamicProgram(InvertedIndex):
 
         return dp
 
-
 class Coverage(DynamicProgram):
 
-    def __init__(self, settings):
+    def __init__(self, settings:Settings):
         self.settings = settings
-        self.engine_url = f"{settings.other.path_database}"
-        self.schema = settings.other.db_schema
-        self.db = Database(settings=settings)
+        self.engine_url = f"{self.settings.other.path_database}"
+        self.schema = self.settings.other.db_schema
+        self.db = Database(settings=self.settings)
 
-    
     @cached_property
     def results(self):
         

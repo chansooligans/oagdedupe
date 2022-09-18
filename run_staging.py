@@ -21,7 +21,6 @@ settings = Settings(
     name="default",  # the name of the project, a unique identifier
     folder="./.dedupe",  # path to folder where settings and data will be saved
     other=SettingsOther(
-        mem=False,
         n=5000,
         k=3,
         cpus=15,  # parallelize distance computations
@@ -53,7 +52,7 @@ d = Dedupe(settings=settings)
 d.initialize(df=None)
 
 # %%
-d.cover.results
+d.cover.score()
 
 # %%
 [d.cover.getBest(tuple([x])) for x in d.cover.blocking_schemes[0:10]]
