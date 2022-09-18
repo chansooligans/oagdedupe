@@ -52,6 +52,13 @@ for attr in settings.other.attributes:
 d = Dedupe(settings=settings)
 d.initialize(df=None)
 
+# %%
+d.cover.results
+
+# %%
+[d.cover.getBest(tuple([x])) for x in d.cover.blocking_schemes[0:10]]
+d.cover.score(tuple(["first_nchars_2_givenname"]))
+
 # %% [markdown]
 """
 ################################################################
@@ -70,5 +77,7 @@ testing to get m.distances on FULL data based on best conjunctions:
 d.fit()
 
 # %%
-pd.read_sql("select * from dedupe.full_distances limit 100", con=engine)
+pd.read_sql("select * from dedupe.blocks_sample", con=engine)
 
+
+# %%

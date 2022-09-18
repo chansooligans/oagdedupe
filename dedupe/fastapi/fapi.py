@@ -1,6 +1,7 @@
 from dedupe.labelstudio.lsapi import LabelStudioAPI
-from dedupe.fastapi.db import Database
-from dedupe.block import Blocker, Coverage
+from dedupe.db import Database
+from dedupe.block import Coverage
+from dedupe.db import Initialize
 from dedupe.settings import Settings
 
 from typing import List
@@ -148,7 +149,7 @@ class Tasks:
                 return
 
             # learn new block conjunctions
-            self.blocker._init_sample()
+            self.init._init_sample()
             self.cover.save_best()
 
             # re-train model
@@ -167,7 +168,7 @@ class Model(Tasks, Projects):
 
         self.db = Database(settings=settings)
         self.lsapi = LabelStudioAPI(settings=settings)
-        self.blocker = Blocker(settings=self.settings)
+        self.init = Initialize(settings=self.settings)
         self.coverage = Coverage(settings=self.settings)
     
     @cached_property

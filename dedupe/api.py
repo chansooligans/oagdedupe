@@ -3,6 +3,7 @@ from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
 from dedupe.block import Blocker, Coverage
+from dedupe.db import Initialize
 
 import requests
 import json
@@ -109,12 +110,18 @@ class Dedupe(BaseModel):
     def initialize(self, df):
         """learn p(match)"""
 
+        self.init = Initialize(settings=self.settings)
         logging.info(f"building tables in schema: {self.settings.other.db_schema}")
+        if df is not None:
+            if "_index" in df.columns:
+                raise ValueError("_index cannot be a column name")
+            self.init._init_df(df=df, attributes=self.settings.other.attributes)
+        self.init._init_sample()
+        self.init._init_train()
+        self.init._init_labels()
+        
         self.blocker = Blocker(settings=self.settings)
-        self.blocker.initialize(
-            df=df, 
-            attributes=self.settings.other.attributes
-        )
+        self.blocker.build_forward_indices()
         self.cover = Coverage(settings=self.settings)
         self.cover.save_best()
 

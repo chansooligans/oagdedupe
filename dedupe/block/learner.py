@@ -1,15 +1,11 @@
+from dedupe.db import Database
+
 from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
 from sqlalchemy import create_engine
 from multiprocessing import Pool
 import logging
-
-def query(sql, engine_url):
-    engine = create_engine(engine_url)
-    res = pd.read_sql(sql, con=engine)
-    engine.dispose()
-    return res
 
 class InvertedIndex:
     """
@@ -32,7 +28,7 @@ class InvertedIndex:
         ])
 
     def inverted_index(self, names, table):
-        return query(
+        return pd.read_sql(
             f"""
             SELECT 
                 {self.signatures(names)}, 
@@ -40,11 +36,11 @@ class InvertedIndex:
             FROM {self.schema}.{table}
             GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
             """, 
-            engine_url=self.engine_url
+            engine=self.engine
         )
 
     def inverted_index_mem(self, names, table):
-        df = self.tables[table]
+        df = self.db.tables[table]
         for x in names:
             if "ngram" in x:
                 df = df.explode(x)
@@ -94,11 +90,11 @@ class DynamicProgram(InvertedIndex):
             for table in ["blocks_train","blocks_sample"]
         ]
 
-        coverage = self.labels.merge(train_pairs, how = 'left').fillna(0)
+        coverage = self.db.labels.merge(train_pairs, how = 'left').fillna(0)
 
         return {
             "scheme": names,
-            "rr":1 - (len(sample_pairs) / ((self.n * (self.n-1))/2)),
+            "rr":1 - (len(sample_pairs) / ((self.db.n * (self.db.n-1))/2)),
             "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
             "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
             "n_pairs": len(sample_pairs),
@@ -129,7 +125,7 @@ class DynamicProgram(InvertedIndex):
                 self.score(
                     tuple(sorted(dp[n-1]["scheme"] + [x]))
                 ) 
-                for x in self.blocking_schemes
+                for x in self.db.blocking_schemes
                 if x not in dp[n-1]["scheme"]
             ]
 
@@ -156,47 +152,9 @@ class Coverage(DynamicProgram):
         self.settings = settings
         self.engine_url = f"{settings.other.path_database}"
         self.schema = settings.other.db_schema
+        self.db = Database(settings=settings)
 
-    @cached_property
-    def blocking_schemes(self):
-        """
-        get all blocking schemes
-        """
-        return query(
-            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1",
-            engine_url=self.engine_url
-        ).columns[1:]
-
-    @cached_property
-    def n(self):
-        """
-        sample_n used for reduction ratio computation
-        """
-        return len(query(
-            f"SELECT * FROM {self.schema}.sample",
-            engine_url=self.engine_url
-        ))
-
-    @cached_property
-    def tables(self):
-        return {
-            "blocks_train":query(
-                f"SELECT * FROM {self.schema}.blocks_train", 
-                engine_url=self.engine_url
-            ),
-            "blocks_sample":query(
-                f"SELECT * FROM {self.schema}.blocks_sample", 
-                engine_url=self.engine_url
-            )
-        }
-
-    @cached_property
-    def labels(self):
-        return query(
-            f"SELECT * FROM {self.schema}.labels", 
-            engine_url=self.engine_url
-        )
-
+    
     @cached_property
     def results(self):
         
@@ -204,7 +162,7 @@ class Coverage(DynamicProgram):
         p = Pool(10)
         res = p.map(
             self.getBest, 
-            [tuple([o]) for o in self.blocking_schemes]
+            [tuple([o]) for o in self.db.blocking_schemes]
         )
         p.close()
         p.join()
@@ -213,7 +171,9 @@ class Coverage(DynamicProgram):
             pd.DataFrame(r)
             for r in res
         ]).reset_index(drop=True)
-        return df.loc[df.astype(str).drop_duplicates().index].sort_values("rr", ascending=False)
+        return df.loc[
+            df.astype(str).drop_duplicates().index
+        ].sort_values("rr", ascending=False)
 
     def best_schemes(self, n_covered):
         return self.results.loc[
@@ -227,11 +187,6 @@ class Coverage(DynamicProgram):
         newtable="comparisons",
         n_covered=100
     ):
-        """
-        applies "best" blocking conjunctions on "sample" data
-        save output to "comparisons"
-        """
-
         comparisons = pd.concat([
             self.get_pairs(names=x, table=table, mem=False)  
             for x in self.best_schemes(n_covered=n_covered)
