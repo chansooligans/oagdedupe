@@ -1,13 +1,10 @@
 # %%
 from IPython import get_ipython
-
 if get_ipython() is not None:
     get_ipython().run_line_magic("load_ext", "autoreload")
     get_ipython().run_line_magic("autoreload", "2")
 
 # %%
-import glob
-import pandas as pd
 from dedupe.settings import (
     Settings,
     SettingsOther,
@@ -39,44 +36,24 @@ settings = Settings(
 settings.save()
 
 # %%
-files = glob.glob(
-    "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
-)[:2]
-df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
-for attr in settings.other.attributes:
-    df[attr] = df[attr].astype(str)
+# files = glob.glob(
+#     "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
+# )[:2]
+# df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
+# for attr in settings.other.attributes:
+#     df[attr] = df[attr].astype(str)
 
 # %%
 %%time
 d = Dedupe(settings=settings)
+# d.initialize(df=df)
 d.initialize(df=None)
 
 # %%
-d.cover.score()
-
-# %%
-[d.cover.getBest(tuple([x])) for x in d.cover.blocking_schemes[0:10]]
-d.cover.score(tuple(["first_nchars_2_givenname"]))
-
-# %% [markdown]
-"""
-################################################################
-################################################################
-################################################################
-
-testing to get m.distances on FULL data based on best conjunctions:
-
-################################################################
-################################################################
-################################################################
-"""
-
-# %%
 %%time
-d.fit()
+d.fit_blocks()
 
 # %%
-pd.read_sql("select * from dedupe.blocks_sample", con=engine)
-
+# res = d.predict()
 
 # %%

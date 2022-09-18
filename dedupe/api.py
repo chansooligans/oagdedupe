@@ -3,7 +3,8 @@ from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
 from dedupe.block import Blocker, Conjunctions
-from dedupe.db import Initialize
+from dedupe.db.initialize import Initialize
+from dedupe.db.database import Database
 
 import requests
 import json
@@ -38,7 +39,11 @@ class BaseModel(metaclass=ABCMeta):
         return
 
     @abstractmethod
-    def fit(self):
+    def fit_blocks(self):
+        return
+
+    @abstractmethod
+    def fit_model(self):
         return
 
     @abstractmethod
@@ -59,18 +64,23 @@ class Dedupe(BaseModel):
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
 
+        self.init = Initialize(settings=self.settings)
+        self.db = Database(settings=self.settings)
+        self.blocker = Blocker(settings=self.settings)
+        self.cover = Conjunctions(settings=self.settings)
+        self.distance = RayAllJaro(settings=self.settings)
+
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
 
-        idxmat, scores, y = self.fit()
+        idxmat, scores, y = self.fit_model()
 
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
             matches=idxmat[y == 1].astype(int), scores=scores[y == 1], rl=False
         )
 
-    def fit(self) -> Tuple[np.array, np.array, np.array]:
-        """learn p(match)"""
+    def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
         columns = [
@@ -88,29 +98,22 @@ class Dedupe(BaseModel):
             newtable="full_distances"
         )
 
+    def fit_model(self) -> Tuple[np.array, np.array, np.array]:
+        """learn p(match)"""
+
         # get predictions
         contents = requests.get(f"{self.settings.other.fast_api.url}/predict")
         results = json.loads(contents.content)
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = np.array(
-            pd.read_sql_query(
-                f"""
-            SELECT _index_l,_index_r
-            FROM {self.schema}.full_distances
-            ORDER BY _index_l,_index_r
-        """,
-                con=self.engine,
-            )
-        )
+        idxmat = self.db.get_full_comparison_indices()
 
         return idxmat, scores, np.array(y)
 
     def initialize(self, df):
         """learn p(match)"""
 
-        self.init = Initialize(settings=self.settings)
         logging.info(f"building tables in schema: {self.settings.other.db_schema}")
         if df is not None:
             if "_index" in df.columns:
@@ -120,13 +123,10 @@ class Dedupe(BaseModel):
         self.init._init_train()
         self.init._init_labels()
         
-        self.blocker = Blocker(settings=self.settings)
         self.blocker.build_forward_indices()
-        self.cover = Coverage(settings=self.settings)
         self.cover.save_best()
 
         logging.info("get distance matrix")
-        self.distance = RayAllJaro(settings=self.settings)
         self.distance.save_distances(
             table="comparisons",
             newtable="distances"

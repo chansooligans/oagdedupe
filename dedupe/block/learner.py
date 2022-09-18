@@ -1,5 +1,6 @@
-from dedupe.db import Database
+from dedupe.db.database import Database
 from dedupe.settings import Settings
+from dedupe.db.engine import Engine
 
 from dataclasses import dataclass
 from functools import lru_cache, cached_property
@@ -10,41 +11,12 @@ from multiprocessing import Pool
 import logging
 
 class InvertedIndex:
-    """
-    1. builds block collection (inverted index) where keys are signatures and values are arrays of entity IDs
-    2. gets comparison pairs and computes:
-        - reduction ratio
-        - positive coverage
-        - negative coverage
-    """
-
-    def check_unnest(self, name):
-        if "ngrams" in name:
-            return f"unnest({name})"
-        return name
-
-    def signatures(self, names):
-        return ", ".join([
-            f"{self.check_unnest(name)} as signature{i}" 
-            for i,name in  enumerate(names)
-        ])
-
-    def inverted_index(self, names, table):
-        return self.db.query(
-            f"""
-            SELECT 
-                {self.signatures(names)}, 
-                ARRAY_AGG(_index ORDER BY _index asc)
-            FROM {self.schema}.{table}
-            GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
-            """
-        )
 
     def get_pairs(self, names, table):
         """
-        get inverted_index then for each array oof entity IDs, get distinct comparison pairs
+        inverted index where keys are signatures and values are arrays of entity IDs
         """
-        inverted_index = self.inverted_index(names, table)
+        inverted_index = self.db.get_inverted_index(names,table)
 
         return pd.DataFrame([ 
             y
@@ -71,11 +43,16 @@ class DynamicProgram(InvertedIndex):
             for table in ["blocks_train","blocks_sample"]
         ]
 
-        coverage = self.db.labels.merge(train_pairs, how = 'left').fillna(0)
+        coverage = (
+            self.db
+            .get_labels()
+            .merge(train_pairs, how = 'left')
+            .fillna(0)
+        )
 
         return {
             "scheme": names,
-            "rr":1 - (len(sample_pairs) / ((self.db.n * (self.db.n-1))/2)),
+            "rr":1 - (len(sample_pairs) / ((self.n * (self.n-1))/2)),
             "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
             "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
             "n_pairs": len(sample_pairs),
@@ -126,10 +103,11 @@ class DynamicProgram(InvertedIndex):
 
         return dp
 
-class Conjunctions(DynamicProgram):
+class Conjunctions(DynamicProgram, Engine):
 
     def __init__(self, settings:Settings):
         self.settings = settings
+        self.n = self.settings.other.n
         self.engine_url = f"{self.settings.other.path_database}"
         self.schema = self.settings.other.db_schema
         self.db = Database(settings=self.settings)
@@ -167,7 +145,7 @@ class Conjunctions(DynamicProgram):
         n_covered=100
     ):
         comparisons = pd.concat([
-            self.get_pairs(names=x, table=table, mem=False)  
+            self.get_pairs(names=x, table=table)  
             for x in self.best_schemes(n_covered=n_covered)
         ]).drop(["blocked"], axis=1).drop_duplicates()
         
@@ -179,6 +157,3 @@ class Conjunctions(DynamicProgram):
             index=False
         )
     
-    @cached_property
-    def engine(self):
-        return create_engine(self.settings.other.path_database)

@@ -1,5 +1,6 @@
 from dedupe.settings import Settings
 from dedupe.distance.string import RayAllJaro
+from dedupe.db.engine import Engine
 
 from dataclasses import dataclass
 from sqlalchemy import create_engine
@@ -7,16 +8,12 @@ from functools import cached_property
 import logging
 
 @dataclass
-class Initialize:
+class Initialize(Engine):
     settings:Settings
 
     def __post_init__(self):
         self.schema = self.settings.other.db_schema
         self.distance = RayAllJaro(settings=self.settings)
-
-    @cached_property
-    def engine(self):
-        return create_engine(self.settings.other.path_database)
 
     def _init_df(self, df, attributes):
         logging.info(f"Building table {self.schema}.df...")

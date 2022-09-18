@@ -1,12 +1,5 @@
-from dedupe.settings import Settings
-from dedupe.block.schemes import BlockSchemes
-from dedupe.db.engine import Engine
-
 from typing import List, Optional, Tuple
-from dataclasses import dataclass
-from sqlalchemy import create_engine
 from functools import cached_property
-import logging
 
 class BlockSchemes:
 
@@ -59,43 +52,3 @@ class BlockSchemes:
             for scheme,nlist in self.block_schemes
             for n in nlist
         ]
-
-
-class ForwardIndex(BlockSchemes):
-    """
-    Builds Entity Index (Forward Index) where keys are entities and values are signatures
-    """
-
-    def query_blocks(self, table, columns):
-        return f"""
-            DROP TABLE IF EXISTS {self.schema}.blocks_{table};
-            
-            CREATE TABLE {self.schema}.blocks_{table} as (
-                SELECT 
-                    _index,
-                    {", ".join(columns)}
-                FROM {self.schema}.{table}
-            );
-        """
-
-    def build_forward_indices(self):
-        for table in ["sample","train"]:
-            logging.info(f"Building forward indices: {self.schema}.blocks_{table}")
-            self.engine.execute(self.query_blocks(
-                table=table,
-                columns=self.block_scheme_sql
-            ))
-
-    def build_forward_indices_full(self, columns):
-        logging.info(f"Building forward indices: {self.schema}.blocks_df")
-        self.engine.execute(self.query_blocks(
-            table="df",
-            columns=columns
-        ))    
-        
-@dataclass
-class Blocker(ForwardIndex, Engine):
-    settings: Settings
-
-    def __post_init__(self):
-        self.schema = self.settings.other.db_schema

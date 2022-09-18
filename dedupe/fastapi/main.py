@@ -37,8 +37,12 @@ async def predict():
 
     return dict(
         {
-            "predict_proba": m.clf.predict_proba(m.X).reshape(1, -1).tolist()[0],
-            "predict": m.clf.predict(m.X).tolist(),
+            "predict_proba": m.clf.predict_proba(
+                m.db.get_full_distances()
+            )[:,1].tolist(),
+            "predict": m.clf.predict(
+                m.db.get_full_distances()
+            ).tolist(),
         }
     )
 

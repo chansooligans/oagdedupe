@@ -1,8 +1,9 @@
 from dedupe.labelstudio.lsapi import LabelStudioAPI
-from dedupe.db import Database
-from dedupe.block import Conjunctions
-from dedupe.db import Initialize
+from dedupe.block import Blocker,Conjunctions
+from dedupe.db.database import Database
+from dedupe.db.initialize import Initialize
 from dedupe.settings import Settings
+from dedupe.db.engine import Engine
 
 from typing import List
 from modAL.models import ActiveLearner
@@ -150,6 +151,7 @@ class Tasks:
 
             # learn new block conjunctions
             self.init._init_sample()
+            self.blocker.build_forward_indices()
             self.cover.save_best()
 
             # re-train model
@@ -158,7 +160,7 @@ class Tasks:
             # post new active learning samples to label studio
             self._post_tasks()
 
-class Model(Tasks, Projects):
+class Model(Tasks, Projects, Engine):
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -169,14 +171,8 @@ class Model(Tasks, Projects):
         self.db = Database(settings=settings)
         self.lsapi = LabelStudioAPI(settings=settings)
         self.init = Initialize(settings=self.settings)
+        self.blocker = Blocker(settings=self.settings)
         self.coverage = Conjunctions(settings=self.settings)
-    
-    @cached_property
-    def engine(self):
-        logging.info(f"reading database: {self.settings.other.path_database}")
-        return create_engine(
-            self.settings.other.path_database, echo=True
-        )
 
     def initialize_learner(self):
         """
