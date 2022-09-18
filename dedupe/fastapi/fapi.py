@@ -149,7 +149,7 @@ class Tasks:
 
             # learn new block conjunctions
             self.blocker._init_sample()
-            self.cover.save()
+            self.cover.save_best()
 
             # re-train model
             self._train()

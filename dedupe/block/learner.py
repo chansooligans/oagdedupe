@@ -215,26 +215,36 @@ class Coverage(DynamicProgram):
         ]).reset_index(drop=True)
         return df.loc[df.astype(str).drop_duplicates().index].sort_values("rr", ascending=False)
 
-    def save(self):
+    def best_schemes(self, n_covered):
+        return self.results.loc[
+            self.results["n_pairs"].cumsum()<n_covered, 
+            "scheme"
+        ]
+
+    def save_best(
+        self, 
+        table="blocks_sample", 
+        newtable="comparisons",
+        n_covered=100
+    ):
         """
         applies "best" blocking conjunctions on "sample" data
         save output to "comparisons"
         """
 
-        engine = create_engine(self.engine_url)
-
-        schemes = self.results.loc[self.results["n_pairs"].cumsum()<100, "scheme"]
-        
-        logging.info(f"saving best conjunctions")
         comparisons = pd.concat([
-            self.get_pairs(names=x, table="blocks_sample", mem=False)  for x in schemes
+            self.get_pairs(names=x, table=table, mem=False)  
+            for x in self.best_schemes(n_covered=n_covered)
         ]).drop(["blocked"], axis=1).drop_duplicates()
         
         comparisons.to_sql(
-            "comparisons", 
+            newtable, 
             schema=self.schema,
             if_exists="replace", 
-            con=engine,
+            con=self.engine,
             index=False
         )
-        engine.dispose()
+    
+    @cached_property
+    def engine(self):
+        return create_engine(self.settings.other.path_database)

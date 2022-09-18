@@ -26,6 +26,21 @@ class ForwardIndex:
         ]
 
     @cached_property
+    def block_scheme_mapping(self):
+        """
+        helper to build column names in query
+        """
+        mapping = {}
+        for attribute in self.settings.other.attributes:
+            for scheme,nlist in self.block_schemes:
+                for n in nlist:
+                    if n:
+                        mapping[f"{scheme}_{n}_{attribute}"]=f"{scheme}({attribute},{n})"
+                    else:
+                        mapping[f"{scheme}_{attribute}"]=f"{scheme}({attribute})"
+        return mapping
+
+    @cached_property
     def block_scheme_sql(self):
         """
         helper to build column names in query
@@ -39,30 +54,32 @@ class ForwardIndex:
             for n in nlist
         ]
 
-    @property
-    def query_blocks(self):
+    def query_blocks(self, table, columns):
         return f"""
-            DROP TABLE IF EXISTS {self.schema}.blocks_sample;
-            DROP TABLE IF EXISTS {self.schema}.blocks_train;
+            DROP TABLE IF EXISTS {self.schema}.blocks_{table};
             
-            CREATE TABLE {self.schema}.blocks_sample as (
+            CREATE TABLE {self.schema}.blocks_{table} as (
                 SELECT 
                     _index,
-                    {", ".join(self.block_scheme_sql)}
-                FROM {self.schema}.sample
-            );
-
-            CREATE TABLE {self.schema}.blocks_train as (
-                SELECT 
-                    _index,
-                    {", ".join(self.block_scheme_sql)}
-                FROM {self.schema}.train
+                    {", ".join(columns)}
+                FROM {self.schema}.{table}
             );
         """
 
     def build_forward_indices(self):
-        logging.info(f"Building table {self.schema}.blocks_sample and {self.schema}.blocks_train ...")
-        self.engine.execute(self.query_blocks)
+        for table in ["sample","train"]:
+            logging.info(f"Building forward indices: {self.schema}.blocks_{table}")
+            self.engine.execute(self.query_blocks(
+                table=table,
+                columns=self.block_scheme_sql
+            ))
+
+    def build_forward_indices_full(self, columns):
+        logging.info(f"Building forward indices: {self.schema}.blocks_df")
+        self.engine.execute(self.query_blocks(
+            table="df",
+            columns=columns
+        ))
 
 class Initialize(ForwardIndex):
 
@@ -143,37 +160,25 @@ class Initialize(ForwardIndex):
             )
         """)
 
-        labels = self.distance.get_distmat(
+        self.distance.save_distances(
             table="labels",
-            settings=self.settings,
-            engine=self.engine,
-        )
-
-        labels.to_sql(
-            "labels",
-            schema=self.settings.other.db_schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False,
-            dtype={
-                x:sqlalchemy.types.INTEGER()
-                for x in ["_index_l","_index_r"]
-            }
+            newtable="labels"
         )
         
 @dataclass
 class Blocker(Initialize):
     settings: Settings
-    distance: Optional[BaseDistance] = RayAllJaro()
 
     def __post_init__(self):
         self.schema = self.settings.other.db_schema
+        self.distance = RayAllJaro(settings=self.settings)
 
     def initialize(self, df, attributes):
         
-        if "_index" in df.columns:
-            raise ValueError("_index cannot be a column name")
-        self._init_df(df=df, attributes=attributes)
+        if df is not None:
+            if "_index" in df.columns:
+                raise ValueError("_index cannot be a column name")
+            self._init_df(df=df, attributes=attributes)
 
         # build SQL tables
         self._init_sample()

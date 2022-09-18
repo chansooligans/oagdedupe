@@ -1,7 +1,8 @@
-from dedupe.base import BaseDistance, BaseCluster
+from dedupe.base import BaseCluster
 from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
+from dedupe.block import Blocker, Coverage
 
 import requests
 import json
@@ -29,7 +30,6 @@ class BaseModel(metaclass=ABCMeta):
     """project settings"""
     settings: Settings
     df: Optional[pd.DataFrame] = None
-    distance: Optional[BaseDistance] = RayAllJaro()
     cluster: Optional[BaseCluster] = ConnectedComponents()
 
     @abstractmethod
@@ -41,7 +41,7 @@ class BaseModel(metaclass=ABCMeta):
         return
 
     @abstractmethod
-    def train(self):
+    def initialize(self):
         return
 
 
@@ -71,6 +71,23 @@ class Dedupe(BaseModel):
     def fit(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
 
+        # fit block scheme conjunctions to full data
+        columns = [
+            f"{self.blocker.block_scheme_mapping[x]} as {x}"
+            for x in set(sum(self.cover.best_schemes(n_covered=5).values, []))
+        ]
+        self.blocker.build_forward_indices_full(
+            columns = columns
+        )
+        self.cover.save_best(table="blocks_df", newtable="full_comparisons", n_covered=5)
+
+        # get distances
+        self.distance.save_distances(
+            table="full_comparisons",
+            newtable="full_distances"
+        )
+
+        # get predictions
         contents = requests.get(f"{self.settings.other.fast_api.url}/predict")
         results = json.loads(contents.content)
         scores = np.array(results["predict_proba"])
@@ -79,8 +96,9 @@ class Dedupe(BaseModel):
         idxmat = np.array(
             pd.read_sql_query(
                 f"""
-            SELECT idxl, idxr
-            FROM idxmat
+            SELECT _index_l,_index_r
+            FROM {self.schema}.full_distances
+            ORDER BY _index_l,_index_r
         """,
                 con=self.engine,
             )
@@ -88,28 +106,26 @@ class Dedupe(BaseModel):
 
         return idxmat, scores, np.array(y)
 
-    def train(self) -> Tuple[np.array, np.array, np.array]:
+    def initialize(self, df):
         """learn p(match)"""
 
+        logging.info(f"building tables in schema: {self.settings.other.db_schema}")
+        self.blocker = Blocker(settings=self.settings)
+        self.blocker.initialize(
+            df=df, 
+            attributes=self.settings.other.attributes
+        )
+        self.cover = Coverage(settings=self.settings)
+        self.cover.save_best()
+
         logging.info("get distance matrix")
-        distances = self.distance.get_distmat(
+        self.distance = RayAllJaro(settings=self.settings)
+        self.distance.save_distances(
             table="comparisons",
-            engine=self.engine,
-            settings=self.settings
+            newtable="distances"
         )
 
-        distances.to_sql(
-            "distances",
-            schema=self.settings.other.db_schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False,
-            dtype={
-                x:sqlalchemy.types.INTEGER()
-                for x in ["_index_l","_index_r"]
-            }
-        )
-
+        
         
 
 
