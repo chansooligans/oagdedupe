@@ -71,3 +71,4 @@ d.fit()
 
 # %%
 pd.read_sql("select * from dedupe.full_distances limit 100", con=engine)
+
