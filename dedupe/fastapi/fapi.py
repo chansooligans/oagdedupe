@@ -1,6 +1,6 @@
 from dedupe.labelstudio.lsapi import LabelStudioAPI
 from dedupe.db import Database
-from dedupe.block import Coverage
+from dedupe.block import Conjunctions
 from dedupe.db import Initialize
 from dedupe.settings import Settings
 
@@ -169,7 +169,7 @@ class Model(Tasks, Projects):
         self.db = Database(settings=settings)
         self.lsapi = LabelStudioAPI(settings=settings)
         self.init = Initialize(settings=self.settings)
-        self.coverage = Coverage(settings=self.settings)
+        self.coverage = Conjunctions(settings=self.settings)
     
     @cached_property
     def engine(self):

@@ -126,7 +126,7 @@ class DynamicProgram(InvertedIndex):
 
         return dp
 
-class Coverage(DynamicProgram):
+class Conjunctions(DynamicProgram):
 
     def __init__(self, settings:Settings):
         self.settings = settings

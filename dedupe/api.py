@@ -2,7 +2,7 @@ from dedupe.base import BaseCluster
 from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
-from dedupe.block import Blocker, Coverage
+from dedupe.block import Blocker, Conjunctions
 from dedupe.db import Initialize
 
 import requests

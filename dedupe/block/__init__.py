@@ -1,2 +1,2 @@
 from .blocker import Blocker
-from .learner import Coverage
+from .learner import Conjunctions
