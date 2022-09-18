@@ -1,5 +1,6 @@
-from dedupe.fastapi import utils as u
+from dedupe.fastapi import fapi
 from dedupe.fastapi import app
+from dedupe.labelstudio import lsapi
 from dedupe.settings import get_settings_from_env
 from typing import Union
 
@@ -14,15 +15,17 @@ root.setLevel(logging.DEBUG)
 
 settings = get_settings_from_env()
 assert settings.other is not None
-while u.url_checker(settings.other.label_studio.url) == False:
+while fapi.url_checker(settings.other.label_studio.url) == False:
     logging.info("waiting for label studio...")
     time.sleep(3)
 
-m = u.Model(settings=settings)
+m = fapi.Model(settings=settings)
+m.initialize_learner()
 
 
 @app.on_event("startup")
 async def startup():
+    m.initialize_project()
     m.generate_new_samples()
 
 
@@ -34,14 +37,18 @@ async def predict():
 
     return dict(
         {
-            "predict_proba": m.clf.predict_proba(m.X).reshape(1, -1).tolist()[0],
-            "predict": m.clf.predict(m.X).tolist(),
+            "predict_proba": m.clf.predict_proba(
+                m.db.get_full_distances()
+            )[:,1].tolist(),
+            "predict": m.clf.predict(
+                m.db.get_full_distances()
+            ).tolist(),
         }
     )
 
 
 @app.post("/payload")
-async def payload(data: Union[u.Annotation, None]):
+async def payload(data):
     m.generate_new_samples()
 
 

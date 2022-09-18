@@ -1,9 +1,10 @@
-from dedupe.base import BaseBlocker, BaseDistance, BaseCluster
-from dedupe.block.blockers import TestBlocker
-from dedupe.distance.string import AllJaro
+from dedupe.base import BaseCluster
+from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
-from dedupe.db import CreateDB
 from dedupe.settings import Settings
+from dedupe.block import Blocker, Conjunctions
+from dedupe.db.initialize import Initialize
+from dedupe.db.database import Database
 
 import requests
 import json
@@ -14,6 +15,8 @@ import pandas as pd
 import numpy as np
 import ray
 import gc
+import sqlalchemy
+from sqlalchemy import create_engine
 import logging
 
 root = logging.getLogger()
@@ -28,13 +31,7 @@ class BaseModel(metaclass=ABCMeta):
 
     """project settings"""
     settings: Settings
-
     df: Optional[pd.DataFrame] = None
-    df2: Optional[pd.DataFrame] = None
-    attributes: Optional[List[str]] = None
-    attributes2: Optional[List[str]] = None
-    blocker: Optional[BaseBlocker] = TestBlocker()
-    distance: Optional[BaseDistance] = AllJaro()
     cluster: Optional[BaseCluster] = ConnectedComponents()
 
     @abstractmethod
@@ -42,123 +39,100 @@ class BaseModel(metaclass=ABCMeta):
         return
 
     @abstractmethod
-    def fit(self):
+    def fit_blocks(self):
         return
 
     @abstractmethod
-    def train(self):
+    def fit_model(self):
         return
 
     @abstractmethod
-    def _get_candidates(self):
+    def initialize(self):
         return
 
 
 @dataclass
-class Dedupe(BaseModel, CreateDB):
+class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     def __post_init__(self):
 
         self.settings.sync()
 
-        # if self.attributes is None:
-        #     self.attributes = self.df.columns
+        self.engine = create_engine(self.settings.other.path_database)
 
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
 
+        self.init = Initialize(settings=self.settings)
+        self.db = Database(settings=self.settings)
+        self.blocker = Blocker(settings=self.settings)
+        self.cover = Conjunctions(settings=self.settings)
+        self.distance = RayAllJaro(settings=self.settings)
+
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
 
-        idxmat, scores, y = self.fit()
+        idxmat, scores, y = self.fit_model()
 
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
             matches=idxmat[y == 1].astype(int), scores=scores[y == 1], rl=False
         )
 
-    def fit(self) -> Tuple[np.array, np.array, np.array]:
+    def fit_blocks(self):
+
+        # fit block scheme conjunctions to full data
+        columns = [
+            f"{self.blocker.block_scheme_mapping[x]} as {x}"
+            for x in set(sum(self.cover.best_schemes(n_covered=5).values, []))
+        ]
+        self.blocker.build_forward_indices_full(
+            columns = columns
+        )
+        self.cover.save_best(table="blocks_df", newtable="full_comparisons", n_covered=5)
+
+        # get distances
+        self.distance.save_distances(
+            table="full_comparisons",
+            newtable="full_distances"
+        )
+
+    def fit_model(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
 
+        # get predictions
         contents = requests.get(f"{self.settings.other.fast_api.url}/predict")
         results = json.loads(contents.content)
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = np.array(
-            pd.read_sql_query(
-                f"""
-            SELECT idxl, idxr
-            FROM idxmat
-        """,
-                con=self.engine,
-            )
-        )
+        idxmat = self.db.get_full_comparison_indices()
 
         return idxmat, scores, np.array(y)
 
-    def train(self) -> Tuple[np.array, np.array, np.array]:
+    def initialize(self, df):
         """learn p(match)"""
 
-        idxmat = self._get_candidates()
+        logging.info(f"building tables in schema: {self.settings.other.db_schema}")
+        if df is not None:
+            if "_index" in df.columns:
+                raise ValueError("_index cannot be a column name")
+            self.init._init_df(df=df, attributes=self.settings.other.attributes)
+        self.init._init_sample()
+        self.init._init_train()
+        self.init._init_labels()
+        
+        self.blocker.build_forward_indices()
+        self.cover.save_best()
 
         logging.info("get distance matrix")
-        X = self.distance.get_distmat(
-            self.df, self.df2, self.settings.other.attributes, self.attributes2, idxmat
+        self.distance.save_distances(
+            table="comparisons",
+            newtable="distances"
         )
 
-        logging.info("building SQLite database")
-        self.create_tables(
-            X=X, idxmat=idxmat, attributes=self.settings.other.attributes
-        )
-
-        # free memory from ram
-        del X, idxmat
-        gc.collect()
-
-    def _get_candidates(self) -> np.array:
-        """get candidate pairs"""
-
-        logging.info("get block maps")
-        block_maps = self.blocker.get_block_maps(
-            df=self.df, attributes=self.settings.other.attributes
-        )
-
-        logging.info("get candidate pairs")
-        return self.blocker.dedupe_get_candidates(block_maps)
+        
+        
 
 
-# @dataclass
-# class RecordLinkage(Dedupe, BaseModel):
-#     """General record linkage block, inherits from BaseModel.
-#     """
-
-#     def __post_init__(self):
-#         if (self.attributes is None) & (self.attributes2 is None):
-#             unq_cols = list(set(self.df.columns).intersection(self.df2.columns))
-#             self.attributes = self.attributes2 = unq_cols
-#         elif self.attributes2 is None:
-#             self.attributes2 = self.attributes
-
-#     def predict(self) -> pd.DataFrame:
-#         """get clusters of matches and return cluster IDs"""
-
-#         idxmat, scores, y = self.fit()
-#         return self.cluster.get_df_cluster(
-#             matches=idxmat[y == 1].astype(int),
-#             scores=scores[y == 1],
-#             rl=True
-#         )
-
-#     def _get_candidates(self) -> np.array:
-#         "get candidate pairs"
-
-#         block_maps1, block_maps2 = [
-#             self.blocker.get_block_maps(df=_, attributes=self.attributes)
-#             for _ in [self.df, self.df2]
-#         ]
-
-#         return self.blocker.rl_get_candidates(
-#             block_maps1, block_maps2
-#         )
