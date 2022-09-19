@@ -50,9 +50,12 @@ class DynamicProgram(InvertedIndex):
             .fillna(0)
         )
 
+        n = self.settings.other.n
+        n_comparisons = (n * (n-1))/2
+
         return {
             "scheme": names,
-            "rr":1 - (len(sample_pairs) / ((self.n * (self.n-1))/2)),
+            "rr":1 - (len(sample_pairs) / (n_comparisons)),
             "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
             "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
             "n_pairs": len(sample_pairs),
@@ -108,15 +111,13 @@ class Conjunctions(DynamicProgram, Engine):
     def __init__(self, settings:Settings):
         self.settings = settings
         self.n = self.settings.other.n
-        self.engine_url = f"{self.settings.other.path_database}"
-        self.schema = self.settings.other.db_schema
         self.db = Database(settings=self.settings)
 
     @cached_property
     def results(self):
         
         logging.info(f"getting best conjunctions")
-        p = Pool(10)
+        p = Pool(self.settings.other.ncpus)
         res = p.map(
             self.getBest, 
             [tuple([o]) for o in self.db.blocking_schemes]
@@ -151,7 +152,7 @@ class Conjunctions(DynamicProgram, Engine):
         
         comparisons.to_sql(
             newtable, 
-            schema=self.schema,
+            schema=self.settings.other.db_schema,
             if_exists="replace", 
             con=self.engine,
             index=False
