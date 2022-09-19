@@ -117,7 +117,7 @@ class Conjunctions(DynamicProgram, Engine):
     def results(self):
         
         logging.info(f"getting best conjunctions")
-        p = Pool(self.settings.other.ncpus)
+        p = Pool(self.settings.other.cpus)
         res = p.map(
             self.getBest, 
             [tuple([o]) for o in self.db.blocking_schemes]

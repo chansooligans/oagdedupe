@@ -142,4 +142,12 @@ class Database(Engine):
             f"SELECT * FROM {self.schema}.blocks_train LIMIT 1"
         ).columns[1:]
 
+    def get_clusters(self):
+        return self.query(f"""
+            SELECT * 
+            FROM {self.schema}.clusters t1
+            JOIN {self.schema}.df t2 
+                ON t1._index = t2._index
+            ORDER BY cluster
+        """)
     

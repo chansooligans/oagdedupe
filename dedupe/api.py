@@ -31,8 +31,6 @@ class BaseModel(metaclass=ABCMeta):
 
     """project settings"""
     settings: Settings
-    df: Optional[pd.DataFrame] = None
-    cluster: Optional[BaseCluster] = ConnectedComponents()
 
     @abstractmethod
     def predict(self):
@@ -69,6 +67,7 @@ class Dedupe(BaseModel):
         self.blocker = Blocker(settings=self.settings)
         self.cover = Conjunctions(settings=self.settings)
         self.distance = RayAllJaro(settings=self.settings)
+        self.cluster = ConnectedComponents(settings=self.settings)
 
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
@@ -77,7 +76,7 @@ class Dedupe(BaseModel):
 
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
-            matches=idxmat[y == 1].astype(int), scores=scores[y == 1], rl=False
+            matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
         )
 
     def fit_blocks(self):
@@ -107,9 +106,9 @@ class Dedupe(BaseModel):
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = self.db.get_full_comparison_indices()
+        idxmat = self.db.get_full_comparison_indices().values
 
-        return idxmat, scores, np.array(y)
+        return idxmat, scores, y
 
     def initialize(self, df):
         """learn p(match)"""

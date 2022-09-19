@@ -10,6 +10,9 @@ from dedupe.settings import (
     SettingsOther,
 )
 from dedupe.api import Dedupe
+
+import glob
+import pandas as pd
 from sqlalchemy import create_engine
 engine = create_engine("postgresql+psycopg2://username:password@172.22.39.26:8000/db")
 
@@ -36,24 +39,28 @@ settings = Settings(
 settings.save()
 
 # %%
-# files = glob.glob(
-#     "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
-# )[:2]
-# df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
-# for attr in settings.other.attributes:
-#     df[attr] = df[attr].astype(str)
+files = glob.glob(
+    "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
+)[:2]
+df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
+for attr in settings.other.attributes:
+    df[attr] = df[attr].astype(str)
+df = df.sample(100_000, random_state=1234)
+
 
 # %%
 %%time
 d = Dedupe(settings=settings)
 # d.initialize(df=df)
-d.initialize(df=None)
+# d.initialize(df=None)
 
 # %%
-%%time
-d.fit_blocks()
+# %%time
+# d.fit_blocks()
 
 # %%
-# res = d.predict()
+res = d.predict()
 
+# %%
+res.head(30)
 # %%
