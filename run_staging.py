@@ -26,7 +26,7 @@ settings = Settings(
         cpus=10,  # parallelize distance computations
         attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
         path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
-        schema="dedupe",
+        db_schema="dedupe",
         path_model="./.dedupe/test_model",  # where to save the model
         label_studio={
             "port": 8089,  # label studio port

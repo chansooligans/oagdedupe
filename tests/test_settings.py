@@ -16,9 +16,12 @@ def settings(tmp_path) -> Settings:
         name="test",
         folder=tmp_path,
         other=SettingsOther(
+            n=5000,
+            k=3,
             cpus=15,
             attributes=["name", "addr"],
             path_database=tmp_path / "test.db",
+            db_schema="dedupe",
             path_model=tmp_path / "test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
