@@ -14,8 +14,6 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import ray
-import gc
-import sqlalchemy
 from sqlalchemy import create_engine
 import logging
 
