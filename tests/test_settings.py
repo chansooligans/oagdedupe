@@ -50,22 +50,22 @@ def test_read(settings: Settings) -> None:
     assert settings_new.other == settings.other
 
 
-def test_sync(settings: Settings) -> None:
-    if settings.path.is_file():
-        settings.path.unlink()
-    settings.sync()
-    assert settings.path.is_file()
-    settings_new = Settings(name=settings.name, folder=settings.folder)
-    settings_new.sync()
-    assert settings_new.other == settings.other
+# def test_sync(settings: Settings) -> None:
+#     if settings.path.is_file():
+#         settings.path.unlink()
+#     settings.sync()
+#     assert settings.path.is_file()
+#     settings_new = Settings(name=settings.name, folder=settings.folder)
+#     settings_new.sync()
+#     assert settings_new.other == settings.other
 
 
-def test_set(settings: Settings) -> None:
-    assert settings.other is not None
-    settings.set("cpus", 1)
-    assert settings.other.cpus == 1
-    settings.set("cpus", 10)
-    assert settings.other.cpus == 10
+# def test_set(settings: Settings) -> None:
+#     assert settings.other is not None
+#     settings.set("cpus", 1)
+#     assert settings.other.cpus == 1
+#     settings.set("cpus", 10)
+#     assert settings.other.cpus == 10
 
 def test_get_settings_from_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(os, "environ", {"DEDUPER_NAME": "name from env", "DEDUPER_FOLDER": "folder/from/env"})

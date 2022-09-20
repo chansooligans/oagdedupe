@@ -63,4 +63,7 @@ res = d.predict()
 
 # %%
 res.head(30)
+
+# %%
+df[settings.other.attributes].duplicated().sum()
 # %%
