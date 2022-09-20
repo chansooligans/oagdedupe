@@ -57,6 +57,22 @@ d.initialize(df=df)
 # %%
 # %%time
 # d.fit_blocks()
+# res = d.predict()
+
+# %% [markdown]
+"""
+# Test Database using SQLAlchemy
+"""
 
 # %%
-res = d.predict()
+from dedupe.db.database import Database
+from sqlalchemy import select
+db = Database(settings=settings)
+
+
+# %%
+with db.Session() as session:
+    query = session.query(db.Train)
+    check = pd.read_sql(query.statement, query.session.bind)
+
+# %%

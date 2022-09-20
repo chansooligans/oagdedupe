@@ -44,14 +44,14 @@ class Database(Engine, Tables):
         return res
 
     def get_labels(self):
-        return self.query(
-            f"SELECT * FROM {self.schema}.labels"
-        )
+        with self.Session() as session:
+            query = session.query(self.Labels)
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_train(self):
-        return self.query(
-            f"SELECT * FROM {self.schema}.train"
-        )
+        with self.Session() as session:
+            query = session.query(self.Train)
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_inverted_index(self, names, table):
         return self.query(

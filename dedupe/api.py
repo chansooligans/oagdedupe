@@ -120,7 +120,6 @@ class Dedupe(BaseModel):
         self.init._init_sample()
         self.init._init_train()
         self.init._init_labels()
-        self.init.session.close()
         
         self.blocker.build_forward_indices()
         self.cover.save_best()

@@ -44,8 +44,7 @@ class DynamicProgram(InvertedIndex):
         ]
 
         coverage = (
-            self.db
-            .get_labels()
+            self.db.get_labels()
             .merge(train_pairs, how = 'left')
             .fillna(0)
         )
@@ -157,4 +156,11 @@ class Conjunctions(DynamicProgram, Engine):
             con=self.engine,
             index=False
         )
-    
+
+        with self.db.Session() as session:
+            session.bulk_insert_mappings(
+                self.db.Comparisons, 
+                comparisons.to_dict(orient='records')
+            )
+            session.commit()
+        

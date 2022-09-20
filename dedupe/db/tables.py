@@ -21,6 +21,7 @@ class Tables:
     @cached_property
     def Session(self):
         return sessionmaker(bind=self.engine)
+
     @cached_property
     def Base(self):
         return declarative_base(metadata=self.metadata_obj)
@@ -30,8 +31,15 @@ class Tables:
         return self.settings.other.attributes
 
     def init_tables(self):
-        return (self.maindf, self.Sample, self.Pos, self.Neg,
-        self.Train, self.Labels)
+        return (
+            self.maindf, 
+            self.Sample, 
+            self.Pos, 
+            self.Neg,
+            self.Train, 
+            self.Labels,
+            self.Comparisons
+        )
 
     @property
     def Attributes(self):
@@ -105,5 +113,37 @@ class Tables:
                 "_index_l":Column(Integer),
                 "_index_r":Column(Integer),
                 "label":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def Distances(self):
+        return type('distances', (self.Attributes, self.AttributeComparisons, self.Base), {
+                "__tablename__":"distances",
+                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
+                "_index_l":Column(Integer),
+                "_index_r":Column(Integer),
+                "label":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def FullDistances(self):
+        return type('full_distances', (self.Attributes, self.AttributeComparisons, self.Base), {
+                "__tablename__":"full_distances",
+                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
+                "_index_l":Column(Integer),
+                "_index_r":Column(Integer),
+                "label":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def Comparisons(self):
+        return type('comparisons', (self.Base, ), {
+                "__tablename__":"comparisons",
+                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
+                "_index_l":Column(Integer),
+                "_index_r":Column(Integer)
             }
         )

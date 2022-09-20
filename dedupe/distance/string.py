@@ -40,6 +40,15 @@ class DistanceMixin:
             ),
             columns = list(comps.columns) + self.attributes
         )
+
+    @property
+    def dist_tables(self):
+        return {
+            "labels":self.db.Labels,
+            "distances":self.db.Distances,
+            "full_distances":self.db.FullDistances
+        }
+
     
     def save_distances(self, table="comparisons", newtable="distances"):
 
@@ -47,18 +56,20 @@ class DistanceMixin:
             table=table
         )
 
-        distances.to_sql(
-            newtable,
-            schema=self.schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False,
-            dtype={
-                x:sqlalchemy.types.INTEGER()
-                for x in ["_index_l","_index_r"]
-            }
-        )
+        distances[["_index_l","_index_r"]] = distances[["_index_l","_index_r"]].astype(int)
+        
+        # drop table
+        self.db.engine.execute(f"""
+            TRUNCATE TABLE {self.schema}.{newtable};
+        """)
 
+        # insert
+        with self.db.Session() as session:
+            session.bulk_insert_mappings(
+                self.dist_tables[newtable], 
+                distances.to_dict(orient='records')
+            )
+            session.commit()
 
 @ray.remote
 def ray_distance(pairs):
