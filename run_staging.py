@@ -51,7 +51,7 @@ df = df.sample(100_000, random_state=1234)
 # %%
 %%time
 d = Dedupe(settings=settings)
-# d.initialize(df=df)
+d.initialize(df=df)
 # d.initialize(df=None)
 
 # %%
@@ -60,10 +60,3 @@ d = Dedupe(settings=settings)
 
 # %%
 res = d.predict()
-
-# %%
-res.head(30)
-
-# %%
-df[settings.other.attributes].duplicated().sum()
-# %%

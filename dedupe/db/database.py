@@ -1,5 +1,6 @@
 from dedupe.settings import Settings
 from dedupe.db.engine import Engine
+from dedupe.db.tables import Tables
 
 from functools import cached_property
 from sqlalchemy import create_engine
@@ -24,7 +25,7 @@ def lr_columns(attributes):
     """
 
 @dataclass
-class Database(Engine):
+class Database(Engine, Tables):
     settings: Settings
 
     def __post_init__(self):

@@ -1,96 +1,102 @@
 from dedupe.settings import Settings
 from dedupe.distance.string import RayAllJaro
-from dedupe.db.engine import Engine
+from dedupe.db.tables import Tables
+from sqlalchemy import select, insert, func
+from sqlalchemy.schema import CreateSchema
+
 
 from dataclasses import dataclass
-from sqlalchemy import create_engine
-from functools import cached_property
 import logging
 
 @dataclass
-class Initialize(Engine):
+class Initialize(Tables):
     settings:Settings
 
     def __post_init__(self):
         self.schema = self.settings.other.db_schema
+        self.attributes = self.settings.other.attributes + ["_index"]
         self.distance = RayAllJaro(settings=self.settings)
+        self.init_tables()
+
+        if not self.engine.dialect.has_schema(self.engine, self.schema):
+            self.engine.execute(CreateSchema(self.schema))
+
+        # delete all
+        self.Base.metadata.drop_all(self.engine)
+
+        # create all
+        self.Base.metadata.create_all(self.engine, checkfirst=True)
+
+        self.session = self.Session()
 
     def _init_df(self, df, attributes):
         logging.info(f"Building table {self.schema}.df...")
-        self.engine.execute(f"CREATE SCHEMA IF NOT EXISTS {self.schema}")
-        df[attributes].to_sql(
-            "df", 
-            schema=self.schema, 
-            con=self.engine, 
-            if_exists="replace", 
-            index=False
+        self.session.bulk_insert_mappings(
+            self.maindf, 
+            df.to_dict(orient='records')
         )
-        self.engine.execute(f"ALTER TABLE {self.schema}.df ADD _index SERIAL PRIMARY KEY")
-        
+        self.session.commit()
+
     def _init_sample(self):
         logging.info(f"Building table {self.schema}.sample...")
-        self.engine.execute(f"""
-            DROP TABLE IF EXISTS {self.schema}.sample;
-            CREATE TABLE {self.schema}.sample AS (
-                SELECT * FROM {self.schema}.df
-                ORDER BY random() 
-                LIMIT {self.settings.other.n}
-            )
-        """)
+        sample = select([self.maindf]).order_by(func.random()).limit(10)
+        self.session.execute(
+            insert(self.Sample).from_select(sample.subquery(1).c, sample)
+        )
+        self.session.commit()
+
+    def _init_pos(self):
+        # create pos
+        pos = select([self.maindf]).order_by(func.random()).limit(1)
+        res = self.session.execute(pos).first()
+        for _ in range(4):
+            pos = self.Pos()
+            for attr in self.attributes:
+                setattr(pos, attr, getattr(res[0], attr))
+            setattr(pos, "label", 1)
+            self.session.add(pos)
+        self.session.commit()
+
+    def _init_neg(self):
+        # create neg
+        neg = select([self.maindf]).order_by(func.random()).limit(10)
+        records = self.session.execute(neg).all()
+        for r in records:
+            neg = self.Neg()
+            for attr in self.attributes:
+                setattr(neg, attr, getattr(r[0], attr))
+            setattr(neg, "label", 0)
+            self.session.add(neg)
+        self.session.commit()
 
     def _init_train(self):
+        
         logging.info(f"Building table {self.schema}.train...")
-        self.engine.execute(f"""
-            DROP TABLE IF EXISTS {self.schema}.pos;
-            CREATE TABLE {self.schema}.pos AS (
-                SELECT *
-                FROM {self.schema}.df
-                ORDER BY random()
-                LIMIT 1
-            );
-            DROP TABLE IF EXISTS {self.schema}.neg;
-            CREATE TABLE {self.schema}.neg AS (
-                SELECT *
-                FROM {self.schema}.df
-                WHERE _index NOT IN (
-                    SELECT _index from {self.schema}.pos
-                )
-                ORDER BY random()
-                LIMIT 8
-            );
-            DROP TABLE IF EXISTS {self.schema}.train;
-            CREATE TABLE {self.schema}.train AS (
-                SELECT {self.schema}.pos.*
-                FROM {self.schema}.pos 
-                CROSS JOIN generate_series(1,4) as x
-                UNION ALL
-                SELECT *
-                FROM {self.schema}.neg
-            );
-        """)
+        self._init_pos()
+        self._init_neg()
+        
+        # create train
+        for tab in [self.Pos, self.Neg]:
+            records = self.session.query(tab).all()
+            for r in records:
+                train = self.Train()
+                for attr in self.attributes:
+                    setattr(train, attr, getattr(r, attr))
+                self.session.add(train)
+        self.session.commit()
+
 
     def _init_labels(self):
         logging.info(f"Building table {self.schema}.labels...")
-        self.engine.execute(f"""
-            DROP TABLE IF EXISTS {self.schema}.labels;
-            CREATE TABLE {self.schema}.labels AS (
-                WITH 
-                    positive_labels AS (
-                        SELECT _index as _index_l, _index  as _index_r, 1 as label
-                        FROM {self.schema}.pos
-                        CROSS JOIN generate_series(1,10) as x
-                    ),
-                    negative_labels AS (
-                        SELECT t1._index as _index_l, t2._index as _index_r, 0 as label
-                        FROM {self.schema}.neg AS t1
-                        CROSS JOIN {self.schema}.neg AS t2 
-                        WHERE t1._index < t2._index
-                    )
-                SELECT * FROM positive_labels    
-                UNION ALL
-                SELECT * FROM negative_labels
-            )
-        """)
+        for l,tab in [(1,self.Pos), (0,self.Neg)]:
+            records = self.session.query(tab).all()
+            for r in records:
+                label = self.Labels()
+                label._index_l = r._index
+                label._index_r = r._index
+                label.label = l
+                self.session.add(label)
+        self.session.commit()
 
         self.distance.save_distances(
             table="labels",
