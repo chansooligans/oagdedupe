@@ -25,24 +25,26 @@ from dedupe.settings import (
     SettingsOther,
 )
 
-attributes = ["givenname", "surname", "suburb", "postcode"]
-
 settings = Settings(
-    name="test",  # the name of the project, a unique identifier
+    name="default",  # the name of the project, a unique identifier
     folder="./.dedupe",  # path to folder where settings and data will be saved
     other=SettingsOther(
-        cpus=15,  # parallelize distance computations
-        attributes=attributes,  # list of entity attribute names
-        path_database="./.dedupe/test.db",  # where to save the sqlite database holding intermediate data
+        n=5000,
+        k=3,
+        cpus=20,  # parallelize distance computations
+        attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
+        path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
+        db_schema="dedupe",
         path_model="./.dedupe/test_model",  # where to save the model
         label_studio={
             "port": 8089,  # label studio port
-            "api_key": "bc66ff77abeefc91a5fecd031fc0c238f9ad4814",  # label studio port
-            "description": "gs test project",  # label studio description of project
+            "api_key": "83e2bc3da92741aa41c272829558c596faefa745",  # label studio port
+            "description": "chansoo test project",  # label studio description of project
         },
-        fast_api={"port": 8003},  # fast api port
+        fast_api={"port": 8090},  # fast api port
     ),
 )
+settings.save()
 ```
 See [dedupe/settings.py](./dedupe/settings.py) for the full settings code.
 
@@ -54,47 +56,23 @@ It uses a manual blocking scheme to narrow possible comparisons.
 
 ```py
 import glob
+import pandas as pd
 from dedupe.api import Dedupe
-from dedupe.distance.string import RayAllJaro
-from dedupe.block import blockers
-from dedupe.block import algos
 
 files = glob.glob(
     "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
-)[:1]
-
-
-df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True).iloc[:10000]
-
-for attr in attributes:
+)[:2]
+df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
+for attr in settings.other.attributes:
     df[attr] = df[attr].astype(str)
+df = df.sample(100_000, random_state=1234)
 
-
-manual_blocker = blockers.ManualBlocker(
-    [
-        [
-            (algos.FirstNLetters(N=2), "givenname"),
-            (algos.FirstNLetters(N=2), "surname"),
-            (algos.ExactMatch(), "suburb"),
-        ],
-        [
-            (algos.FirstNLetters(N=2), "givenname"),
-            (algos.FirstNLetters(N=2), "surname"),
-            (algos.ExactMatch(), "postcode"),
-        ],
-    ]
-)
-
-d = Dedupe(
-    settings=settings, # defined above
-    df=df,
-    blocker=manual_blocker,
-    distance=RayAllJaro(),
-)
+d = Dedupe(settings=settings)
+d.initialize(df=df)
 
 # %%
 # pre-processes data and stores pre-processed data, comparisons, ID matrices in SQLite db
-d.train()
+d.fit_blocks()
 ```
 
 #### 4. start fastAPI
