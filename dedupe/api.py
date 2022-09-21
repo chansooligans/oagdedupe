@@ -4,7 +4,7 @@ from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
 from dedupe.block import Blocker, Conjunctions
 from dedupe.db.initialize import Initialize
-from dedupe.db.database import Database
+from dedupe.db.database import DatabaseORM
 
 import requests
 import json
@@ -59,19 +59,18 @@ class Dedupe(BaseModel):
 
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
-
-        self.init = Initialize(settings=self.settings)
-        self.db = Database(settings=self.settings)
+        
+        self.orm = DatabaseORM(settings=self.settings)
         self.blocker = Blocker(settings=self.settings)
         self.cover = Conjunctions(settings=self.settings)
         self.distance = RayAllJaro(settings=self.settings)
-        self.cluster = ConnectedComponents(settings=self.settings)
 
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
 
         idxmat, scores, y = self.fit_model()
 
+        self.cluster = ConnectedComponents(settings=self.settings)
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
             matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
@@ -104,12 +103,14 @@ class Dedupe(BaseModel):
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = self.db.get_full_comparison_indices().values
+        idxmat = self.orm.get_full_comparison_indices().values
 
         return idxmat, scores, y
 
     def initialize(self, df):
         """learn p(match)"""
+
+        self.init = Initialize(settings=self.settings)
 
         logging.info(f"building tables in schema: {self.settings.other.db_schema}")
         if df is not None:

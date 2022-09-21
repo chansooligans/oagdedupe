@@ -1,8 +1,9 @@
 from dedupe.settings import Settings
-from dedupe.db.engine import Engine
+from dedupe.db.tables import Tables
 
 from functools import cached_property
 from sqlalchemy import create_engine
+from sqlalchemy.orm import aliased
 from dataclasses import dataclass
 import pandas as pd
 
@@ -24,13 +25,12 @@ def lr_columns(attributes):
     """
 
 @dataclass
-class Database(Engine):
+class DatabaseCore:
     settings: Settings
 
     def __post_init__(self):
         self.engine_url = self.settings.other.path_database
         self.schema = self.settings.other.db_schema
-        self.attributes = self.settings.other.attributes
 
     def query(self, sql):
         """
@@ -44,54 +44,97 @@ class Database(Engine):
 
     def get_labels(self):
         return self.query(
-            f"SELECT * FROM {self.schema}.labels"
-        )
-
-    def get_train(self):
-        return self.query(
-            f"SELECT * FROM {self.schema}.train"
+            f"""
+            SELECT * FROM dedupe.labels
+            """
         )
 
     def get_inverted_index(self, names, table):
         return self.query(
             f"""
-            SELECT 
-                {signatures(names)}, 
-                ARRAY_AGG(_index ORDER BY _index asc)
-            FROM {self.schema}.{table}
-            GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
+            WITH 
+                inverted_index AS (
+                    SELECT 
+                        {signatures(names)}, 
+                        ARRAY_AGG(_index ORDER BY _index asc) as array_agg
+                    FROM {self.schema}.{table}
+                    GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
+                )
+            SELECT * 
+            FROM inverted_index
+            WHERE array_length(array_agg, 1) > 1
             """
         )
+
+    @cached_property
+    def blocking_schemes(self):
+        """
+        get all blocking schemes
+        """
+        return self.query(
+            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1"
+        ).columns[1:]
+
+
+@dataclass
+class DatabaseORM(Tables, DatabaseCore):
+    settings: Settings
+
+    def __post_init__(self):
+        self.engine_url = self.settings.other.path_database
+        self.schema = self.settings.other.db_schema
+        self.attributes = self.settings.other.attributes
+
+    @cached_property
+    def engine(self):
+        return create_engine(self.settings.other.path_database)
+
+    def get_train(self):
+        with self.Session() as session:
+            query = session.query(self.Train)
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_distances(self):
-        return self.query(
-            f"""
-            SELECT t1.*
-            FROM {self.schema}.distances t1
-            LEFT JOIN {self.schema}.labels t2
-                ON t1._index_l = t2._index_l
-                AND t1._index_r = t2._index_r
-            WHERE t2._index_l is null
-            """
-        )
+        """
+        get unlabelled distances for sample data
+        """
+        with self.Session() as session:
+            query = (
+                session
+                .query(self.Distances)
+                .join(
+                    self.Labels, 
+                    (self.Distances._index_l==self.Labels._index_l) & 
+                    (self.Distances._index_r==self.Labels._index_r), 
+                    isouter=True)
+                .filter(self.Labels.label == None)
+                )
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_full_distances(self):
-        return self.query(
-            f"""
-            SELECT {", ".join(self.attributes)}
-            FROM {self.schema}.full_distances
-            ORDER BY _index_l, _index_r
-            """
-        )
+        """
+        get distances for full data
+        """
+        with self.Session() as session:
+            query = (
+                session
+                .query(
+                    *(
+                        getattr(self.FullDistances,x) 
+                        for x in self.attributes
+                    )
+                )
+                )
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_full_comparison_indices(self):
-        return self.query(
-            f"""
-            SELECT _index_l,_index_r
-            FROM {self.schema}.full_distances
-            ORDER BY _index_l,_index_r
-            """
-        )
+        with self.Session() as session:
+            query = (
+                session
+                .query(self.FullDistances._index_l, self.FullDistances._index_r)
+                .order_by(self.FullDistances._index_l, self.FullDistances._index_r)
+                )
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_compare_cols(self):
         columns = [
@@ -105,49 +148,73 @@ class Database(Engine):
     def get_comparison_attributes(self, table):
 
         fields_table = {
-            "comparisons":"sample",
-            "full_comparisons":"df",
-            "labels":"train"
+            "comparisons":(self.Comparisons,self.Sample),
+            "full_comparisons":(self.FullComparisons,self.maindf)
         }
-        
-        fields = f"SELECT * FROM {self.schema}.{fields_table[table]}"
-        columns = lr_columns(attributes=self.attributes)
-        
-        if table == "labels":
-            fields = f"""SELECT distinct on (_index) _index as d, *
-                    FROM {self.schema}.{fields_table[table]}"""
-            columns = f"t1.label, {columns}"
+        pairs, data = fields_table[table]
 
-        return self.query(f"""
-            WITH 
-                fields AS (
-                    {fields}
+        with self.Session() as session:
+            dataL = aliased(data)
+            dataR = aliased(data)
+            query = (
+                session
+                .query(
+                    pairs._label_key,
+                    *(
+                        getattr(dataL,x).label(f"{x}_l")
+                        for x in self.settings.other.attributes + ["_index"]
+                    ),
+                    *(
+                        getattr(dataR,x).label(f"{x}_r")
+                        for x in self.settings.other.attributes + ["_index"]
+                    ),
                 )
-            SELECT 
-                {columns}
-            FROM {self.schema}.{table} t1 
-            LEFT JOIN fields t2 
-            ON t1._index_l = t2._index
-            LEFT JOIN fields t3 
-            ON t1._index_r = t3._index
-            ORDER BY t1._index_l, t1._index_r
-        """)
+                .outerjoin(dataL, pairs._index_l==dataL._index)
+                .outerjoin(dataR, pairs._index_r==dataR._index)
+                .order_by(pairs._index_l, pairs._index_r)
+                )
 
-    @cached_property
-    def blocking_schemes(self):
-        """
-        get all blocking schemes
-        """
-        return self.query(
-            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1"
-        ).columns[1:]
+            return (
+                pd.read_sql(query.statement, query.session.bind)
+                .drop(["_label_key"], axis=1)
+            )
+
+    def get_label_attributes(self):
+
+        with self.Session() as session:
+            
+            dataL = session.query(self.Train).distinct(self.Train._index).subquery()
+            dataR = session.query(self.Train).distinct(self.Train._index).subquery()
+            
+            query = (
+                session
+                .query(
+                    self.Labels.label,
+                    *(
+                        getattr(dataL.c,x).label(f"{x}_l")
+                        for x in self.settings.other.attributes
+                    ),
+                    dataL.c._index["_index"].label("_index_l"),
+                    *(
+                        getattr(dataR.c,x).label(f"{x}_r")
+                        for x in self.settings.other.attributes
+                    ),
+                    dataR.c._index["_index"].label("_index_r"),
+                )
+                .outerjoin(dataL, self.Labels._index_l==dataL.c._index["_index"])
+                .outerjoin(dataR, self.Labels._index_r==dataR.c._index["_index"])
+                .order_by(self.Labels._index_l, self.Labels._index_r)
+                )
+
+            return pd.read_sql(query.statement, query.session.bind)
 
     def get_clusters(self):
-        return self.query(f"""
-            SELECT * 
-            FROM {self.schema}.clusters t1
-            JOIN {self.schema}.df t2 
-                ON t1._index = t2._index
-            ORDER BY cluster
-        """)
-    
+        with self.Session() as session:
+            query = (
+                session
+                .query(self.Clusters.cluster, self.maindf)
+                .join(self.maindf, self.Clusters._index == self.maindf._index)
+                .order_by(self.Clusters.cluster)
+                )
+            return pd.read_sql(query.statement, query.session.bind)
+        

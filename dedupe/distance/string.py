@@ -1,13 +1,8 @@
 from dedupe.base import BaseDistance
-from dedupe.db.database import Database
-from dedupe.db.engine import Engine
-
-from functools import cached_property
+from dedupe.db.database import DatabaseORM
 from dataclasses import dataclass
 from jellyfish import jaro_winkler_similarity
 import ray
-from sqlalchemy import create_engine
-import sqlalchemy
 import numpy as np
 import pandas as pd
 import logging
@@ -26,7 +21,10 @@ class DistanceMixin:
     def get_distmat(self, table) -> np.array:
         """for each candidate pair and attribute, compute distances"""
 
-        comps = self.db.get_comparison_attributes(table=table)
+        if table == "labels":
+            comps = self.orm.get_label_attributes()
+        else:
+            comps = self.orm.get_comparison_attributes(table=table)
 
         logging.info(f"making {len(comps)} comparions for table: {table}")
 
@@ -40,6 +38,15 @@ class DistanceMixin:
             ),
             columns = list(comps.columns) + self.attributes
         )
+
+    @property
+    def dist_tables(self):
+        return {
+            "labels":self.orm.Labels,
+            "distances":self.orm.Distances,
+            "full_distances":self.orm.FullDistances
+        }
+
     
     def save_distances(self, table="comparisons", newtable="distances"):
 
@@ -47,18 +54,20 @@ class DistanceMixin:
             table=table
         )
 
-        distances.to_sql(
-            newtable,
-            schema=self.schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False,
-            dtype={
-                x:sqlalchemy.types.INTEGER()
-                for x in ["_index_l","_index_r"]
-            }
-        )
+        distances[["_index_l","_index_r"]] = distances[["_index_l","_index_r"]].astype(int)
+        
+        # reset table
+        self.orm.engine.execute(f"""
+            TRUNCATE TABLE {self.schema}.{newtable};
+        """)
 
+        # insert
+        with self.orm.Session() as session:
+            session.bulk_insert_mappings(
+                self.dist_tables[newtable], 
+                distances.to_dict(orient='records')
+            )
+            session.commit()
 
 @ray.remote
 def ray_distance(pairs):
@@ -67,7 +76,7 @@ def ray_distance(pairs):
         for pair in pairs
     ]
 
-class RayAllJaro(BaseDistance, DistanceMixin, Engine):
+class RayAllJaro(BaseDistance, DistanceMixin, DatabaseORM):
     "needs work: update to allow user to specify attribute-algorithm pairs"
 
     def __init__(self, settings):
@@ -75,7 +84,7 @@ class RayAllJaro(BaseDistance, DistanceMixin, Engine):
         self.schema = settings.other.db_schema
         self.attributes = settings.other.attributes
 
-        self.db = Database(settings=settings)
+        self.orm = DatabaseORM(settings=settings)
 
 
     def distance(self, pairs):

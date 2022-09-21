@@ -1,9 +1,8 @@
 from dedupe.labelstudio.lsapi import LabelStudioAPI
 from dedupe.block import Blocker,Conjunctions
-from dedupe.db.database import Database
+from dedupe.db.database import DatabaseORM
 from dedupe.db.initialize import Initialize
 from dedupe.settings import Settings
-from dedupe.db.engine import Engine
 
 from typing import List
 from modAL.models import ActiveLearner
@@ -95,10 +94,10 @@ class Tasks:
                 for task in tasklist.tasks
                 if task.id in labels.keys()
             ],
-            columns= ["label"] + self.db.get_compare_cols()
+            columns= ["label"] + self.orm.get_compare_cols()
         )
 
-        oldlabels = self.db.get_labels()
+        oldlabels = self.orm.get_labels()
 
         newlabels = newlabels.merge(
             oldlabels[["_index_l","_index_r"]],
@@ -117,7 +116,7 @@ class Tasks:
 
     def _get_learning_samples(self, n_instances=5):
 
-        distances = self.db.get_distances()
+        distances = self.orm.get_distances()
 
         sample_idx, _ = self.clf.query(
             distances[self.settings.other.attributes], 
@@ -126,7 +125,7 @@ class Tasks:
 
         return distances.loc[
             sample_idx,
-            self.db.get_compare_cols()
+            self.orm.get_compare_cols()
         ]
             
     def _post_tasks(self):
@@ -160,7 +159,7 @@ class Tasks:
             # post new active learning samples to label studio
             self._post_tasks()
 
-class Model(Tasks, Projects, Engine):
+class Model(Tasks, Projects, DatabaseORM):
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -168,7 +167,7 @@ class Model(Tasks, Projects, Engine):
         assert self.settings.other.path_model is not None
         self.schema = self.settings.other.db_schema
 
-        self.db = Database(settings=settings)
+        self.orm = DatabaseORM(settings=settings)
         self.lsapi = LabelStudioAPI(settings=settings)
         self.init = Initialize(settings=self.settings)
         self.blocker = Blocker(settings=self.settings)
@@ -190,6 +189,6 @@ class Model(Tasks, Projects, Engine):
         self._train()
     
     def _train(self):
-        labels=self.db.get_labels()
+        labels=self.orm.get_labels()
         self.clf.teach(labels[self.settings.other.attributes], labels["label"])
         

@@ -1,7 +1,6 @@
 from dedupe.base import BaseCluster
 from dedupe.settings import Settings
-from dedupe.db.engine import Engine
-from dedupe.db.database import Database
+from dedupe.db.database import DatabaseORM
 
 from dataclasses import dataclass
 import networkx as nx
@@ -9,14 +8,14 @@ import pandas as pd
 
 
 @dataclass
-class ConnectedComponents(BaseCluster, Engine):
+class ConnectedComponents(BaseCluster, DatabaseORM):
     settings:Settings
     """
     Use a graph to retrieve connected components
     """
 
     def __post_init__(self):
-        self.db = Database(settings=self.settings)
+        self.orm = DatabaseORM(settings=self.settings)
 
     def get_df_cluster(self, matches, scores):
         """ convert connected components to dataframe for user friendly output
@@ -25,15 +24,20 @@ class ConnectedComponents(BaseCluster, Engine):
         """
 
         df_clusters = self.get_connected_components(matches, scores)
-        df_clusters.to_sql(
-            "clusters",
-            schema=self.settings.other.db_schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False
-        )
+
+        # reset table
+        self.engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.clusters;
+        """)
+
+        with self.Session() as session:
+            session.bulk_insert_mappings(
+                self.Clusters, 
+                df_clusters.to_dict(orient='records')
+            )
+            session.commit()
         
-        return self.db.get_clusters()
+        return self.orm.get_clusters()
 
 
     def get_connected_components(self, matches, scores) -> pd.DataFrame:
