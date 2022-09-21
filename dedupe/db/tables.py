@@ -26,10 +26,6 @@ class Tables:
     def Base(self):
         return declarative_base(metadata=self.metadata_obj)
 
-    @cached_property
-    def attributes(self):
-        return self.settings.other.attributes
-
     def init_tables(self):
         return (
             self.maindf, 
@@ -38,15 +34,18 @@ class Tables:
             self.Neg,
             self.Train, 
             self.Labels,
+            self.Distances,
+            self.FullDistances,
             self.Comparisons,
-            self.FullComparisons
+            self.FullComparisons,
+            self.Clusters
         )
 
     @property
     def Attributes(self):
         return type('Attributes', (object,), {
                 k:Column(String)
-                for k in self.attributes
+                for k in self.settings.other.attributes
             }
         )
 
@@ -55,11 +54,11 @@ class Tables:
         return type('AttributeComparisons', (object,), {
                 **{
                     f"{k}_l":Column(String)
-                    for k in self.attributes
+                    for k in self.settings.other.attributes
                 },
                 **{
                     f"{k}_r":Column(String)
-                    for k in self.attributes
+                    for k in self.settings.other.attributes
                 },
             }
         )
@@ -156,5 +155,15 @@ class Tables:
                 "_label_key":Column(Integer, primary_key=True, autoincrement=True),
                 "_index_l":Column(Integer),
                 "_index_r":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def Clusters(self):
+        return type('clusters', (self.Base, ), {
+                "__tablename__":"clusters",
+                "_cluster_key":Column(Integer, primary_key=True, autoincrement=True),
+                "cluster":Column(Integer),
+                "_index":Column(Integer)
             }
         )

@@ -1,6 +1,5 @@
-from dedupe.db.database import Database
+from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
-from dedupe.db.engine import Engine
 
 from dataclasses import dataclass
 from functools import lru_cache, cached_property
@@ -8,7 +7,7 @@ import pandas as pd
 import itertools
 from sqlalchemy import create_engine
 # from pathos.multiprocessing import ProcessingPool as Pool
-from multiprocessing.pool import ThreadPool as Pool
+from multiprocessing import Pool
 import logging
 
 class InvertedIndex:
@@ -108,18 +107,17 @@ class DynamicProgram(InvertedIndex):
 
         return dp
 
-class Conjunctions(DynamicProgram, Engine):
+class Conjunctions(DynamicProgram):
 
     def __init__(self, settings:Settings):
         self.settings = settings
         self.n = self.settings.other.n
-        self.db = Database(settings=self.settings)
-
+        self.db = DatabaseCore(settings=self.settings)
+    
     @cached_property
     def results(self):
         
-        logging.info(f"getting best conjunctions")
-        
+        logging.info(f"getting best conjunctions")        
         p = Pool(self.settings.other.cpus)
         res = p.map(
             self.getBest, 
@@ -149,17 +147,24 @@ class Conjunctions(DynamicProgram, Engine):
         n_covered=10
     ):
 
-        newtablemap = {
-            "comparisons":self.db.Comparisons,
-            "full_comparisons":self.db.FullComparisons
-        }
-
         comparisons = pd.concat([
             self.get_pairs(names=x, table=table)  
             for x in self.best_schemes(n_covered=n_covered)
         ]).drop(["blocked"], axis=1).drop_duplicates()
+        
+        self.orm = DatabaseORM(settings=self.settings)
 
-        with self.db.Session() as session:
+        newtablemap = {
+            "comparisons":self.orm.Comparisons,
+            "full_comparisons":self.orm.FullComparisons
+        }
+
+        # reset table
+        self.orm.engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.{newtable};
+        """)
+
+        with self.orm.Session() as session:
             session.bulk_insert_mappings(
                 newtablemap[newtable], 
                 comparisons.to_dict(orient='records')

@@ -1,13 +1,8 @@
 from dedupe.base import BaseDistance
-from dedupe.db.database import Database
-from dedupe.db.engine import Engine
-
-from functools import cached_property
+from dedupe.db.database import DatabaseORM
 from dataclasses import dataclass
 from jellyfish import jaro_winkler_similarity
 import ray
-from sqlalchemy import create_engine
-import sqlalchemy
 import numpy as np
 import pandas as pd
 import logging
@@ -26,7 +21,10 @@ class DistanceMixin:
     def get_distmat(self, table) -> np.array:
         """for each candidate pair and attribute, compute distances"""
 
-        comps = self.db.get_comparison_attributes(table=table)
+        if table == "labels":
+            comps = self.orm.get_label_attributes()
+        else:
+            comps = self.orm.get_comparison_attributes(table=table)
 
         logging.info(f"making {len(comps)} comparions for table: {table}")
 
@@ -44,9 +42,9 @@ class DistanceMixin:
     @property
     def dist_tables(self):
         return {
-            "labels":self.db.Labels,
-            "distances":self.db.Distances,
-            "full_distances":self.db.FullDistances
+            "labels":self.orm.Labels,
+            "distances":self.orm.Distances,
+            "full_distances":self.orm.FullDistances
         }
 
     
@@ -58,13 +56,13 @@ class DistanceMixin:
 
         distances[["_index_l","_index_r"]] = distances[["_index_l","_index_r"]].astype(int)
         
-        # drop table
-        self.db.engine.execute(f"""
+        # reset table
+        self.orm.engine.execute(f"""
             TRUNCATE TABLE {self.schema}.{newtable};
         """)
 
         # insert
-        with self.db.Session() as session:
+        with self.orm.Session() as session:
             session.bulk_insert_mappings(
                 self.dist_tables[newtable], 
                 distances.to_dict(orient='records')
@@ -78,7 +76,7 @@ def ray_distance(pairs):
         for pair in pairs
     ]
 
-class RayAllJaro(BaseDistance, DistanceMixin, Engine):
+class RayAllJaro(BaseDistance, DistanceMixin, DatabaseORM):
     "needs work: update to allow user to specify attribute-algorithm pairs"
 
     def __init__(self, settings):
@@ -86,7 +84,7 @@ class RayAllJaro(BaseDistance, DistanceMixin, Engine):
         self.schema = settings.other.db_schema
         self.attributes = settings.other.attributes
 
-        self.db = Database(settings=settings)
+        self.orm = DatabaseORM(settings=settings)
 
 
     def distance(self, pairs):

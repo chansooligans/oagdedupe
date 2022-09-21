@@ -4,7 +4,7 @@ from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
 from dedupe.block import Blocker, Conjunctions
 from dedupe.db.initialize import Initialize
-from dedupe.db.database import Database
+from dedupe.db.database import DatabaseORM
 
 import requests
 import json
@@ -60,7 +60,7 @@ class Dedupe(BaseModel):
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
         
-        self.db = Database(settings=self.settings)
+        self.orm = DatabaseORM(settings=self.settings)
         self.blocker = Blocker(settings=self.settings)
         self.cover = Conjunctions(settings=self.settings)
         self.distance = RayAllJaro(settings=self.settings)
@@ -103,7 +103,7 @@ class Dedupe(BaseModel):
         scores = np.array(results["predict_proba"])
         y = np.array(results["predict"])
 
-        idxmat = self.db.get_full_comparison_indices().values
+        idxmat = self.orm.get_full_comparison_indices().values
 
         return idxmat, scores, y
 

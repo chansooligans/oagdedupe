@@ -49,7 +49,6 @@ for attr in settings.other.attributes:
 df = df.sample(100_000, random_state=1234)
 
 # %%
-%%time
 d = Dedupe(settings=settings)
 d.initialize(df=df)
 # d.initialize(df=None)
@@ -58,18 +57,4 @@ d.initialize(df=df)
 d.fit_blocks()
 res = d.predict()
 
-
-# %% [markdown]
-"""
-# Test Database using SQLAlchemy
-"""
-
 # %%
-from dedupe.db.database import Database
-from sqlalchemy import select
-db = Database(settings=settings)
-
-# %%
-with db.Session() as session:
-    query = session.query(db.Train)
-    check = pd.read_sql(query.statement, query.session.bind)
