@@ -20,9 +20,9 @@ def settings(tmp_path) -> Settings:
             k=3,
             cpus=15,
             attributes=["name", "addr"],
-            path_database=tmp_path / "test.db",
+            path_database="test.db",
             db_schema="dedupe",
-            path_model="test_model",
+            path_model=tmp_path / "test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
@@ -50,22 +50,22 @@ def test_read(settings: Settings) -> None:
     assert settings_new.other == settings.other
 
 
-# def test_sync(settings: Settings) -> None:
-#     if settings.path.is_file():
-#         settings.path.unlink()
-#     settings.sync()
-#     assert settings.path.is_file()
-#     settings_new = Settings(name=settings.name, folder=settings.folder)
-#     settings_new.sync()
-#     assert settings_new.other == settings.other
+def test_sync(settings: Settings) -> None:
+    if settings.path.is_file():
+        settings.path.unlink()
+    settings.sync()
+    assert settings.path.is_file()
+    settings_new = Settings(name=settings.name, folder=settings.folder)
+    settings_new.sync()
+    assert settings_new.other == settings.other
 
 
-# def test_set(settings: Settings) -> None:
-#     assert settings.other is not None
-#     settings.set("cpus", 1)
-#     assert settings.other.cpus == 1
-#     settings.set("cpus", 10)
-#     assert settings.other.cpus == 10
+def test_set(settings: Settings) -> None:
+    assert settings.other is not None
+    settings.set("cpus", 1)
+    assert settings.other.cpus == 1
+    settings.set("cpus", 10)
+    assert settings.other.cpus == 10
 
 def test_get_settings_from_env(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setattr(os, "environ", {"DEDUPER_NAME": "name from env", "DEDUPER_FOLDER": "folder/from/env"})
