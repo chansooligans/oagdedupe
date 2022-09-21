@@ -22,7 +22,7 @@ def settings(tmp_path) -> Settings:
             attributes=["name", "addr"],
             path_database=tmp_path / "test.db",
             db_schema="dedupe",
-            path_model=tmp_path / "test_model",
+            path_model="test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
