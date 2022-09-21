@@ -1,7 +1,7 @@
-# dedupe.config
+# dedupe.distance
 
 ```{eval-rst}
-.. automodule:: dedupe.config
+.. automodule:: dedupe.distance
     :autosummary:
     :show-inheritance:
     :members:

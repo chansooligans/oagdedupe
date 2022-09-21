@@ -1,7 +1,7 @@
-# dedupe.base
+# dedupe.block
 
 ```{eval-rst}
-.. automodule:: dedupe.base
+.. automodule:: dedupe.block
     :autosummary:
     :show-inheritance:
     :members:
