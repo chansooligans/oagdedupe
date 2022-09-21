@@ -13,6 +13,7 @@ from dedupe.api import Dedupe
 
 import glob
 import pandas as pd
+pd.options.display.precision = 12
 from sqlalchemy import create_engine
 engine = create_engine("postgresql+psycopg2://username:password@172.22.39.26:8000/db")
 
@@ -47,17 +48,16 @@ for attr in settings.other.attributes:
     df[attr] = df[attr].astype(str)
 df = df.sample(100_000, random_state=1234)
 
-
 # %%
 %%time
 d = Dedupe(settings=settings)
 d.initialize(df=df)
 # d.initialize(df=None)
 
-# %%
 # %%time
-# d.fit_blocks()
-# res = d.predict()
+d.fit_blocks()
+res = d.predict()
+
 
 # %% [markdown]
 """
@@ -69,10 +69,7 @@ from dedupe.db.database import Database
 from sqlalchemy import select
 db = Database(settings=settings)
 
-
 # %%
 with db.Session() as session:
     query = session.query(db.Train)
     check = pd.read_sql(query.statement, query.session.bind)
-
-# %%

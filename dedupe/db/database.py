@@ -44,9 +44,14 @@ class Database(Engine, Tables):
         return res
 
     def get_labels(self):
-        with self.Session() as session:
-            query = session.query(self.Labels)
-            return pd.read_sql(query.statement, query.session.bind)
+        return self.query(
+            f"""
+            SELECT * FROM dedupe.labels
+            """
+        )
+        # with self.Session() as session:
+        #     query = session.query(self.Labels)
+        #     return pd.read_sql(query.statement, query.session.bind)
 
     def get_train(self):
         with self.Session() as session:
@@ -56,11 +61,17 @@ class Database(Engine, Tables):
     def get_inverted_index(self, names, table):
         return self.query(
             f"""
-            SELECT 
-                {signatures(names)}, 
-                ARRAY_AGG(_index ORDER BY _index asc)
-            FROM {self.schema}.{table}
-            GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
+            WITH 
+                inverted_index AS (
+                    SELECT 
+                        {signatures(names)}, 
+                        ARRAY_AGG(_index ORDER BY _index asc) as array_agg
+                    FROM {self.schema}.{table}
+                    GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
+                )
+            SELECT * 
+            FROM inverted_index
+            WHERE array_length(array_agg, 1) > 1
             """
         )
 

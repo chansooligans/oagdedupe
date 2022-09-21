@@ -39,7 +39,7 @@ class Initialize(Tables):
     def _init_sample(self):
         logging.info(f"Building table {self.schema}.sample...")
         with self.Session() as session:
-            sample = select([self.maindf]).order_by(func.random()).limit(10)
+            sample = select([self.maindf]).order_by(func.random()).limit(self.settings.other.n)
             session.execute(
                 insert(self.Sample).from_select(sample.subquery(1).c, sample)
             )

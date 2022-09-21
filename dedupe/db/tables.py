@@ -38,7 +38,8 @@ class Tables:
             self.Neg,
             self.Train, 
             self.Labels,
-            self.Comparisons
+            self.Comparisons,
+            self.FullComparisons
         )
 
     @property
@@ -142,6 +143,16 @@ class Tables:
     def Comparisons(self):
         return type('comparisons', (self.Base, ), {
                 "__tablename__":"comparisons",
+                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
+                "_index_l":Column(Integer),
+                "_index_r":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def FullComparisons(self):
+        return type('full_comparisons', (self.Base, ), {
+                "__tablename__":"full_comparisons",
                 "_label_key":Column(Integer, primary_key=True, autoincrement=True),
                 "_index_l":Column(Integer),
                 "_index_r":Column(Integer)

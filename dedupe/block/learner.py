@@ -7,7 +7,8 @@ from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
 from sqlalchemy import create_engine
-from multiprocessing import Pool
+# from pathos.multiprocessing import ProcessingPool as Pool
+from multiprocessing.pool import ThreadPool as Pool
 import logging
 
 class InvertedIndex:
@@ -76,7 +77,7 @@ class DynamicProgram(InvertedIndex):
         dp = [None for _ in range(self.settings.other.k)]
         dp[0] = self.score(scheme)
 
-        if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99) or (dp[0]["rr"] == 1):
+        if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99) or (dp[0]["rr"] == 1) or (dp[0]["n_pairs"] <= 1):
             return None
 
         for n in range(1,self.settings.other.k):
@@ -92,9 +93,11 @@ class DynamicProgram(InvertedIndex):
             scores = [
                 x
                 for x in scores
-                if (x["positives"] > 0) & (x["rr"] < 1)
+                if (x["positives"] > 0) & \
+                    (x["rr"] < 1) & (x["n_pairs"] > 1) & \
+                    (sum(["_ngrams" in _ for _ in x["scheme"]]) <= 1)
             ]
-
+            
             if len(scores) == 0:
                 return dp[:n]
 
@@ -116,6 +119,7 @@ class Conjunctions(DynamicProgram, Engine):
     def results(self):
         
         logging.info(f"getting best conjunctions")
+        
         p = Pool(self.settings.other.cpus)
         res = p.map(
             self.getBest, 
@@ -142,24 +146,22 @@ class Conjunctions(DynamicProgram, Engine):
         self, 
         table="blocks_sample", 
         newtable="comparisons",
-        n_covered=100
+        n_covered=10
     ):
+
+        newtablemap = {
+            "comparisons":self.db.Comparisons,
+            "full_comparisons":self.db.FullComparisons
+        }
+
         comparisons = pd.concat([
             self.get_pairs(names=x, table=table)  
             for x in self.best_schemes(n_covered=n_covered)
         ]).drop(["blocked"], axis=1).drop_duplicates()
-        
-        comparisons.to_sql(
-            newtable, 
-            schema=self.settings.other.db_schema,
-            if_exists="replace", 
-            con=self.engine,
-            index=False
-        )
 
         with self.db.Session() as session:
             session.bulk_insert_mappings(
-                self.db.Comparisons, 
+                newtablemap[newtable], 
                 comparisons.to_dict(orient='records')
             )
             session.commit()
