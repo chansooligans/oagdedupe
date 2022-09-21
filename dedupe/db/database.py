@@ -18,12 +18,6 @@ def signatures(names):
         for i,name in  enumerate(names)
     ])
 
-def lr_columns(attributes):
-    return f"""
-        {", ".join([f"t2.{x} as {x}_l" for x in list(attributes) + ["_index"]])}, 
-        {", ".join([f"t3.{x} as {x}_r" for x in list(attributes) + ["_index"]])} 
-    """
-
 @dataclass
 class DatabaseCore:
     settings: Settings
@@ -65,6 +59,29 @@ class DatabaseCore:
             WHERE array_length(array_agg, 1) > 1
             """
         )
+
+    def get_inverted_index_pairs(self, names, table):
+        return self.query(f"""
+            WITH 
+                inverted_index AS (
+                    SELECT 
+                        {signatures(names)}, 
+                        ARRAY_AGG(_index ORDER BY _index asc) as array_agg
+                    FROM {self.schema}.{table}
+                    GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
+                ),
+                inverted_index_subset AS (
+                    SELECT * 
+                    FROM inverted_index
+                    WHERE array_length(array_agg, 1) > 1
+                ),
+                combinations AS (
+                    SELECT unnest_2d_1d(combinations(array_agg)) as pairs
+                    FROM inverted_index_subset
+                )
+            SELECT pairs[1] as _index_l, pairs[2] as _index_r, True as blocked
+            FROM combinations
+            """)
 
     @cached_property
     def blocking_schemes(self):

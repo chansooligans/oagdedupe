@@ -24,7 +24,7 @@ settings = Settings(
     other=SettingsOther(
         n=5000,
         k=3,
-        cpus=10,  # parallelize distance computations
+        cpus=20,  # parallelize distance computations
         attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
         path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
         db_schema="dedupe",
@@ -57,4 +57,3 @@ d.initialize(df=df)
 d.fit_blocks()
 res = d.predict()
 
-# %%
