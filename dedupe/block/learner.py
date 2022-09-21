@@ -14,17 +14,22 @@ class InvertedIndex:
 
     def get_pairs(self, names, table):
         """
-        inverted index where keys are signatures and values are arrays of entity IDs
+        inverted index where keys are signatures and values are arrays of entity IDs;
         """
-        # inverted_index = self.db.get_inverted_index(names,table)
-
-        # return pd.DataFrame([ 
-        #     y
-        #     for x in list(inverted_index["array_agg"])
-        #     for y in list(itertools.combinations(x, 2))
-        # ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
-
         return self.db.get_inverted_index_pairs(names,table)
+
+    def get_pairs_in_memory(self, names, table):
+        """
+        same as get_pairs() but faster to run in memory;
+        used when searching for best conjunctions
+        """
+        inverted_index = self.db.get_inverted_index(names,table)
+
+        return pd.DataFrame([ 
+            y
+            for x in list(inverted_index["array_agg"])
+            for y in list(itertools.combinations(x, 2))
+        ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
 
 class DynamicProgram(InvertedIndex):
     """
@@ -41,7 +46,7 @@ class DynamicProgram(InvertedIndex):
         """
 
         train_pairs, sample_pairs = [
-            self.get_pairs(names=names, table=table)
+            self.get_pairs_in_memory(names=names, table=table)
             for table in ["blocks_train","blocks_sample"]
         ]
 
