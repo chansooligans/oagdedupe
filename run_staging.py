@@ -57,4 +57,25 @@ d.initialize(df=df)
 d.fit_blocks()
 res = d.predict()
 
+
+
+# %%
+import itertools
+from dedupe.db.database import DatabaseCore
+db = DatabaseCore(settings=settings)
+db.blocking_schemes
+
+# %%
+%%time
+test = db.get_inverted_index_pairs(names = ["acronym_suburb", "first_nchars_2_givenname"], table="blocks_sample")
+
+# %%
+%%time
+inverted_index = db.get_inverted_index(names = ["acronym_suburb", "first_nchars_2_givenname"], table="blocks_sample")
+check = pd.DataFrame([ 
+    y
+    for x in list(inverted_index["array_agg"])
+    for y in list(itertools.combinations(x, 2))
+], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
+
 # %%

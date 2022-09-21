@@ -16,13 +16,15 @@ class InvertedIndex:
         """
         inverted index where keys are signatures and values are arrays of entity IDs
         """
-        inverted_index = self.db.get_inverted_index(names,table)
+        # inverted_index = self.db.get_inverted_index(names,table)
 
-        return pd.DataFrame([ 
-            y
-            for x in list(inverted_index["array_agg"])
-            for y in list(itertools.combinations(x, 2))
-        ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
+        # return pd.DataFrame([ 
+        #     y
+        #     for x in list(inverted_index["array_agg"])
+        #     for y in list(itertools.combinations(x, 2))
+        # ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
+
+        return self.db.get_inverted_index_pairs(names,table)
 
 class DynamicProgram(InvertedIndex):
     """
