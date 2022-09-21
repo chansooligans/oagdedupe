@@ -1,4 +1,3 @@
-from dedupe.base import BaseCluster
 from dedupe.distance.string import RayAllJaro
 from dedupe.cluster.cluster import ConnectedComponents
 from dedupe.settings import Settings
@@ -71,6 +70,7 @@ class Dedupe(BaseModel):
         idxmat, scores, y = self.fit_model()
 
         self.cluster = ConnectedComponents(settings=self.settings)
+        
         logging.info("get clusters")
         return self.cluster.get_df_cluster(
             matches=idxmat[y == 1].astype(int), scores=scores[y == 1]

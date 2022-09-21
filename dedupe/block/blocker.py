@@ -2,9 +2,7 @@ from dedupe.settings import Settings
 from dedupe.block.schemes import BlockSchemes
 from dedupe.db.database import DatabaseORM
 
-from typing import List, Optional, Tuple
 from dataclasses import dataclass
-from sqlalchemy import create_engine
 from functools import cached_property
 import logging
 

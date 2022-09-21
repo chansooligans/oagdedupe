@@ -1,12 +1,9 @@
 from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
 
-from dataclasses import dataclass
 from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
-from sqlalchemy import create_engine
-# from pathos.multiprocessing import ProcessingPool as Pool
 from multiprocessing import Pool
 import logging
 

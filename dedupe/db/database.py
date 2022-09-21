@@ -21,6 +21,10 @@ def signatures(names):
 @dataclass
 class DatabaseCore:
     settings: Settings
+    """
+    easier to use sqlalchemy core than ORM for parallel operations
+    queries that do not need to run in parallel are in DatabaseORM
+    """
 
     def __post_init__(self):
         self.engine_url = self.settings.other.path_database
@@ -71,16 +75,12 @@ class DatabaseCore:
                     GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
                 ),
                 inverted_index_subset AS (
-                    SELECT * 
+                    SELECT unnest_2d_1d(combinations(array_agg)) as pairs
                     FROM inverted_index
                     WHERE array_length(array_agg, 1) > 1
-                ),
-                combinations AS (
-                    SELECT unnest_2d_1d(combinations(array_agg)) as pairs
-                    FROM inverted_index_subset
                 )
             SELECT pairs[1] as _index_l, pairs[2] as _index_r, True as blocked
-            FROM combinations
+            FROM inverted_index_subset
             """)
 
     @cached_property
