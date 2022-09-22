@@ -81,7 +81,7 @@ class DynamicProgram(InvertedIndex):
         dp = [None for _ in range(self.settings.other.k)]
         dp[0] = self.score(scheme)
 
-        if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99) or (dp[0]["rr"] == 1) or (dp[0]["n_pairs"] <= 1):
+        if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99) or (dp[0]["rr"] == 1):
             return None
 
         for n in range(1,self.settings.other.k):
@@ -107,7 +107,12 @@ class DynamicProgram(InvertedIndex):
 
             dp[n] = max(
                 scores, 
-                key=lambda x: (x["rr"], x["positives"], -x["negatives"] -x["n_scheme"])
+                key=lambda x: (
+                    x["rr"], 
+                    x["positives"], 
+                    -x["negatives"],
+                    -x["n_scheme"]
+                )
             )
 
         return dp

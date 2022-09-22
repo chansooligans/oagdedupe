@@ -1,18 +1,8 @@
 from functools import cached_property
 
-class BlockSchemes:
+class BlockSchemesHelper:
 
     @property
-    def block_schemes(self):
-        return [
-            ("first_nchars", [2,4,6]),
-            ("last_nchars", [2,4,6]),
-            ("find_ngrams",[2,4,6]),
-            ("acronym", [None]),
-            ("exactmatch", [None])
-        ]
-
-    @cached_property
     def block_scheme_mapping(self):
         """
         helper to build column names in query
@@ -27,7 +17,7 @@ class BlockSchemes:
                         mapping[f"{scheme}_{attribute}"]=f"{scheme}({attribute})"
         return mapping
 
-    @cached_property
+    @property
     def block_scheme_names(self):
         return [
             f"{scheme}_{n}_{attribute}"
@@ -38,7 +28,7 @@ class BlockSchemes:
             for n in nlist
         ]
 
-    @cached_property
+    @property
     def block_scheme_sql(self):
         """
         helper to build column names in query
@@ -50,4 +40,16 @@ class BlockSchemes:
             for attribute in self.settings.other.attributes
             for scheme,nlist in self.block_schemes
             for n in nlist
+        ]
+
+class BlockSchemes(BlockSchemesHelper):
+
+    @property
+    def block_schemes(self):
+        return [
+            ("first_nchars", [2,4,6]),
+            ("last_nchars", [2,4,6]),
+            ("find_ngrams",[2,4,6]),
+            ("acronym", [None]),
+            ("exactmatch", [None])
         ]
