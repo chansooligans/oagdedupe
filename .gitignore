@@ -73,3 +73,5 @@ scratch/
 
 # Dedupe
 .dedupe
+
+*.code-workspace
