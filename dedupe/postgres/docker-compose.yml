@@ -19,8 +19,8 @@ services:
     # env_file:
     #   - proj.env
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8002:8080
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - 8002:8080

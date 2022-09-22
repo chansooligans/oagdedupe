@@ -5,13 +5,7 @@ tests_all:
 
 clear_cache:
 	rm cache/*
-
-# build:
-# 	docker build -t deduper:latest .
-
-# docker-run:
-# 	docker run -t -d --rm --name deduper -p 8080:8081 deduper 
-
+	
 lint:
 	flake8 --ignore W291 dedupe --max-line-length=180
 	flake8 --ignore W291 app --max-line-length=180
@@ -21,7 +15,7 @@ postgres:
 	python3 dedupe/postgres/postgres.py;
 
 label-studio:
-	docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
+	docker run -it -p $(port):8080 -v `pwd`/cache/mydata:/label-studio/data \
 	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
 	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
 	-v `pwd`/cache/myfiles:/label-studio/files \

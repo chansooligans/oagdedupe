@@ -15,6 +15,11 @@ docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
 	heartexlabs/label-studio:latest label-studio
 ```
 
+#### 1b. postgres
+
+[insert instructions here about initializing postgres]
+
+most importantly, need to create functions (dedupe/postgres/funcs.py)
 
 #### 2. Define project settings
 
@@ -68,7 +73,7 @@ for attr in settings.other.attributes:
 df = df.sample(100_000, random_state=1234)
 
 d = Dedupe(settings=settings)
-d.initialize(df=df)
+d.initialize(df=df, reset=True)
 
 # %%
 # pre-processes data and stores pre-processed data, comparisons, ID matrices in SQLite db
