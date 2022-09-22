@@ -50,7 +50,7 @@ df = df.sample(100_000, random_state=1234)
 
 # %%
 d = Dedupe(settings=settings)
-d.initialize(df=df)
+d.initialize(df=df, reset=True)
 
 # %%
 d.fit_blocks()

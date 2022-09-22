@@ -154,7 +154,7 @@ class Tables:
             }
         )
     
-    def dynamic_declarative_mapping(self):
+    def setup_dynamic_declarative_mapping(self):
         """
         see "Declarative Table" in: https://docs.sqlalchemy.org/en/14/orm/declarative_tables.html
 
@@ -186,7 +186,6 @@ class Tables:
         self.Base.metadata.drop_all(self.engine)
         self.Base.metadata.create_all(self.engine, checkfirst=True)
 
-    def init_tables(self):
-        self.dynamic_declarative_mapping()
+    def reset_tables(self):
         self.create_schema()
         self.reset_all_tables()

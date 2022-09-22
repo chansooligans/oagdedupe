@@ -10,11 +10,7 @@ import logging
 @dataclass
 class Initialize(Tables):
     settings:Settings
-
-    def __post_init__(self):
-        
-        # initialize Tables sqlalchemy classes
-        self.init_tables()
+    reset:bool = True
 
     def _init_df(self, df):
         logging.info(f"Building table {self.settings.other.db_schema}.df.")
@@ -101,12 +97,20 @@ class Initialize(Tables):
             newtable="labels"
         )
 
-    def setup(self, df):
+    def setup(self, df, reset):
+        
+        # initialize Tables sqlalchemy classes
+        self.setup_dynamic_declarative_mapping()
+
+        if reset:
+            self.reset_tables()
+
         logging.info(f"building tables in schema: {self.settings.other.db_schema}")
         if df is not None:
             if "_index" in df.columns:
                 raise ValueError("_index cannot be a column name")
             self._init_df(df=df)
+
         self._init_sample()
         self._init_train()
         self._init_labels()
