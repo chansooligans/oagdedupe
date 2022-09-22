@@ -1,5 +1,6 @@
 # dedupe.block
 
+## dedupe.block.blocker
 ```{eval-rst}
 .. automodule:: dedupe.block.blocker
     :autosummary:
@@ -8,6 +9,7 @@
     :undoc-members:    
 ```
 
+## dedupe.block.learner
 ```{eval-rst}
 .. automodule:: dedupe.block.learner
     :autosummary:
@@ -16,6 +18,7 @@
     :undoc-members:    
 ```
 
+## dedupe.block.schemes
 ```{eval-rst}
 .. automodule:: dedupe.block.schemes
     :autosummary:
