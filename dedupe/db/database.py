@@ -89,12 +89,16 @@ class DatabaseCore:
         ).columns[1:]
 
 @dataclass
-class DatabaseORM(Tables, DatabaseCore):
+class Engine:
     settings: Settings
 
     @cached_property
     def engine(self):
         return create_engine(self.settings.other.path_database)
+
+@dataclass
+class DatabaseORM(Tables, DatabaseCore, Engine):
+    settings: Settings
 
     def get_train(self):
         with self.Session() as session:

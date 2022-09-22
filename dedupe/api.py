@@ -109,20 +109,17 @@ class Dedupe(BaseModel):
             newtable="full_distances"
         )
 
-    def initialize(self, df, reset=True):
+    def initialize(self, df, reset=True, resample=False):
         """learn p(match)"""
 
         self.init = Initialize(settings=self.settings)
-        self.init.setup(df=df, reset=reset)
+        self.init.setup(df=df, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
-        self.cover.save_best()
+        self.cover.save_best(table="blocks_sample", newtable="comparisons")
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table="comparisons",
-            newtable="distances"
-        )
+        self.distance.save_distances(table="comparisons",newtable="distances")
 
         
         

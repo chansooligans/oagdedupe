@@ -1,9 +1,9 @@
 from dedupe.labelstudio.lsapi import LabelStudioAPI
-from dedupe.block import Blocker,Conjunctions
-from dedupe.db.database import DatabaseORM
-from dedupe.db.initialize import Initialize
+from dedupe.db.database import Engine
 from dedupe.settings import Settings
+from dedupe.api import Dedupe
 
+from dataclasses import dataclass
 from typing import List
 from modAL.models import ActiveLearner
 from modAL.uncertainty import uncertainty_sampling
@@ -94,10 +94,10 @@ class Tasks:
                 for task in tasklist.tasks
                 if task.id in labels.keys()
             ],
-            columns= ["label"] + self.orm.get_compare_cols()
+            columns= ["label"] + self.api.orm.get_compare_cols()
         )
 
-        oldlabels = self.orm.get_labels()
+        oldlabels = self.api.orm.get_labels()
 
         newlabels = newlabels.merge(
             oldlabels[["_index_l","_index_r"]],
@@ -116,7 +116,7 @@ class Tasks:
 
     def _get_learning_samples(self, n_instances=5):
 
-        distances = self.orm.get_distances()
+        distances = self.api.orm.get_distances()
 
         sample_idx, _ = self.clf.query(
             distances[self.settings.other.attributes], 
@@ -125,7 +125,7 @@ class Tasks:
 
         return distances.loc[
             sample_idx,
-            self.orm.get_compare_cols()
+            self.api.orm.get_compare_cols()
         ]
             
     def _post_tasks(self):
@@ -149,28 +149,21 @@ class Tasks:
                 return
 
             # learn new block conjunctions
-            self.init._init_sample()
-            self.blocker.build_forward_indices()
-            self.cover.save_best()
-
+            self.api.initialize(reset=False, resample=True)
+            
             # re-train model
             self._train()
 
             # post new active learning samples to label studio
             self._post_tasks()
 
-class Model(Tasks, Projects, DatabaseORM):
+@dataclass
+class Model(Tasks, Projects, Engine):
+    settings:Settings
 
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        assert self.settings.other is not None
-        assert self.settings.other.path_model is not None
-
-        self.orm = DatabaseORM(settings=self.settings)
+    def __post_init__(self):
+        self.api =  Dedupe(settings=self.settings)
         self.lsapi = LabelStudioAPI(settings=self.settings)
-        self.init = Initialize(settings=self.settings)
-        self.blocker = Blocker(settings=self.settings)
-        self.coverage = Conjunctions(settings=self.settings)
 
     def initialize_learner(self):
         """
@@ -188,6 +181,6 @@ class Model(Tasks, Projects, DatabaseORM):
         self._train()
     
     def _train(self):
-        labels=self.orm.get_labels()
+        labels=self.api.orm.get_labels()
         self.clf.teach(labels[self.settings.other.attributes], labels["label"])
         

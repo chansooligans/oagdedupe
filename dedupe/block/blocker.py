@@ -1,6 +1,6 @@
 from dedupe.settings import Settings
 from dedupe.block.schemes import BlockSchemes
-from dedupe.db.database import DatabaseORM
+from dedupe.db.database import Engine
 
 from dataclasses import dataclass
 from functools import cached_property
@@ -92,7 +92,7 @@ class ForwardIndex(BlockSchemes):
         ))    
         
 @dataclass
-class Blocker(ForwardIndex, DatabaseORM):
+class Blocker(ForwardIndex, Engine):
     settings: Settings
     """
     DatabaseORM is used only for `self.engine`
