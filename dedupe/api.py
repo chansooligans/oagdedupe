@@ -59,6 +59,7 @@ class Dedupe(BaseModel):
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
         
+        self.init = Initialize(settings=self.settings)
         self.orm = DatabaseORM(settings=self.settings)
         self.blocker = Blocker(settings=self.settings)
         self.cover = Conjunctions(settings=self.settings)
@@ -109,14 +110,13 @@ class Dedupe(BaseModel):
             newtable="full_distances"
         )
 
-    def initialize(self, df, reset=True, resample=False):
+    def initialize(self, df=None, reset=True, resample=False):
         """learn p(match)"""
 
-        self.init = Initialize(settings=self.settings)
         self.init.setup(df=df, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
-        self.cover.save_best(table="blocks_sample", newtable="comparisons")
+        self.cover.save_best(table="blocks_sample", newtable="comparisons", n_covered=100)
 
         logging.info("get distance matrix")
         self.distance.save_distances(table="comparisons",newtable="distances")

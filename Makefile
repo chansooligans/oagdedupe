@@ -12,7 +12,7 @@ lint:
 
 postgres:
 	. dedupe/postgres/postgres.sh;
-	python3 dedupe/postgres/postgres.py;
+	python3 dedupe/postgres/funcs.py;
 
 label-studio:
 	docker run -it -p $(port):8080 -v `pwd`/cache/mydata:/label-studio/data \

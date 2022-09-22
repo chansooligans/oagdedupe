@@ -1,7 +1,7 @@
 from dedupe.settings import Settings
 from dataclasses import dataclass
 from functools import cached_property
-from sqlalchemy import Column, String, Integer, Date
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
@@ -53,7 +53,7 @@ class Tables:
     def maindf(self):
         return type('df', (self.Attributes, self.Base), {
                 "__tablename__":"df",
-                "_index":Column(Integer, primary_key=True, autoincrement=True)
+                "_index":Column(Integer, primary_key=True)
             }
         )
 
@@ -61,7 +61,7 @@ class Tables:
     def Sample(self):
         return type('sample', (self.Attributes, self.Base), {
                 "__tablename__":"sample",
-                "_index":Column(Integer, primary_key=True, autoincrement=True)
+                "_index":Column(Integer, primary_key=True)
             }
         )
 
@@ -69,16 +69,16 @@ class Tables:
     def Pos(self):
         return type('pos', (self.Attributes, self.Base), {
                 "__tablename__":"pos",
-                "_pos_key": Column(Integer, primary_key=True, autoincrement=True),
-                "_index":Column(Integer)
+                "_index":Column(Integer, primary_key=True)
             }
         )
+
 
     @cached_property    
     def Neg(self):
         return type('neg', (self.Attributes, self.Base), {
                 "__tablename__":"neg",
-                "_index":Column(Integer, primary_key=True, autoincrement=True)
+                "_index":Column(Integer, primary_key=True)
             }
         )
 
@@ -86,8 +86,7 @@ class Tables:
     def Train(self):
         return type('train', (self.Attributes, self.Base), {
                 "__tablename__":"train",
-                "_train_key": Column(Integer, primary_key=True, autoincrement=True),
-                "_index":Column(Integer)
+                "_index":Column(Integer, primary_key=True)
             }
         )
 
@@ -95,9 +94,8 @@ class Tables:
     def Labels(self):
         return type('labels', (self.Attributes, self.AttributeComparisons, self.Base), {
                 "__tablename__":"labels",
-                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
-                "_index_l":Column(Integer),
-                "_index_r":Column(Integer),
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True),
                 "label":Column(Integer)
             }
         )
@@ -106,9 +104,8 @@ class Tables:
     def Distances(self):
         return type('distances', (self.Attributes, self.AttributeComparisons, self.Base), {
                 "__tablename__":"distances",
-                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
-                "_index_l":Column(Integer),
-                "_index_r":Column(Integer),
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True),
                 "label":Column(Integer)
             }
         )
@@ -117,9 +114,8 @@ class Tables:
     def FullDistances(self):
         return type('full_distances', (self.Attributes, self.AttributeComparisons, self.Base), {
                 "__tablename__":"full_distances",
-                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
-                "_index_l":Column(Integer),
-                "_index_r":Column(Integer),
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True),
                 "label":Column(Integer)
             }
         )
@@ -128,9 +124,8 @@ class Tables:
     def Comparisons(self):
         return type('comparisons', (self.Base, ), {
                 "__tablename__":"comparisons",
-                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
-                "_index_l":Column(Integer),
-                "_index_r":Column(Integer)
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True)
             }
         )
 
@@ -138,9 +133,8 @@ class Tables:
     def FullComparisons(self):
         return type('full_comparisons', (self.Base, ), {
                 "__tablename__":"full_comparisons",
-                "_label_key":Column(Integer, primary_key=True, autoincrement=True),
-                "_index_l":Column(Integer),
-                "_index_r":Column(Integer)
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True)
             }
         )
 

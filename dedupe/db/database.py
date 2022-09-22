@@ -170,7 +170,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
             query = (
                 session
                 .query(
-                    pairs._label_key,
+                    pairs._index_l.label("drop"),
                     *(
                         getattr(dataL,x).label(f"{x}_l")
                         for x in self.settings.other.attributes + ["_index"]
@@ -187,7 +187,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
 
             return (
                 pd.read_sql(query.statement, query.session.bind)
-                .drop(["_label_key"], axis=1)
+                .drop(["drop"], axis=1)
             )
 
     def distinct_train_subquery(self, session):
@@ -236,4 +236,12 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                 .order_by(self.Clusters.cluster)
                 )
             return pd.read_sql(query.statement, query.session.bind)
+
+    def _update_table(self, df, to_table):
+        with self.Session() as session:    
+            for r in df.to_dict(orient="records"):
+                for k in r.keys():
+                    setattr(to_table, k, r[k])
+                session.merge(to_table)
+            session.commit()
         

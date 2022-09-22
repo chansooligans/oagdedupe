@@ -12,7 +12,6 @@ import logging
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
-
 settings = get_settings_from_env()
 assert settings.other is not None
 while fapi.url_checker(settings.other.label_studio.url) == False:
@@ -48,7 +47,7 @@ async def predict():
 
 
 @app.post("/payload")
-async def payload(data):
+async def payload():
     m.generate_new_samples()
 
 

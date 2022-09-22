@@ -58,3 +58,4 @@ res = d.predict()
 
 # %%
 print(res)
+

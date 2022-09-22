@@ -4,6 +4,7 @@ from dedupe.settings import Settings
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 import requests
+import pandas as pd
 import json
 
 class Annotation(BaseModel):
@@ -101,7 +102,6 @@ class APIProjects:
 
 @dataclass
 class APITasks:
-    test: str = "testing"
 
     def get_tasks(self, project_id):
         tasklist = json.loads(
@@ -155,8 +155,11 @@ class APIAnnotations:
         for task in self.get_tasks(project_id=project_id).tasks:
             annotationlist = self._get_annotationlist_for_task(task_id=task.id)
             if annotationlist:
-                labels[task.id] = self._latest_annotation(annotationlist)
-        return labels
+                labels[task.id] = {
+                    **{"label":self._latest_annotation(annotationlist)},
+                    **task.data["item"]
+                }
+        return pd.DataFrame(labels).T
 
 @dataclass
 class APIWebhooks:
@@ -171,7 +174,7 @@ class APIWebhooks:
         query = {
             "project": project_id,
             "url": f"{self.settings.other.fast_api.url}/payload",
-            "send_payload": True,
+            "send_payload": False,
             "is_active": True,
             "actions": ["ANNOTATION_CREATED", "ANNOTATION_UPDATED"],
         }
@@ -186,12 +189,10 @@ class LabelStudioAPI(APIProjects, APITasks, APIAnnotations, APIWebhooks):
 
     @property
     def url(self) -> str:
-        assert self.settings.other is not None
         return self.settings.other.label_studio.url
 
     @property
     def headers(self) -> Dict[str, str]:
-        assert self.settings.other is not None
         return {
             "Authorization": f"""Token {self.settings.other.label_studio.api_key}"""
         }

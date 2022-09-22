@@ -3,7 +3,7 @@ from dedupe.distance.string import RayAllJaro
 from dedupe.db.tables import Tables
 from sqlalchemy import select, insert, func
 
-
+import itertools
 from dataclasses import dataclass
 import logging
 
@@ -37,12 +37,13 @@ class Initialize(Tables):
         # create pos
         pos = select([self.maindf]).order_by(func.random()).limit(1)
         with self.Session() as session:
-            res = session.execute(pos).first()
-            for _ in range(4):
+            records = session.execute(pos).first()
+            for i in range(-3,1):
                 pos = self.Pos()
                 for attr in self.settings.other.attributes + ["_index"]:
-                    setattr(pos, attr, getattr(res[0], attr))
-                setattr(pos, "label", 1)
+                    setattr(pos, attr, getattr(records[0], attr))
+                if i < 0:
+                    setattr(pos, "_index", i)
                 session.add(pos)
             session.commit()
 
@@ -55,7 +56,6 @@ class Initialize(Tables):
                 neg = self.Neg()
                 for attr in self.settings.other.attributes + ["_index"]:
                     setattr(neg, attr, getattr(r[0], attr))
-                setattr(neg, "label", 0)
                 session.add(neg)
             session.commit()
 
@@ -76,27 +76,30 @@ class Initialize(Tables):
                     session.add(train)
             session.commit()
 
-
     def _init_labels(self):
         logging.info(f"Building table {self.settings.other.db_schema}.labels.")
         with self.Session() as session:
             for l,tab in [(1,self.Pos), (0,self.Neg)]:
                 records = session.query(tab).all()
-                for r in records:
+                pairs = list(itertools.combinations(records, 2))
+                for left,right in pairs:
                     label = self.Labels()
-                    label._index_l = r._index
-                    label._index_r = r._index
-                    label.label = l
-                    session.add(label)
+                    if left._index < right._index:
+                        label._index_l = left._index
+                        label._index_r = right._index
+                        label.label = l
+                        session.add(label)
             session.commit()
+        self._label_distances()
 
+    def _label_distances(self):
         self.distance = RayAllJaro(settings=self.settings)
         self.distance.save_distances(
             table="labels",
             newtable="labels"
         )
 
-    def setup(self, df, reset=True, resample=False):
+    def setup(self, df=None, reset=True, resample=False):
         
         # initialize Tables sqlalchemy classes
         self.setup_dynamic_declarative_mapping()
@@ -114,5 +117,9 @@ class Initialize(Tables):
             self._init_labels()
 
         if resample:
+            self.engine.execute(f"""
+                TRUNCATE TABLE {self.settings.other.db_schema}.sample;
+            """)
             self._init_sample()
+            self._label_distances()
     

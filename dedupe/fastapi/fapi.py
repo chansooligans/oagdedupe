@@ -8,12 +8,11 @@ from typing import List
 from modAL.models import ActiveLearner
 from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
-from functools import cached_property
 import requests
 import joblib
 import pandas as pd
-from sqlalchemy import create_engine
 import logging
+from sqlalchemy import select
 
 def url_checker(url):
     try:
@@ -57,67 +56,36 @@ class Projects:
 class Tasks:
     """
     Pushes new annotations to label studio if needed.
-
-
     """
 
-    def _update_labels(self, df):
-        df.to_sql(
-            "labels", 
-            schema=self.settings.other.db_schema, 
-            con=self.engine, 
-            if_exists="append", 
-            index=False
-        )
-
-        newtrain = set(df["_index_l"]).union(set(df["_index_r"]))
-        self.engine.execute(
-            f"""
-            INSERT INTO {self.settings.other.db_schema}.train 
-            SELECT * FROM {self.settings.other.db_schema}.df
-            WHERE _index IN ({", ".join([str(x) for x in newtrain])})
-            """, 
-            con=self.engine
-        )
+    def _update_train(self, newlabels):
+        indices = set(newlabels["_index_l"]).union(set(newlabels["_index_r"]))
+        with self.api.init.Session() as session:    
+            query = (
+                session.query(self.api.init.maindf)
+                .filter(self.api.init.maindf._index.in_(indices))
+            )
+            return pd.read_sql(query.statement, query.session.bind)
+    
+    def _update_labels_and_train(self, newlabels):
+        self.api.orm._update_table(newlabels, self.api.init.Labels())
+        newtrain = self._update_train(newlabels)
+        self.api.orm._update_table(newtrain, self.api.init.Train())
+        return True
 
     def _get_new_labels(self):
-        
-        labels = self.lsapi.get_new_labels(project_id=self.project.id)
-        
-        if len(labels)==0:
-            return
-        
-        tasklist = self.lsapi.get_tasks(project_id=self.project.id)
-        newlabels = pd.DataFrame(
-            [
-                [labels[task.id]] + list(task.data["item"].values())
-                for task in tasklist.tasks
-                if task.id in labels.keys()
-            ],
-            columns= ["label"] + self.api.orm.get_compare_cols()
-        )
-
-        oldlabels = self.api.orm.get_labels()
-
-        newlabels = newlabels.merge(
-            oldlabels[["_index_l","_index_r"]],
-            how="left",
-            indicator=True
-        )
-
-        newlabels = newlabels.loc[
-            newlabels["_merge"]=="left_only"
-        ].drop(["_merge"], axis=1)
-
+        newlabels = self.lsapi.get_new_labels(project_id=self.project.id)
         if len(newlabels) > 0:
-            self._update_labels(newlabels)
+            return self._update_labels_and_train(newlabels)
         else:
             return
 
     def _get_learning_samples(self, n_instances=5):
-
+        
+        logging.info("getting distances")
         distances = self.api.orm.get_distances()
 
+        logging.info("getting active learning samples")
         sample_idx, _ = self.clf.query(
             distances[self.settings.other.attributes], 
             n_instances=n_instances
@@ -182,5 +150,5 @@ class Model(Tasks, Projects, Engine):
     
     def _train(self):
         labels=self.api.orm.get_labels()
-        self.clf.teach(labels[self.settings.other.attributes], labels["label"])
+        self.clf.teach(labels[self.settings.other.attributes].values, labels["label"].values)
         

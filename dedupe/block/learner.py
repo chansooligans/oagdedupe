@@ -146,9 +146,9 @@ class Conjunctions(DynamicProgram):
 
     def save_best(
         self, 
-        table="blocks_sample", 
-        newtable="comparisons",
-        n_covered=10
+        table, 
+        newtable,
+        n_covered
     ):
 
         comparisons = pd.concat([
