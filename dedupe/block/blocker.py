@@ -9,8 +9,9 @@ import logging
 class Blocker(BlockSchemes, Engine):
     settings: Settings
     """
-    Builds Entity Index (Forward Index) where keys are entities 
-    and values are signatures. Inherits BlockSchemes
+    Used to build forward indices. A forward index 
+    is a table where rows are entities, columns are block schemes,
+    and values contain signatures.
 
     Attributes
     ----------
@@ -19,9 +20,7 @@ class Blocker(BlockSchemes, Engine):
 
     def query_blocks(self, table, columns):
         """
-        Builds SQL query used to build forward indices. A forward index 
-        is a table where rows are entities, columns are block schemes,
-        and values contain signatures.
+        Builds SQL query used to build forward indices. 
 
         Parameters
         ----------

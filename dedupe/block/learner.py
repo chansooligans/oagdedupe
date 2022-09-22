@@ -2,6 +2,7 @@ from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
 
 from dataclasses import dataclass
+from typing import List
 from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
@@ -9,17 +10,46 @@ from multiprocessing import Pool
 import logging
 
 class InvertedIndex:
+    """
+    Used to build inverted index. An inverted index is dataframe 
+    where keys are signatures and values are arrays of entity IDs
+    """
 
     def get_pairs(self, names, table):
         """
-        inverted index where keys are signatures and values are arrays of entity IDs;
+        Given forward index, construct inverted index. 
+        Then for each row in inverted index, get all "nC2" distinct 
+        combinations of size 2 from the array. Concatenates and 
+        returns all distinct pairs.
+
+        Parameters
+        ----------
+        names : List[str]
+            list of block schemes
+        table : str
+            table name of forward index
+
+        Returns
+        ----------
+        pd.DataFrame
         """
         return self.db.get_inverted_index_pairs(names,table)
 
     def get_pairs_in_memory(self, names, table):
         """
-        same as get_pairs() but faster to run in memory;
-        used when searching for best conjunctions
+        same as get_pairs() but runs in-memory;
+        faster and used when searching for best conjunctions
+
+        Parameters
+        ----------
+        names : List[str]
+            list of block schemes
+        table : str
+            table name of forward index
+
+        Returns
+        ----------
+        pd.Dataframe
         """
         inverted_index = self.db.get_inverted_index(names,table)
 
@@ -31,16 +61,33 @@ class InvertedIndex:
 
 class DynamicProgram(InvertedIndex):
     """
-    for each block scheme, get the best conjunctions of lengths 1 to k using greedy approach
+    For each block scheme, get the best block scheme conjunctions of 
+    lengths 1 to k using greedy dynamic programming approach.
     """
 
     def get_coverage(self, names):
         """
-        names:list
+        Get comparisons using train data then merge with labelled data. 
+        Evaluate conjunction performance by:
+            - percentage of positive / negative labels that are blocked;
+            uses blocks_train
+            - get comparisons using sample data to compute reduction ratio;
+            uses blocks_sample
 
-        1. get comparisons using train data then merge with labelled data; count 
-        how many positive / negative labels are blocked
-        2. get comparisons using sample data to compute reduction ratio
+        Parameters
+        ----------
+        names: List[str]
+            list of block schemes
+
+        Returns
+        ----------
+        dict
+            returns statistics evaluating the conjunction: 
+                - reduction ratio
+                - percent of positive pairs blocked
+                - percent of negative pairs blocked
+                - number of pairs generated
+                - length of conjunction
         """
 
         train_pairs, sample_pairs = [
@@ -67,15 +114,25 @@ class DynamicProgram(InvertedIndex):
         }
 
     @lru_cache
-    def score(self, arr):
+    def score(self, arr:tuple):
         """
-        arr:tuple
+        Wraps get_coverage() function with @lru_cache decorator for caching.
+
+        Parameters
+        ----------
+        arr: tuple
+            list of block schemes
         """
         return self.get_coverage(names=list(arr))
 
-    def getBest(self, scheme):
+    def getBest(self, scheme:List[tuple]):
         """
-        dynamic programming implementation to get best conjunction
+        Dynamic programming implementation to get best conjunction.
+
+        Parameters
+        ----------
+        scheme: tuple
+            list of block schemes
         """
 
         dp = [None for _ in range(self.settings.other.k)]
@@ -123,7 +180,7 @@ class Conjunctions(DynamicProgram):
         self.settings = settings
         self.db = DatabaseCore(settings=self.settings)
     
-    @cached_property
+    @property
     def results(self):
         
         logging.info(f"getting best conjunctions")        
@@ -144,8 +201,9 @@ class Conjunctions(DynamicProgram):
         ].sort_values("rr", ascending=False)
 
     def best_schemes(self, n_covered):
-        return self.results.loc[
-            self.results["n_pairs"].cumsum()<n_covered, 
+        best_schemes = self.results.copy()
+        return best_schemes.loc[
+            best_schemes["n_pairs"].cumsum()<n_covered, 
             "scheme"
         ]
 
