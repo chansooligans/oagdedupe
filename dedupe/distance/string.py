@@ -64,12 +64,9 @@ class DistanceMixin:
         """)
 
         # insert
-        with self.orm.Session() as session:
-            session.bulk_insert_mappings(
-                self.dist_tables[newtable], 
-                distances.to_dict(orient='records')
-            )
-            session.commit()
+        self.orm.bulk_insert(
+            df=distances, to_table=self.dist_tables[newtable]
+        )
 
 @ray.remote
 def ray_distance(pairs):

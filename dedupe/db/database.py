@@ -237,6 +237,11 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                 )
             return pd.read_sql(query.statement, query.session.bind)
 
+    def truncate_table(self, table):
+        self.engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.{table};
+        """)
+
     def _update_table(self, df, to_table):
         with self.Session() as session:    
             for r in df.to_dict(orient="records"):
@@ -245,3 +250,10 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                 session.merge(to_table)
             session.commit()
         
+    def bulk_insert(self, df, to_table):
+        with self.Session() as session:
+            session.bulk_insert_mappings(
+                to_table, 
+                df.to_dict(orient='records')
+            )
+            session.commit()

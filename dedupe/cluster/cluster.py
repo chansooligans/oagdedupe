@@ -30,12 +30,9 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             TRUNCATE TABLE {self.settings.other.db_schema}.clusters;
         """)
 
-        with self.Session() as session:
-            session.bulk_insert_mappings(
-                self.Clusters, 
-                df_clusters.to_dict(orient='records')
-            )
-            session.commit()
+        self.orm.bulk_insert(
+            df=df_clusters, to_table=self.Clusters
+        )
         
         return self.orm.get_clusters()
 

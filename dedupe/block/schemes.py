@@ -1,6 +1,10 @@
-from functools import cached_property
+from dedupe.settings import Settings
 
 class BlockSchemesHelper:
+    """
+    Attributes used to help build SQL queries, which are used to 
+    build forward indices. 
+    """
 
     @property
     def block_scheme_mapping(self):
@@ -18,17 +22,6 @@ class BlockSchemesHelper:
         return mapping
 
     @property
-    def block_scheme_names(self):
-        return [
-            f"{scheme}_{n}_{attribute}"
-            if n
-            else f"{scheme}_{attribute}"
-            for attribute in self.settings.other.attributes
-            for scheme,nlist in self.block_schemes
-            for n in nlist
-        ]
-
-    @property
     def block_scheme_sql(self):
         """
         helper to build column names in query
@@ -43,13 +36,35 @@ class BlockSchemesHelper:
         ]
 
 class BlockSchemes(BlockSchemesHelper):
+    settings: Settings
+    """
+    Contains all block schemes.
+    """
 
     @property
     def block_schemes(self):
+        """
+        List of tuples containing block scheme name and parameters.
+        The block scheme name should correspond to a postgres function
+        """
         return [
             ("first_nchars", [2,4,6]),
             ("last_nchars", [2,4,6]),
             ("find_ngrams",[2,4,6]),
             ("acronym", [None]),
             ("exactmatch", [None])
+        ]
+
+    @property
+    def block_scheme_names(self):
+        """
+        Convenience property to list all block schemes
+        """
+        return [
+            f"{scheme}_{n}_{attribute}"
+            if n
+            else f"{scheme}_{attribute}"
+            for attribute in self.settings.other.attributes
+            for scheme,nlist in self.block_schemes
+            for n in nlist
         ]

@@ -54,25 +54,64 @@ class InvertedIndex:
         inverted_index = self.db.get_inverted_index(names,table)
 
         return pd.DataFrame([ 
-            y
-            for x in list(inverted_index["array_agg"])
-            for y in list(itertools.combinations(x, 2))
-        ], columns = ["_index_l","_index_r"]).assign(blocked=True).drop_duplicates()
+                y
+                for x in list(inverted_index["array_agg"])
+                for y in list(itertools.combinations(x, 2))
+            ], columns = ["_index_l","_index_r"]
+        ).assign(blocked=True).drop_duplicates()
 
 class DynamicProgram(InvertedIndex):
     """
-    For each block scheme, get the best block scheme conjunctions of 
-    lengths 1 to k using greedy dynamic programming approach.
+    Given a block scheme, use dynamic programming algorithm getBest()
+    to construct best conjunction
     """
 
-    def get_coverage(self, names):
+    def get_stats(self, names, sample_pairs, coverage):
         """
-        Get comparisons using train data then merge with labelled data. 
         Evaluate conjunction performance by:
             - percentage of positive / negative labels that are blocked;
             uses blocks_train
             - get comparisons using sample data to compute reduction ratio;
             uses blocks_sample
+
+        Parameters
+        ----------
+        names: List[str]
+            list of block schemes
+        sample_pairs: pd.DataFrame
+            comparison pairs obtained from sample data
+        coverage: pd.DataFrame
+            labelled data merged with comparison pairs obtained from 
+            train data; contains binary column blocked, which is 1 if 
+            the labelled pair was blocked and 0 if it was not blocked;
+            used to compute percent of positive and negative labels covered
+
+        Returns
+        ----------
+        dict
+            returns statistics evaluating the conjunction: 
+                - reduction ratio
+                - percent of positive pairs blocked
+                - percent of negative pairs blocked
+                - number of pairs generated
+                - length of conjunction
+        """
+        
+        n = self.settings.other.n
+        n_comparisons = (n * (n-1))/2
+
+        return {
+            "scheme": names,
+            "rr":1 - (len(sample_pairs) / (n_comparisons)),
+            "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
+            "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
+            "n_pairs": len(sample_pairs),
+            "n_scheme": len(names)
+        }
+
+    def get_coverage(self, names):
+        """
+        Get comparisons using train data then merge with labelled data. 
 
         Parameters
         ----------
@@ -95,23 +134,12 @@ class DynamicProgram(InvertedIndex):
             for table in ["blocks_train","blocks_sample"]
         ]
 
-        coverage = (
-            self.db.get_labels()
-            .merge(train_pairs, how = 'left')
-            .fillna(0)
+        coverage = self.db.get_labels().merge(train_pairs, how = 'left')
+        coverage = coverage.fillna(0)
+        
+        return self.get_stats(
+            names=names, sample_pairs=sample_pairs, coverage=coverage
         )
-
-        n = self.settings.other.n
-        n_comparisons = (n * (n-1))/2
-
-        return {
-            "scheme": names,
-            "rr":1 - (len(sample_pairs) / (n_comparisons)),
-            "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
-            "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
-            "n_pairs": len(sample_pairs),
-            "n_scheme": len(names)
-        }
 
     @lru_cache
     def score(self, arr:tuple):
@@ -121,18 +149,18 @@ class DynamicProgram(InvertedIndex):
         Parameters
         ----------
         arr: tuple
-            list of block schemes
+            tuple of block schemes
         """
         return self.get_coverage(names=list(arr))
 
-    def getBest(self, scheme:List[tuple]):
+    def getBest(self, scheme:tuple):
         """
         Dynamic programming implementation to get best conjunction.
 
         Parameters
         ----------
         scheme: tuple
-            list of block schemes
+            tuple of block schemes
         """
 
         dp = [None for _ in range(self.settings.other.k)]
@@ -175,15 +203,20 @@ class DynamicProgram(InvertedIndex):
         return dp
 
 class Conjunctions(DynamicProgram):
+    """
+    For each block scheme, get the best block scheme conjunctions of 
+    lengths 1 to k using greedy dynamic programming approach.
+    """
 
     def __init__(self, settings):
         self.settings = settings
         self.db = DatabaseCore(settings=self.settings)
     
     @property
-    def results(self):
-        
-        logging.info(f"getting best conjunctions")        
+    def conjunctions(self):
+        """
+        Computes conjunctions for each block scheme in parallel
+        """
         p = Pool(self.settings.other.cpus)
         res = p.map(
             self.getBest, 
@@ -191,21 +224,63 @@ class Conjunctions(DynamicProgram):
         )
         p.close()
         p.join()
-        
+        return res
+    
+    @property
+    def df_conjunctions(self):
+        """
+        DataFrame containing best conjunctions and their stats
+        """
         df = pd.concat([
             pd.DataFrame(r)
-            for r in res
+            for r in self.conjunctions
         ]).reset_index(drop=True)
         return df.loc[
             df.astype(str).drop_duplicates().index
         ].sort_values("rr", ascending=False)
 
     def best_schemes(self, n_covered):
-        best_schemes = self.results.copy()
+        """
+        Subset of best conjunctions such that n_covered samples 
+        are covered by the block conjunctions.
+
+        n_covered: int
+            number of samples to be cumulatively covered
+        """
+        logging.info(f"getting best conjunctions")        
+        best_schemes = self.df_conjunctions.copy()
         return best_schemes.loc[
             best_schemes["n_pairs"].cumsum()<n_covered, 
             "scheme"
         ]
+
+    @property
+    def newtablemap(self):
+        return {
+            "comparisons":self.orm.Comparisons,
+            "full_comparisons":self.orm.FullComparisons
+        }
+
+    def get_comparisons(
+            self, 
+            table, 
+            n_covered
+        ):
+        """
+        Applies subset of best conjunction to obtain comparison pairs.
+
+        Parameters
+        ----------
+        table: str
+            get pairs from table (either blocks_sample for sample or 
+            blocks_df for full df)
+        n_covered: int
+            number of records that the conjunctions should cover
+        """
+        return pd.concat([
+            self.get_pairs(names=x, table=table)  
+            for x in self.best_schemes(n_covered=n_covered)
+        ]).drop(["blocked"], axis=1).drop_duplicates()
 
     def save_best(
         self, 
@@ -213,28 +288,26 @@ class Conjunctions(DynamicProgram):
         newtable,
         n_covered
     ):
+        """
+        Applies subset of best conjunction to obtain comparison pairs.
 
-        comparisons = pd.concat([
-            self.get_pairs(names=x, table=table)  
-            for x in self.best_schemes(n_covered=n_covered)
-        ]).drop(["blocked"], axis=1).drop_duplicates()
+        Parameters
+        ----------
+        table: str
+            get pairs from table (either blocks_sample for sample or 
+            blocks_df for full df)
+        newtable: str
+            table to save output (either comparisons for sample or 
+            full_comparisons for full df)
+        n_covered: int
+            number of records that the conjunctions should cover
+        """
+        
+        comparisons = self.get_comparisons(table=table,n_covered=n_covered)
         
         self.orm = DatabaseORM(settings=self.settings)
-
-        newtablemap = {
-            "comparisons":self.orm.Comparisons,
-            "full_comparisons":self.orm.FullComparisons
-        }
-
-        # reset table
-        self.orm.engine.execute(f"""
-            TRUNCATE TABLE {self.settings.other.db_schema}.{newtable};
-        """)
-
-        with self.orm.Session() as session:
-            session.bulk_insert_mappings(
-                newtablemap[newtable], 
-                comparisons.to_dict(orient='records')
-            )
-            session.commit()
         
+        self.orm.truncate_table(newtable)
+        self.orm.bulk_insert(
+            df=comparisons, to_table=self.newtablemap[newtable]
+        )
