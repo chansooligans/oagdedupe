@@ -64,7 +64,7 @@ class Tasks:
     def _update_labels(self, df):
         df.to_sql(
             "labels", 
-            schema=self.schema, 
+            schema=self.settings.other.db_schema, 
             con=self.engine, 
             if_exists="append", 
             index=False
@@ -73,8 +73,8 @@ class Tasks:
         newtrain = set(df["_index_l"]).union(set(df["_index_r"]))
         self.engine.execute(
             f"""
-            INSERT INTO {self.schema}.train 
-            SELECT * FROM {self.schema}.df
+            INSERT INTO {self.settings.other.db_schema}.train 
+            SELECT * FROM {self.settings.other.db_schema}.df
             WHERE _index IN ({", ".join([str(x) for x in newtrain])})
             """, 
             con=self.engine
@@ -165,10 +165,9 @@ class Model(Tasks, Projects, DatabaseORM):
         self.settings = settings
         assert self.settings.other is not None
         assert self.settings.other.path_model is not None
-        self.schema = self.settings.other.db_schema
 
-        self.orm = DatabaseORM(settings=settings)
-        self.lsapi = LabelStudioAPI(settings=settings)
+        self.orm = DatabaseORM(settings=self.settings)
+        self.lsapi = LabelStudioAPI(settings=self.settings)
         self.init = Initialize(settings=self.settings)
         self.blocker = Blocker(settings=self.settings)
         self.coverage = Conjunctions(settings=self.settings)

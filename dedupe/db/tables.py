@@ -5,6 +5,7 @@ from sqlalchemy import Column, String, Integer, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
+from sqlalchemy.schema import CreateSchema
 
 @dataclass
 class Tables:
@@ -25,21 +26,6 @@ class Tables:
     @cached_property
     def Base(self):
         return declarative_base(metadata=self.metadata_obj)
-
-    def init_tables(self):
-        return (
-            self.maindf, 
-            self.Sample, 
-            self.Pos, 
-            self.Neg,
-            self.Train, 
-            self.Labels,
-            self.Distances,
-            self.FullDistances,
-            self.Comparisons,
-            self.FullComparisons,
-            self.Clusters
-        )
 
     @property
     def Attributes(self):
@@ -167,3 +153,40 @@ class Tables:
                 "_index":Column(Integer)
             }
         )
+    
+    def dynamic_declarative_mapping(self):
+        """
+        see "Declarative Table" in: https://docs.sqlalchemy.org/en/14/orm/declarative_tables.html
+
+        difference here is that we use builtin function type() to generate 
+        declarative table dynamically
+        """
+        return (
+            self.maindf, 
+            self.Sample, 
+            self.Pos, 
+            self.Neg,
+            self.Train, 
+            self.Labels,
+            self.Distances,
+            self.FullDistances,
+            self.Comparisons,
+            self.FullComparisons,
+            self.Clusters
+        )
+
+    def create_schema(self):
+        if not self.engine.dialect.has_schema(
+            self.engine, 
+            self.settings.other.db_schema
+        ):
+            self.engine.execute(CreateSchema(self.settings.other.db_schema))
+
+    def reset_all_tables(self):
+        self.Base.metadata.drop_all(self.engine)
+        self.Base.metadata.create_all(self.engine, checkfirst=True)
+
+    def init_tables(self):
+        self.dynamic_declarative_mapping()
+        self.create_schema()
+        self.reset_all_tables()

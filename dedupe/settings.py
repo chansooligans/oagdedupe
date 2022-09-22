@@ -34,8 +34,8 @@ class SettingsOther(BaseModel):
     """in-memory vs database calculations"""
     mem: bool = False
 
-    """block learner sample size"""
-    n: int = 500
+    """block learner sample size (per learning loop)"""
+    n: int = 5000
 
     """maximum length of blocking scheme conjunctions"""
     k: int = 3

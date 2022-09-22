@@ -76,6 +76,21 @@ class Dedupe(BaseModel):
             matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
         )
 
+
+    def fit_model(self) -> Tuple[np.array, np.array, np.array]:
+        """learn p(match)"""
+
+        # get predictions
+        results = json.loads(
+            requests.get(f"{self.settings.other.fast_api.url}/predict").content
+        )
+
+        return (
+            self.orm.get_full_comparison_indices().values,
+            np.array(results["predict_proba"]),
+            np.array(results["predict"])
+        )
+
     def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
@@ -94,32 +109,11 @@ class Dedupe(BaseModel):
             newtable="full_distances"
         )
 
-    def fit_model(self) -> Tuple[np.array, np.array, np.array]:
-        """learn p(match)"""
-
-        # get predictions
-        contents = requests.get(f"{self.settings.other.fast_api.url}/predict")
-        results = json.loads(contents.content)
-        scores = np.array(results["predict_proba"])
-        y = np.array(results["predict"])
-
-        idxmat = self.orm.get_full_comparison_indices().values
-
-        return idxmat, scores, y
-
     def initialize(self, df):
         """learn p(match)"""
 
         self.init = Initialize(settings=self.settings)
-
-        logging.info(f"building tables in schema: {self.settings.other.db_schema}")
-        if df is not None:
-            if "_index" in df.columns:
-                raise ValueError("_index cannot be a column name")
-            self.init._init_df(df=df, attributes=self.settings.other.attributes)
-        self.init._init_sample()
-        self.init._init_train()
-        self.init._init_labels()
+        self.init.setup(df=df)
         
         self.blocker.build_forward_indices()
         self.cover.save_best()

@@ -1,6 +1,7 @@
 from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
 
+from dataclasses import dataclass
 from functools import lru_cache, cached_property
 import pandas as pd
 import itertools
@@ -113,9 +114,8 @@ class DynamicProgram(InvertedIndex):
 
 class Conjunctions(DynamicProgram):
 
-    def __init__(self, settings:Settings):
+    def __init__(self, settings):
         self.settings = settings
-        self.n = self.settings.other.n
         self.db = DatabaseCore(settings=self.settings)
     
     @cached_property

@@ -1,5 +1,7 @@
 from dedupe.base import BaseDistance
 from dedupe.db.database import DatabaseORM
+from dedupe.settings import Settings
+
 from dataclasses import dataclass
 from jellyfish import jaro_winkler_similarity
 import ray
@@ -33,10 +35,10 @@ class DistanceMixin:
                 [comps.values] + 
                 [
                     self.distance(comps[[f"{attribute}_l",f"{attribute}_r"]].values)
-                    for attribute in self.attributes
+                    for attribute in self.settings.other.attributes
                 ]
             ),
-            columns = list(comps.columns) + self.attributes
+            columns = list(comps.columns) + self.settings.other.attributes
         )
 
     @property
@@ -58,7 +60,7 @@ class DistanceMixin:
         
         # reset table
         self.orm.engine.execute(f"""
-            TRUNCATE TABLE {self.schema}.{newtable};
+            TRUNCATE TABLE {self.settings.other.db_schema}.{newtable};
         """)
 
         # insert
@@ -76,15 +78,13 @@ def ray_distance(pairs):
         for pair in pairs
     ]
 
+@dataclass
 class RayAllJaro(BaseDistance, DistanceMixin, DatabaseORM):
+    settings: Settings
     "needs work: update to allow user to specify attribute-algorithm pairs"
 
-    def __init__(self, settings):
-        self.settings = settings
-        self.schema = settings.other.db_schema
-        self.attributes = settings.other.attributes
-
-        self.orm = DatabaseORM(settings=settings)
+    def __post_init__(self):
+        self.orm = DatabaseORM(settings=self.settings)
 
 
     def distance(self, pairs):

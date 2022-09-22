@@ -26,16 +26,12 @@ class DatabaseCore:
     queries that do not need to run in parallel are in DatabaseORM
     """
 
-    def __post_init__(self):
-        self.engine_url = self.settings.other.path_database
-        self.schema = self.settings.other.db_schema
-
     def query(self, sql):
         """
         for parallel implementation, need to create separate engine 
         for each process
         """
-        engine = create_engine(self.engine_url)
+        engine = create_engine(self.settings.other.path_database)
         res = pd.read_sql(sql, con=engine)
         engine.dispose()
         return res
@@ -55,7 +51,7 @@ class DatabaseCore:
                     SELECT 
                         {signatures(names)}, 
                         ARRAY_AGG(_index ORDER BY _index asc) as array_agg
-                    FROM {self.schema}.{table}
+                    FROM {self.settings.other.db_schema}.{table}
                     GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
                 )
             SELECT * 
@@ -71,7 +67,7 @@ class DatabaseCore:
                     SELECT 
                         {signatures(names)}, 
                         ARRAY_AGG(_index ORDER BY _index asc) as array_agg
-                    FROM {self.schema}.{table}
+                    FROM {self.settings.other.db_schema}.{table}
                     GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
                 ),
                 inverted_index_subset AS (
@@ -89,18 +85,12 @@ class DatabaseCore:
         get all blocking schemes
         """
         return self.query(
-            f"SELECT * FROM {self.schema}.blocks_train LIMIT 1"
+            f"SELECT * FROM {self.settings.other.db_schema}.blocks_train LIMIT 1"
         ).columns[1:]
-
 
 @dataclass
 class DatabaseORM(Tables, DatabaseCore):
     settings: Settings
-
-    def __post_init__(self):
-        self.engine_url = self.settings.other.path_database
-        self.schema = self.settings.other.db_schema
-        self.attributes = self.settings.other.attributes
 
     @cached_property
     def engine(self):
@@ -138,7 +128,7 @@ class DatabaseORM(Tables, DatabaseCore):
                 .query(
                     *(
                         getattr(self.FullDistances,x) 
-                        for x in self.attributes
+                        for x in self.settings.other.attributes
                     )
                 )
                 )
@@ -155,9 +145,9 @@ class DatabaseORM(Tables, DatabaseCore):
 
     def get_compare_cols(self):
         columns = [
-            [f"{x}_l" for x in self.attributes], 
+            [f"{x}_l" for x in self.settings.other.attributes], 
             ["_index_l"],
-            [f"{x}_r" for x in self.attributes],
+            [f"{x}_r" for x in self.settings.other.attributes],
             ["_index_r"]
         ]
         return sum(columns, [])
@@ -196,12 +186,20 @@ class DatabaseORM(Tables, DatabaseCore):
                 .drop(["_label_key"], axis=1)
             )
 
+    def distinct_train_subquery(self, session):
+        return (
+            session
+            .query(self.Train)
+            .distinct(self.Train._index)
+            .subquery()
+        )
+
     def get_label_attributes(self):
 
         with self.Session() as session:
             
-            dataL = session.query(self.Train).distinct(self.Train._index).subquery()
-            dataR = session.query(self.Train).distinct(self.Train._index).subquery()
+            dataL = self.distinct_train_subquery(session)
+            dataR = self.distinct_train_subquery(session)
             
             query = (
                 session
