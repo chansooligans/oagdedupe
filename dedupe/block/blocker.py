@@ -5,13 +5,34 @@ from dedupe.db.database import Engine
 from dataclasses import dataclass
 import logging
 
-class ForwardIndex(BlockSchemes):
+@dataclass
+class Blocker(BlockSchemes, Engine):
+    settings: Settings
     """
     Builds Entity Index (Forward Index) where keys are entities 
-    and values are signatures
+    and values are signatures. Inherits BlockSchemes
+
+    Attributes
+    ----------
+    settings : Settings
     """
 
     def query_blocks(self, table, columns):
+        """
+        Builds SQL query used to build forward indices. A forward index 
+        is a table where rows are entities, columns are block schemes,
+        and values contain signatures.
+
+        Parameters
+        ----------
+        table : str
+        columns : List[str]
+
+        Returns
+        ----------
+        str
+        """
+        
         return f"""
             DROP TABLE IF EXISTS {self.settings.other.db_schema}.blocks_{table};
             
@@ -24,6 +45,10 @@ class ForwardIndex(BlockSchemes):
         """
 
     def build_forward_indices(self):
+        """
+        Executes SQL queries to build forward indices for sample 
+        and train datasets
+        """
         for table in ["sample","train"]:
             logging.info(f"Building forward indices: \
                 {self.settings.other.db_schema}.blocks_{table}")
@@ -33,17 +58,17 @@ class ForwardIndex(BlockSchemes):
             ))
 
     def build_forward_indices_full(self, columns):
+        """
+        Executes SQL queries to build forward indices on full data.
+
+        Parameters
+        ----------
+        columns : List[str]
+            block schemes to include in forward index
+        """
         logging.info(f"Building forward indices: \
             {self.settings.other.db_schema}.blocks_df")
         self.engine.execute(self.query_blocks(
             table="df",
             columns=columns
         ))    
-        
-@dataclass
-class Blocker(ForwardIndex, Engine):
-    settings: Settings
-    """
-    DatabaseORM is used only for `self.engine`
-    """
-    pass
