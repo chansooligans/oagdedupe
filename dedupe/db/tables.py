@@ -1,7 +1,7 @@
 from dedupe.settings import Settings
 from dataclasses import dataclass
 from functools import cached_property
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
@@ -24,9 +24,10 @@ class Tables:
         """
         return (
             self.maindf, 
-            self.Sample, 
+            # self.Sample, 
             self.Pos, 
             self.Neg,
+            self.Unlabelled,
             self.Train, 
             self.Labels,
             self.Distances,
@@ -90,20 +91,13 @@ class Tables:
                 "_index":Column(Integer, primary_key=True)
             }
         )
-
-    @cached_property    
-    def Sample(self):
-        return type('sample', (self.Attributes, self.Base), {
-                "__tablename__":"sample",
-                "_index":Column(Integer, primary_key=True)
-            }
-        )
-
+        
     @cached_property            
     def Pos(self):
         return type('pos', (self.Attributes, self.Base), {
                 "__tablename__":"pos",
-                "_index":Column(Integer, primary_key=True)
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
             }
         )
 
@@ -112,7 +106,17 @@ class Tables:
     def Neg(self):
         return type('neg', (self.Attributes, self.Base), {
                 "__tablename__":"neg",
-                "_index":Column(Integer, primary_key=True)
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
+            }
+        )
+
+    @cached_property    
+    def Unlabelled(self):
+        return type('unlabelled', (self.Attributes, self.Base), {
+                "__tablename__":"unlabelled",
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
             }
         )
 
@@ -120,7 +124,8 @@ class Tables:
     def Train(self):
         return type('train', (self.Attributes, self.Base), {
                 "__tablename__":"train",
-                "_index":Column(Integer, primary_key=True)
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
             }
         )
 

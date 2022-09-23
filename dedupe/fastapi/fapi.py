@@ -12,7 +12,7 @@ import requests
 import joblib
 import pandas as pd
 import logging
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 def url_checker(url):
     try:
@@ -60,25 +60,22 @@ class Tasks:
 
     def _update_train(self, newlabels):
         indices = set(newlabels["_index_l"]).union(set(newlabels["_index_r"]))
-        with self.api.init.Session() as session:    
-            query = (
-                session.query(self.api.init.maindf)
-                .filter(self.api.init.maindf._index.in_(indices))
+        with self.api.init.Session() as session:
+            stmt = (
+                update(self.api.init.Train).
+                where(self.api.init.Train._index.in_(indices)).
+                values(labelled=True)
             )
-            return pd.read_sql(query.statement, query.session.bind)
+            session.execute(stmt)
+            session.commit()
     
-    def _update_labels_and_train(self, newlabels):
+    def _update_labels_and_train_tables(self, newlabels):
         self.api.orm._update_table(newlabels, self.api.init.Labels())
-        newtrain = self._update_train(newlabels)
-        self.api.orm._update_table(newtrain, self.api.init.Train())
+        self._update_train(newlabels)
         return True
 
     def _get_new_labels(self):
-        newlabels = self.lsapi.get_new_labels(project_id=self.project.id)
-        if len(newlabels) > 0:
-            return self._update_labels_and_train(newlabels)
-        else:
-            return
+        return self.lsapi.get_new_labels(project_id=self.project.id)
 
     def _get_learning_samples(self, n_instances=5):
         
@@ -87,7 +84,7 @@ class Tasks:
 
         logging.info("getting active learning samples")
         sample_idx, _ = self.clf.query(
-            distances[self.settings.other.attributes], 
+            distances[self.settings.other.attributes].values, 
             n_instances=n_instances
         )
 
@@ -113,7 +110,9 @@ class Tasks:
             
             # get new annotations and update
             newlabels = self._get_new_labels()
-            if newlabels is None:
+            if len(newlabels) > 0:
+                self._update_labels_and_train_tables(newlabels)
+            else:
                 return
 
             # learn new block conjunctions

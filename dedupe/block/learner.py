@@ -66,20 +66,20 @@ class DynamicProgram(InvertedIndex):
     to construct best conjunction
     """
 
-    def get_stats(self, names, sample_pairs, coverage):
+    def get_stats(self, names, n_pairs, coverage):
         """
         Evaluate conjunction performance by:
             - percentage of positive / negative labels that are blocked;
             uses blocks_train
-            - get comparisons using sample data to compute reduction ratio;
-            uses blocks_sample
+            - get comparisons using train data to compute reduction ratio;
+            uses blocks_train
 
         Parameters
         ----------
         names: List[str]
             list of block schemes
-        sample_pairs: pd.DataFrame
-            comparison pairs obtained from sample data
+        n_pairs: int
+            number of comparison pairs obtained from train data
         coverage: pd.DataFrame
             labelled data merged with comparison pairs obtained from 
             train data; contains binary column blocked, which is 1 if 
@@ -102,10 +102,10 @@ class DynamicProgram(InvertedIndex):
 
         return {
             "scheme": names,
-            "rr":1 - (len(sample_pairs) / (n_comparisons)),
+            "rr":1 - (n_pairs / (n_comparisons)),
             "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
             "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
-            "n_pairs": len(sample_pairs),
+            "n_pairs": n_pairs,
             "n_scheme": len(names)
         }
 
@@ -129,16 +129,16 @@ class DynamicProgram(InvertedIndex):
                 - length of conjunction
         """
 
-        train_pairs, sample_pairs = [
-            self.get_pairs_in_memory(names=names, table=table)
-            for table in ["blocks_train","blocks_sample"]
-        ]
-
+        train_pairs = self.get_pairs_in_memory(
+            names=names, 
+            table="blocks_train"
+        )
+        
         coverage = self.db.get_labels().merge(train_pairs, how = 'left')
         coverage = coverage.fillna(0)
         
         return self.get_stats(
-            names=names, sample_pairs=sample_pairs, coverage=coverage
+            names=names, n_pairs=len(train_pairs), coverage=coverage
         )
 
     @lru_cache
@@ -231,6 +231,7 @@ class Conjunctions(DynamicProgram):
         """
         DataFrame containing best conjunctions and their stats
         """
+        logging.info(f"getting best conjunctions")        
         df = pd.concat([
             pd.DataFrame(r)
             for r in self.conjunctions
@@ -249,7 +250,6 @@ class Conjunctions(DynamicProgram):
         n_covered: int
             number of samples to be cumulatively covered
         """
-        logging.info(f"getting best conjunctions")        
         best_schemes = self.df_conjunctions.copy()
         return best_schemes.loc[
             best_schemes["n_pairs"].cumsum()<n_covered, 
@@ -274,7 +274,7 @@ class Conjunctions(DynamicProgram):
         Parameters
         ----------
         table: str
-            get pairs from table (either blocks_sample for sample or 
+            get pairs from table (either blocks_train for sample or 
             blocks_df for full df)
         n_covered: int
             number of records that the conjunctions should cover
@@ -296,7 +296,7 @@ class Conjunctions(DynamicProgram):
         Parameters
         ----------
         table: str
-            get pairs from table (either blocks_sample for sample or 
+            get pairs from table (either blocks_train for sample or 
             blocks_df for full df)
         newtable: str
             table to save output (either comparisons for sample or 

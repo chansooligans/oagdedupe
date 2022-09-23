@@ -253,7 +253,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
     @property
     def fields_table(self):
         return {
-            "comparisons":self.Sample,
+            "comparisons":self.Train,
             "full_comparisons":self.maindf,
             "labels": self.Train
         }
