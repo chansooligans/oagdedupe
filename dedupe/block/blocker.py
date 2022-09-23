@@ -45,16 +45,15 @@ class Blocker(BlockSchemes, Engine):
 
     def build_forward_indices(self):
         """
-        Executes SQL queries to build forward indices for sample 
-        and train datasets
+        Executes SQL queries to build forward indices for train datasets
         """
-        for table in ["sample","train"]:
-            logging.info(f"Building forward indices: \
-                {self.settings.other.db_schema}.blocks_{table}")
-            self.engine.execute(self.query_blocks(
-                table=table,
-                columns=self.block_scheme_sql
-            ))
+    
+        logging.info(f"Building forward indices: \
+            {self.settings.other.db_schema}.blocks_train")
+        self.engine.execute(self.query_blocks(
+            table="train",
+            columns=self.block_scheme_sql
+        ))
 
     def build_forward_indices_full(self, columns):
         """

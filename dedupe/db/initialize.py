@@ -16,12 +16,12 @@ class Initialize(Tables):
     Can be used to create:
         - df
         - sample
-            - random sample of df of size settings.other.n, drawn each 
-            active learning loop
+            - random sample of df of size settings.other.n, 
         - pos/neg
             - created to help build train and labels; 
             - pos contains a random sample repeated 4 times
-            - neg contains 10 random samples
+            - neg contains [settings.other.n] random samples, drawn each 
+            active learning loop
         - train
             - combines pos and neg
         - labels
@@ -39,18 +39,18 @@ class Initialize(Tables):
             )
             session.commit()
 
-    def _init_sample(self):
-        logging.info(f"Building table {self.settings.other.db_schema}.sample.")
-        with self.Session() as session:
-            sample = (
-                select([self.maindf])
-                .order_by(func.random())
-                .limit(self.settings.other.n)
-            )
-            session.execute(
-                insert(self.Sample).from_select(sample.subquery(1).c, sample)
-            )
-            session.commit()
+    # def _init_sample(self):
+    #     logging.info(f"Building table {self.settings.other.db_schema}.sample.")
+    #     with self.Session() as session:
+    #         sample = (
+    #             select([self.maindf])
+    #             .order_by(func.random())
+    #             .limit(self.settings.other.n)
+    #         )
+    #         session.execute(
+    #             insert(self.Sample).from_select(sample.subquery(1).c, sample)
+    #         )
+    #         session.commit()
 
     def _init_pos(self):
         # create pos
@@ -68,7 +68,11 @@ class Initialize(Tables):
 
     def _init_neg(self):
         # create neg
-        neg = select([self.maindf]).order_by(func.random()).limit(10)
+        neg = (
+            select([self.maindf])
+            .order_by(func.random())
+            .limit(self.settings.other.n)
+        )
         with self.Session() as session:
             records = session.execute(neg).all()
             for r in records:

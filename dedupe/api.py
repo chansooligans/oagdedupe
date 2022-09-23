@@ -119,7 +119,7 @@ class Dedupe(BaseModel):
         
         self.blocker.build_forward_indices()
         self.cover.save_best(
-            table="blocks_sample", newtable="comparisons", n_covered=100
+            table="blocks_train", newtable="comparisons", n_covered=100
         )
 
         logging.info("get distance matrix")
