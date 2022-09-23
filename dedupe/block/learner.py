@@ -1,5 +1,6 @@
 from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
+from dedupe.block import Blocker
 
 from dataclasses import dataclass
 from typing import List
@@ -208,9 +209,10 @@ class Conjunctions(DynamicProgram):
     lengths 1 to k using greedy dynamic programming approach.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings:Settings):
         self.settings = settings
         self.db = DatabaseCore(settings=self.settings)
+        self.blocker = Blocker(settings=self.settings)
     
     @property
     def conjunctions(self):
@@ -240,22 +242,6 @@ class Conjunctions(DynamicProgram):
             df.astype(str).drop_duplicates().index
         ].sort_values("rr", ascending=False)
 
-    def best_schemes(self, n_covered):
-        """
-        Subset of best conjunctions such that n_covered samples 
-        are covered by the block conjunctions.
-
-        Parameters
-        ----------
-        n_covered: int
-            number of samples to be cumulatively covered
-        """
-        best_schemes = self.df_conjunctions.copy()
-        return best_schemes.loc[
-            best_schemes["n_pairs"].cumsum()<n_covered, 
-            "scheme"
-        ]
-
     @property
     def newtablemap(self):
         return {
@@ -279,11 +265,27 @@ class Conjunctions(DynamicProgram):
         n_covered: int
             number of records that the conjunctions should cover
         """
-        return pd.concat([
-            self.get_pairs(names=x, table=table)  
-            for x in self.best_schemes(n_covered=n_covered)
-        ]).drop(["blocked"], axis=1).drop_duplicates()
+        df = pd.DataFrame()
+        for stats in self.df_conjunctions.to_dict(orient="records"):
 
+            if stats["rr"] < 0.99999:
+                logging.warning(f"""
+                    next conjunction may yield too many pairs;
+                    stopping pair generation with scheme {stats["scheme"]}
+                """)
+                return df
+
+            if table == "blocks_df":
+                self.blocker.build_forward_indices_full(stats["scheme"])
+                
+            df = pd.concat([
+                df,
+                self.get_pairs(names=stats["scheme"], table=table)
+            ], axis=0).drop_duplicates()
+
+            if len(df) > n_covered:
+                return df.drop(["blocked"], axis=1)
+        
     def save_best(
         self, 
         table, 

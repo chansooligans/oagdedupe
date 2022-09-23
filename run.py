@@ -56,3 +56,5 @@ d.initialize(df=df, reset=True)
 d.fit_blocks()
 res = d.predict()
 
+# %%
+res
