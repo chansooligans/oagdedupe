@@ -92,16 +92,10 @@ class Dedupe(BaseModel):
             np.array(results["predict"])
         )
 
-    def fit_blocks(self, n_covered=100):
+    def fit_blocks(self, n_covered=100_000):
 
         # fit block scheme conjunctions to full data
-        columns = [
-            f"{self.blocker.block_scheme_mapping[x]} as {x}"
-            for x in set(sum(self.cover.best_schemes(n_covered=n_covered).values, []))
-        ]
-        self.blocker.build_forward_indices_full(
-            columns = columns
-        )
+        self.blocker.init_forward_index_full()
         self.cover.save_best(
             table="blocks_df", newtable="full_comparisons", n_covered=n_covered
         )
@@ -112,7 +106,7 @@ class Dedupe(BaseModel):
             newtable=self.orm.FullDistances
         )
 
-    def initialize(self, df=None, reset=True, resample=False, n_covered=2000):
+    def initialize(self, df=None, reset=True, resample=False, n_covered=500):
         """learn p(match)"""
 
         self.init.setup(df=df, reset=reset, resample=resample)
