@@ -268,6 +268,8 @@ class Conjunctions(DynamicProgram):
         df = pd.DataFrame()
         for stats in self.df_conjunctions.to_dict(orient="records"):
 
+            logging.info(f"""evaluating scheme {stats["scheme"]}""")
+
             if stats["rr"] < 0.99999:
                 logging.warning(f"""
                     next conjunction may yield too many pairs;
@@ -282,6 +284,8 @@ class Conjunctions(DynamicProgram):
                 df,
                 self.get_pairs(names=stats["scheme"], table=table)
             ], axis=0).drop_duplicates()
+
+            logging.info(f"""{len(df)} comparison pairs gathered""")
 
             if len(df) > n_covered:
                 return df.drop(["blocked"], axis=1)

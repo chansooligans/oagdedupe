@@ -58,7 +58,9 @@ class Blocker(BlockSchemes, Engine):
         else:
             coltype = "text"
 
-        logging.info(f"computing block scheme {col} on full data")
+        logging.info(f"""
+            computing block scheme {col} on full data
+        """)
 
         self.engine.execute(f"""
             ALTER TABLE dedupe.blocks_{table}

@@ -92,7 +92,7 @@ class Dedupe(BaseModel):
             np.array(results["predict"])
         )
 
-    def fit_blocks(self, n_covered=100_000):
+    def fit_blocks(self, n_covered=5_000_000):
 
         # fit block scheme conjunctions to full data
         self.blocker.init_forward_index_full()

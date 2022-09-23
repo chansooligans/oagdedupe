@@ -46,7 +46,6 @@ files = glob.glob(
 df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
 for attr in settings.other.attributes:
     df[attr] = df[attr].astype(str)
-df = df.sample(100_000, random_state=1234)
 
 # %%
 d = Dedupe(settings=settings)
@@ -57,4 +56,5 @@ d.fit_blocks()
 res = d.predict()
 
 # %%
-res
+d.cover.df_conjunctions
+# %%
