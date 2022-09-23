@@ -231,6 +231,7 @@ class Conjunctions(DynamicProgram):
         """
         DataFrame containing best conjunctions and their stats
         """
+        logging.info(f"getting best conjunctions")        
         df = pd.concat([
             pd.DataFrame(r)
             for r in self.conjunctions
@@ -249,7 +250,6 @@ class Conjunctions(DynamicProgram):
         n_covered: int
             number of samples to be cumulatively covered
         """
-        logging.info(f"getting best conjunctions")        
         best_schemes = self.df_conjunctions.copy()
         return best_schemes.loc[
             best_schemes["n_pairs"].cumsum()<n_covered, 

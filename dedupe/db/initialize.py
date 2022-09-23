@@ -1,7 +1,7 @@
 from dedupe.settings import Settings
 from dedupe.distance.string import RayAllJaro
 from dedupe.db.tables import Tables
-from sqlalchemy import select, insert, func
+from sqlalchemy import select, delete, func
 
 import itertools
 from dataclasses import dataclass
@@ -15,15 +15,15 @@ class Initialize(Tables):
 
     Can be used to create:
         - df
-        - sample
-            - random sample of df of size settings.other.n, 
         - pos/neg
             - created to help build train and labels; 
             - pos contains a random sample repeated 4 times
-            - neg contains [settings.other.n] random samples, drawn each 
-            active learning loop
+            - neg contains 10 random samples
+        - unlabelled
+            - random sample of df of size settings.other.n, 
+            - samples are drawn each active learning loop
         - train
-            - combines pos and neg
+            - combines pos, neg, and unlabelled
         - labels
             - gets all distinct pairwise comparisons from train
             - pairs from pos are labelled as a match
@@ -39,47 +39,51 @@ class Initialize(Tables):
             )
             session.commit()
 
-    # def _init_sample(self):
-    #     logging.info(f"Building table {self.settings.other.db_schema}.sample.")
-    #     with self.Session() as session:
-    #         sample = (
-    #             select([self.maindf])
-    #             .order_by(func.random())
-    #             .limit(self.settings.other.n)
-    #         )
-    #         session.execute(
-    #             insert(self.Sample).from_select(sample.subquery(1).c, sample)
-    #         )
-    #         session.commit()
-
     def _init_pos(self):
         # create pos
         pos = select([self.maindf]).order_by(func.random()).limit(1)
         with self.Session() as session:
             records = session.execute(pos).first()
             for i in range(-3,1):
-                pos = self.Pos()
+                table = self.Pos()
                 for attr in self.settings.other.attributes + ["_index"]:
-                    setattr(pos, attr, getattr(records[0], attr))
+                    setattr(table, attr, getattr(records[0], attr))
                 if i < 0:
-                    setattr(pos, "_index", i)
-                session.add(pos)
+                    setattr(table, "_index", i)
+                setattr(table, "labelled", True)
+                session.add(table)
             session.commit()
 
     def _init_neg(self):
         # create neg
         neg = (
+            select([self.maindf]).order_by(func.random()).limit(10)
+        )
+        with self.Session() as session:
+            records = session.execute(neg).all()
+            for r in records:
+                table = self.Neg()
+                for attr in self.settings.other.attributes + ["_index"]:
+                    setattr(table, attr, getattr(r[0], attr))
+                setattr(table, "labelled", True)
+                session.add(table)
+            session.commit()
+
+    def _init_unlabelled(self):
+        # create unlabelled
+        unlabelled = (
             select([self.maindf])
             .order_by(func.random())
             .limit(self.settings.other.n)
         )
         with self.Session() as session:
-            records = session.execute(neg).all()
+            records = session.execute(unlabelled).all()
             for r in records:
-                neg = self.Neg()
+                table = self.Unlabelled()
                 for attr in self.settings.other.attributes + ["_index"]:
-                    setattr(neg, attr, getattr(r[0], attr))
-                session.add(neg)
+                    setattr(table, attr, getattr(r[0], attr))
+                setattr(table, "labelled", False)
+                session.add(table)
             session.commit()
 
     def _init_train(self):
@@ -87,16 +91,17 @@ class Initialize(Tables):
         logging.info(f"Building table {self.settings.other.db_schema}.train.")
         self._init_pos()
         self._init_neg()
+        self._init_unlabelled()
         
         # create train
         with self.Session() as session:
-            for tab in [self.Pos, self.Neg]:
+            for tab in [self.Unlabelled, self.Pos, self.Neg]:
                 records = session.query(tab).all()
                 for r in records:
                     train = self.Train()
-                    for attr in self.settings.other.attributes + ["_index"]:
+                    for attr in self.settings.other.attributes + ["_index", "labelled"]:
                         setattr(train, attr, getattr(r, attr))
-                    session.add(train)
+                    session.merge(train)
             session.commit()
 
     def _init_labels(self):
@@ -126,6 +131,34 @@ class Initialize(Tables):
             newtable=self.Labels
         )
 
+    def _resample(self):
+
+        # delete unlabelled from train
+        with self.Session() as session:
+            stmt = (
+                delete(self.Train).
+                where(self.Train.labelled==False)
+            )
+            session.execute(stmt)
+            session.commit()
+
+        # resample unlabelled
+        self.engine.execute(f"""
+                TRUNCATE TABLE {self.settings.other.db_schema}.unlabelled;
+            """)
+
+        # add to train
+        with self.Session() as session:
+     
+            records = session.query(self.Unlabelled).all()
+            for r in records:
+                train = self.Train()
+                for attr in self.settings.other.attributes + ["_index", "labelled"]:
+                    setattr(train, attr, getattr(r, attr))
+                session.merge(train)
+            session.commit()
+        
+
     def setup(self, df=None, reset=True, resample=False):
         """
         runs table creation functions
@@ -151,15 +184,10 @@ class Initialize(Tables):
             if "_index" in df.columns:
                 raise ValueError("_index cannot be a column name")
             self._init_df(df=df)
-
-            self._init_sample()
             self._init_train()
             self._init_labels()
 
         if resample:
-            self.engine.execute(f"""
-                TRUNCATE TABLE {self.settings.other.db_schema}.sample;
-            """)
-            self._init_sample()
+            self._resample()
             self._label_distances()
     

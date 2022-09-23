@@ -92,18 +92,18 @@ class Dedupe(BaseModel):
             np.array(results["predict"])
         )
 
-    def fit_blocks(self):
+    def fit_blocks(self, n_covered=100):
 
         # fit block scheme conjunctions to full data
         columns = [
             f"{self.blocker.block_scheme_mapping[x]} as {x}"
-            for x in set(sum(self.cover.best_schemes(n_covered=5).values, []))
+            for x in set(sum(self.cover.best_schemes(n_covered=n_covered).values, []))
         ]
         self.blocker.build_forward_indices_full(
             columns = columns
         )
         self.cover.save_best(
-            table="blocks_df", newtable="full_comparisons", n_covered=5
+            table="blocks_df", newtable="full_comparisons", n_covered=n_covered
         )
 
         # get distances
@@ -112,14 +112,14 @@ class Dedupe(BaseModel):
             newtable=self.orm.FullDistances
         )
 
-    def initialize(self, df=None, reset=True, resample=False):
+    def initialize(self, df=None, reset=True, resample=False, n_covered=2000):
         """learn p(match)"""
 
         self.init.setup(df=df, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
         self.cover.save_best(
-            table="blocks_train", newtable="comparisons", n_covered=100
+            table="blocks_train", newtable="comparisons", n_covered=n_covered
         )
 
         logging.info("get distance matrix")
