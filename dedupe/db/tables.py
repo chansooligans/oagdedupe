@@ -10,10 +10,47 @@ from sqlalchemy.schema import CreateSchema
 @dataclass
 class Tables:
     settings: Settings
+    """
+    Factory to create sql alchemy "Declarative Table" 
+    (https://docs.sqlalchemy.org/en/14/orm/declarative_tables.html)
+
+    We use builtin function type() to generate declarative table dynamically
+    since attribute names are variable
+    """
+
+    def setup_dynamic_declarative_mapping(self):
+        """
+        initializes declarative tables
+        """
+        return (
+            self.maindf, 
+            self.Sample, 
+            self.Pos, 
+            self.Neg,
+            self.Train, 
+            self.Labels,
+            self.Distances,
+            self.FullDistances,
+            self.Comparisons,
+            self.FullComparisons,
+            self.Clusters
+        )
 
     @cached_property
     def metadata_obj(self):
+        """
+        A sqlalchemy MetaData collection that stores Tables
+        """
         return MetaData(schema=self.settings.other.db_schema)
+
+    @cached_property
+    def Base(self):
+        """
+        All Table objects declared by subclasses of this Base share a 
+        common metadata; that is they are all part of the same 
+        Metadata collection
+        """
+        return declarative_base(metadata=self.metadata_obj)
 
     @cached_property
     def engine(self):
@@ -23,9 +60,6 @@ class Tables:
     def Session(self):
         return sessionmaker(bind=self.engine)
 
-    @cached_property
-    def Base(self):
-        return declarative_base(metadata=self.metadata_obj)
 
     @property
     def Attributes(self):
@@ -147,29 +181,11 @@ class Tables:
                 "_index":Column(Integer)
             }
         )
-    
-    def setup_dynamic_declarative_mapping(self):
-        """
-        see "Declarative Table" in: https://docs.sqlalchemy.org/en/14/orm/declarative_tables.html
-
-        difference here is that we use builtin function type() to generate 
-        declarative table dynamically
-        """
-        return (
-            self.maindf, 
-            self.Sample, 
-            self.Pos, 
-            self.Neg,
-            self.Train, 
-            self.Labels,
-            self.Distances,
-            self.FullDistances,
-            self.Comparisons,
-            self.FullComparisons,
-            self.Clusters
-        )
 
     def create_schema(self):
+        """
+        helper function to create a schema using sqlalchemy orm
+        """
         if not self.engine.dialect.has_schema(
             self.engine, 
             self.settings.other.db_schema
@@ -177,6 +193,9 @@ class Tables:
             self.engine.execute(CreateSchema(self.settings.other.db_schema))
 
     def reset_all_tables(self):
+        """
+        deletes all tables and creates all tables
+        """
         self.Base.metadata.drop_all(self.engine)
         self.Base.metadata.create_all(self.engine, checkfirst=True)
 

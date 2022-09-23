@@ -226,7 +226,7 @@ class Conjunctions(DynamicProgram):
         p.join()
         return res
     
-    @property
+    @cached_property
     def df_conjunctions(self):
         """
         DataFrame containing best conjunctions and their stats
@@ -244,6 +244,8 @@ class Conjunctions(DynamicProgram):
         Subset of best conjunctions such that n_covered samples 
         are covered by the block conjunctions.
 
+        Parameters
+        ----------
         n_covered: int
             number of samples to be cumulatively covered
         """

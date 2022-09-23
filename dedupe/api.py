@@ -102,12 +102,14 @@ class Dedupe(BaseModel):
         self.blocker.build_forward_indices_full(
             columns = columns
         )
-        self.cover.save_best(table="blocks_df", newtable="full_comparisons", n_covered=5)
+        self.cover.save_best(
+            table="blocks_df", newtable="full_comparisons", n_covered=5
+        )
 
         # get distances
         self.distance.save_distances(
-            table="full_comparisons",
-            newtable="full_distances"
+            table=self.orm.FullComparisons,
+            newtable=self.orm.FullDistances
         )
 
     def initialize(self, df=None, reset=True, resample=False):
@@ -116,10 +118,15 @@ class Dedupe(BaseModel):
         self.init.setup(df=df, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
-        self.cover.save_best(table="blocks_sample", newtable="comparisons", n_covered=100)
+        self.cover.save_best(
+            table="blocks_sample", newtable="comparisons", n_covered=100
+        )
 
         logging.info("get distance matrix")
-        self.distance.save_distances(table="comparisons",newtable="distances")
+        self.distance.save_distances(
+            table=self.orm.Comparisons,
+            newtable=self.orm.Distances
+        )
 
         
         

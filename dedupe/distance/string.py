@@ -9,65 +9,6 @@ import numpy as np
 import pandas as pd
 import logging
 
-@dataclass
-class DistanceMixin:
-    """
-    Mixin class for all distance computers
-    """
-
-    def get_chunks(self, lst, n):
-        """Yield successive n-sized chunks from lst."""
-        for i in range(0, len(lst), n):
-            yield lst[i:i + n]
-
-    def get_distmat(self, table) -> np.array:
-        """for each candidate pair and attribute, compute distances"""
-
-        if table == "labels":
-            comps = self.orm.get_label_attributes()
-        else:
-            comps = self.orm.get_comparison_attributes(table=table)
-
-        logging.info(f"making {len(comps)} comparions for table: {table}")
-
-        return pd.DataFrame(
-            np.column_stack(
-                [comps.values] + 
-                [
-                    self.distance(comps[[f"{attribute}_l",f"{attribute}_r"]].values)
-                    for attribute in self.settings.other.attributes
-                ]
-            ),
-            columns = list(comps.columns) + self.settings.other.attributes
-        )
-
-    @property
-    def dist_tables(self):
-        return {
-            "labels":self.orm.Labels,
-            "distances":self.orm.Distances,
-            "full_distances":self.orm.FullDistances
-        }
-
-    
-    def save_distances(self, table="comparisons", newtable="distances"):
-
-        distances = self.get_distmat(
-            table=table
-        )
-
-        distances[["_index_l","_index_r"]] = distances[["_index_l","_index_r"]].astype(int)
-        
-        # reset table
-        self.orm.engine.execute(f"""
-            TRUNCATE TABLE {self.settings.other.db_schema}.{newtable};
-        """)
-
-        # insert
-        self.orm.bulk_insert(
-            df=distances, to_table=self.dist_tables[newtable]
-        )
-
 @ray.remote
 def ray_distance(pairs):
     return [
@@ -76,15 +17,23 @@ def ray_distance(pairs):
     ]
 
 @dataclass
-class RayAllJaro(BaseDistance, DistanceMixin, DatabaseORM):
+class RayAllJaro(BaseDistance, DatabaseORM):
     settings: Settings
-    "needs work: update to allow user to specify attribute-algorithm pairs"
+    """
+    Interface to compute distance between comparison pairs along 
+    common attributes.
+    """
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
 
-
     def distance(self, pairs):
+        """
+        Parameters
+        ----------
+        pairs: np.array
+            Nx2 array of comparison pairs
+        """
         chunks = self.get_chunks(pairs, 10000)
         res = ray.get([
             ray_distance.remote(chunk)
@@ -94,23 +43,54 @@ class RayAllJaro(BaseDistance, DistanceMixin, DatabaseORM):
             x for sublist in res for x in sublist
         ]
 
-    def config(self):
-        """
-        returns dict mapping each column to distance calculation
-        """
-        return dict
+    def get_chunks(self, lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
 
-class AllJaro(BaseDistance, DistanceMixin):
-    "needs work: update to allow user to specify attribute-algorithm pairs"
-
-    def distance(self, pairs):
-        return [
-            jaro_winkler_similarity(pair[0], pair[1])
-            for pair in pairs
-        ]
-
-    def config(self):
+    def get_distmat(self, table) -> np.array:
         """
-        returns dict mapping each column to distance calculation
+        get comparison attributes from table then compute distances
+        for each pair
+        
+        Parameters
+        ----------
+        table: sqlalchemy.orm.decl_api.DeclarativeMeta
+
+        Returns
+        ----------
+        pd.DataFrame
         """
-        return dict
+
+        comps = self.orm.get_comparison_attributes(table)
+        
+        logging.info(
+            f"making {len(comps)} comparions for table: {table.__tablename__}")
+
+        distances = {
+            attribute:self.distance(
+                comps[[f"{attribute}_l",f"{attribute}_r"]].values)
+            for attribute in self.settings.other.attributes
+        }
+
+        return pd.concat([
+            comps,
+            pd.DataFrame(distances)
+        ], axis=1)
+
+    def save_distances(self, table, newtable):
+        """
+        saves distances to newtable
+        """
+
+        distances = self.get_distmat(table=table)
+        
+        # reset table
+        self.orm.engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.{newtable.__tablename__};
+        """)
+
+        # insert
+        self.orm.bulk_insert(
+            df=distances, to_table=newtable
+        )

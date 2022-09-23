@@ -11,16 +11,27 @@ import pandas as pd
 class ConnectedComponents(BaseCluster, DatabaseORM):
     settings:Settings
     """
-    Use a graph to retrieve connected components
+    Uses a graph to retrieve connected components
     """
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
 
     def get_df_cluster(self, matches, scores):
-        """ convert connected components to dataframe for user friendly output
+        """ 
+        Convert connected components to dataframe for user friendly output
 
-        returns: pd.DataFrame for Dedupe or pair of pd.DataFrame for RecordLinkage
+        Parameters
+        ----------
+        matches: np.array
+            array containing pairs of indices that were predicted matches
+        scores: np.array
+            vector of match scores
+
+        Returns
+        ----------
+        pd.DataFrame
+            clusters merged with raw data
         """
 
         df_clusters = self.get_connected_components(matches, scores)
@@ -38,8 +49,23 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
 
 
     def get_connected_components(self, matches, scores) -> pd.DataFrame:
-        """ build graph with "matched" candidate pairs, weighted by p(match)
-        this implementation does not consider p(match) to get connected components
+        """ 
+        Build graph with "matched" candidate pairs, weighted by p(match).
+        
+        Need to add feature to consider weights when generating 
+        connected components.
+
+        Parameters
+        ----------
+        matches: np.array
+            array containing pairs of indices that were predicted matches
+        scores: np.array
+            vector of match scores
+
+        Returns
+        ----------
+        pd.DataFrame
+            dataframe mapping cluster index to entity index
         """
         g = nx.Graph()
         g.add_weighted_edges_from([

@@ -27,9 +27,9 @@ class BaseDistance(metaclass=ABCMeta):
     def distance(self):
         return
 
-    @abstractmethod
-    def config(self):
-        return
+    # @abstractmethod
+    # def config(self):
+    #     return
 
 
 class BaseCluster(metaclass=ABCMeta):

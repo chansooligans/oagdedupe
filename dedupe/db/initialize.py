@@ -10,6 +10,25 @@ import logging
 @dataclass
 class Initialize(Tables):
     settings:Settings
+    """
+    Object used to initialize SQL tables using sqlalchemy
+
+    Can be used to create:
+        - df
+        - sample
+            - random sample of df of size settings.other.n, drawn each 
+            active learning loop
+        - pos/neg
+            - created to help build train and labels; 
+            - pos contains a random sample repeated 4 times
+            - neg contains 10 random samples
+        - train
+            - combines pos and neg
+        - labels
+            - gets all distinct pairwise comparisons from train
+            - pairs from pos are labelled as a match
+            - pairs from neg are labelled as a non-match
+    """
 
     def _init_df(self, df):
         logging.info(f"Building table {self.settings.other.db_schema}.df.")
@@ -93,13 +112,30 @@ class Initialize(Tables):
         self._label_distances()
 
     def _label_distances(self):
+        """
+        computes distances between pairs of records from labels table 
+        then appends distances to the labels table
+        """
         self.distance = RayAllJaro(settings=self.settings)
         self.distance.save_distances(
-            table="labels",
-            newtable="labels"
+            table=self.Labels,
+            newtable=self.Labels
         )
 
     def setup(self, df=None, reset=True, resample=False):
+        """
+        runs table creation functions
+
+        Parameters
+        ----------
+        df: Optional[pd.DataFrame]
+            dataframe to dedupe
+        reset: bool
+            set True to delete and create all tables
+        resample: bool
+            used for active learning loops where model needs to pull a new 
+            sample, without deleting df, train, or labels
+        """
         
         # initialize Tables sqlalchemy classes
         self.setup_dynamic_declarative_mapping()
