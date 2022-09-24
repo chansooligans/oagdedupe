@@ -5,7 +5,6 @@ default:
 
 stages:
   - test
-  - book
 
 test:
   stage: test
@@ -17,14 +16,3 @@ test:
     when: always
     reports:
       junit: report.xml
-
-pages:
-  stage: book
-  needs: [test]
-  script:
-    - pip install .[book]
-    - jb build book
-    - cp -r ./book/_build/html public/
-  artifacts:
-    paths:
-      - public
