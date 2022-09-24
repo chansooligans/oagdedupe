@@ -37,10 +37,10 @@ async def predict():
     return dict(
         {
             "predict_proba": m.clf.predict_proba(
-                m.api.orm.get_full_distances()
+                m.api.orm.get_full_distances()[settings.other.attributes].values
             )[:,1].tolist(),
             "predict": m.clf.predict(
-                m.api.orm.get_full_distances()
+                m.api.orm.get_full_distances()[settings.other.attributes].values
             ).tolist(),
         }
     )

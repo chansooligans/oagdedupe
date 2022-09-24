@@ -31,8 +31,8 @@ class SettingsLabelStudio(SettingsService):
 class SettingsOther(BaseModel):
     """Other project settings"""
 
-    """in-memory vs database calculations"""
-    mem: bool = False
+    """dedupe vs record-linkage"""
+    dedupe: bool = True
 
     """block learner sample size (per learning loop)"""
     n: int = 5000
