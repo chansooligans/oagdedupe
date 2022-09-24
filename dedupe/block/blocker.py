@@ -1,6 +1,7 @@
 from dedupe.settings import Settings
 from dedupe.block.schemes import BlockSchemes
 from dedupe.db.database import Engine
+from dedupe import utils as du
 
 from dataclasses import dataclass
 import logging
@@ -43,8 +44,9 @@ class Blocker(BlockSchemes, Engine):
                 FROM {self.settings.other.db_schema}.{table}
             );
         """
-
-    def add_scheme(self, table, col, exists):
+        
+    @du.recordlinkage_repeat
+    def add_scheme(self, table, col, exists, rl=""):
         """
         check if column is in exists
         if not, add to blocks_{tablle}
@@ -58,47 +60,45 @@ class Blocker(BlockSchemes, Engine):
         else:
             coltype = "text"
 
-        logging.info(f"""
-            computing block scheme {col} on full data
-        """)
-
         self.engine.execute(f"""
-            ALTER TABLE dedupe.blocks_{table}
+            ALTER TABLE {self.settings.other.db_schema}.blocks_{table}{rl}
             ADD COLUMN IF NOT EXISTS {col} {coltype}
         """)
 
         self.engine.execute(f"""
-            UPDATE dedupe.blocks_{table} AS t1
+            UPDATE {self.settings.other.db_schema}.blocks_{table}{rl} AS t1
             SET {col} = t2.{col}
             FROM (
                 SELECT _index, {self.block_scheme_mapping[col]} as {col}
-                FROM dedupe.{table}
+                FROM {self.settings.other.db_schema}.{table}{rl}
             ) t2
             WHERE t1._index = t2._index;
         """)
         self.engine.dispose()
         return
 
-    def build_forward_indices(self):
+    @du.recordlinkage_repeat
+    def build_forward_indices(self, rl=""):
         """
         Executes SQL queries to build forward indices for train datasets
         """
     
-        logging.info(f"Building forward indices: \
-            {self.settings.other.db_schema}.blocks_train")
+        logging.info(f"Building forward indices")
         self.engine.execute(self.query_blocks(
-            table="train",
+            table=f"train{rl}",
             columns=self.block_scheme_sql
         ))
 
-    def init_forward_index_full(self):
+    @du.recordlinkage_repeat
+    def init_forward_index_full(self, rl=""):
+    
         self.engine.execute(f"""
-            DROP TABLE IF EXISTS {self.settings.other.db_schema}.blocks_df;
+            DROP TABLE IF EXISTS {self.settings.other.db_schema}.blocks_df{rl};
             
-            CREATE TABLE {self.settings.other.db_schema}.blocks_df as (
+            CREATE TABLE {self.settings.other.db_schema}.blocks_df{rl} as (
                 SELECT 
                     _index
-                FROM {self.settings.other.db_schema}.df
+                FROM {self.settings.other.db_schema}.df{rl}
             );
         """)
 
@@ -113,7 +113,7 @@ class Blocker(BlockSchemes, Engine):
         """
         for col in columns:
             exists = pd.read_sql(
-                "SELECT * FROM dedupe.blocks_df LIMIT 1", 
+                f"SELECT * FROM {self.settings.other.db_schema}.blocks_df LIMIT 1", 
                 con=self.engine
             ).columns
         

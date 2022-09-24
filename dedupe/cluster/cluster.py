@@ -1,6 +1,7 @@
 from dedupe.base import BaseCluster
 from dedupe.settings import Settings
 from dedupe.db.database import DatabaseORM
+from dedupe import utils as du
 
 from dataclasses import dataclass
 import networkx as nx
@@ -17,7 +18,8 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
 
-    def get_df_cluster(self, matches, scores):
+    @du.recordlinkage
+    def get_df_cluster(self, matches, scores, rl=""):
         """ 
         Convert connected components to dataframe for user friendly output
 
@@ -34,7 +36,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             clusters merged with raw data
         """
 
-        df_clusters = self.get_connected_components(matches, scores)
+        df_clusters = getattr(self,f"get_connected_components{rl}")(matches, scores)
 
         # reset table
         self.engine.execute(f"""
@@ -45,8 +47,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             df=df_clusters, to_table=self.Clusters
         )
         
-        return self.orm.get_clusters()
-
+        return getattr(self.orm,f"get_clusters{rl}")()
 
     def get_connected_components(self, matches, scores) -> pd.DataFrame:
         """ 
@@ -74,8 +75,27 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         ])
         conn_comp = list(nx.connected_components(g))
         clusters = [
-            {"cluster": clusteridx, "_index": int(rec_id)}
+            {"cluster": clusteridx, "_index": int(rec_id), "_type":None}
             for clusteridx, cluster in enumerate(conn_comp)
             for rec_id in cluster
         ]
         return pd.DataFrame(clusters)
+
+    def get_connected_components_link(self, matches, scores) -> pd.DataFrame:
+        g = nx.Graph()
+        g.add_weighted_edges_from([
+            tuple([f"{match[0]}_l", f"{match[1]}_r", score]) 
+            for match, score in zip(matches, scores)
+        ])
+        conn_comp = list(nx.connected_components(g))
+        clusters = [
+            {
+                "cluster": clusteridx, 
+                "_index": rec_id.strip("_")[0], 
+                "_type": "_l" in rec_id
+            }
+            for clusteridx, cluster in enumerate(conn_comp)
+            for rec_id in cluster
+        ]
+        return pd.DataFrame(clusters)
+

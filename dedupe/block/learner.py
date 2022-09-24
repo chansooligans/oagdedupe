@@ -1,6 +1,7 @@
 from dedupe.db.database import DatabaseORM,DatabaseCore
 from dedupe.settings import Settings
 from dedupe.block import Blocker
+from dedupe import utils as du
 
 from dataclasses import dataclass
 from typing import List
@@ -16,7 +17,8 @@ class InvertedIndex:
     where keys are signatures and values are arrays of entity IDs
     """
 
-    def get_pairs(self, names, table):
+    @du.recordlinkage
+    def get_pairs(self, names, table, rl=""):
         """
         Given forward index, construct inverted index. 
         Then for each row in inverted index, get all "nC2" distinct 
@@ -34,9 +36,12 @@ class InvertedIndex:
         ----------
         pd.DataFrame
         """
-        return self.db.get_inverted_index_pairs(names,table)
+        return getattr(self.db, f"get_inverted_index_pairs{rl}")(
+            names=names,
+            table=table
+        )
 
-    def get_pairs_in_memory(self, names, table):
+    def get_pairs_in_memory(self, names, table="blocks_train"):
         """
         same as get_pairs() but runs in-memory;
         faster and used when searching for best conjunctions
@@ -53,13 +58,46 @@ class InvertedIndex:
         pd.Dataframe
         """
         inverted_index = self.db.get_inverted_index(names,table)
-
         return pd.DataFrame([ 
                 y
                 for x in list(inverted_index["array_agg"])
                 for y in list(itertools.combinations(x, 2))
             ], columns = ["_index_l","_index_r"]
         ).assign(blocked=True).drop_duplicates()
+
+    def get_pairs_in_memory_link(self, names, table="blocks_train"):
+        """
+        same as get_pairs() but runs in-memory;
+        faster and used when searching for best conjunctions
+
+        Parameters
+        ----------
+        names : List[str]
+            list of block schemes
+        table : str
+            table name of forward index
+
+        Returns
+        ----------
+        pd.Dataframe
+        """
+        inverted_index = self.db.get_inverted_index(names,table)
+        inverted_index_link = self.db.get_inverted_index(names,f"{table}_link")
+        return (
+            (
+                inverted_index
+                .explode("array_agg")
+                .rename({"array_agg":"_index_l"}, axis=1)
+            )
+            .merge(
+                inverted_index_link
+                .explode("array_agg")
+                .rename({"array_agg":"_index_r"}, axis=1)
+            )
+            [["_index_l","_index_r"]]
+            .assign(blocked=True).drop_duplicates()
+        )
+        
 
 class DynamicProgram(InvertedIndex):
     """
@@ -100,6 +138,8 @@ class DynamicProgram(InvertedIndex):
         
         n = self.settings.other.n
         n_comparisons = (n * (n-1))/2
+        if self.settings.other.dedupe == False:
+            n_comparisons = n ** 2
 
         return {
             "scheme": names,
@@ -110,7 +150,8 @@ class DynamicProgram(InvertedIndex):
             "n_scheme": len(names)
         }
 
-    def get_coverage(self, names):
+    @du.recordlinkage
+    def get_coverage(self, names, rl=""):
         """
         Get comparisons using train data then merge with labelled data. 
 
@@ -130,10 +171,8 @@ class DynamicProgram(InvertedIndex):
                 - length of conjunction
         """
 
-        train_pairs = self.get_pairs_in_memory(
-            names=names, 
-            table="blocks_train"
-        )
+        
+        train_pairs = getattr(self,f"get_pairs_in_memory{rl}")(names=names)
         
         coverage = self.db.get_labels().merge(train_pairs, how = 'left')
         coverage = coverage.fillna(0)
@@ -211,8 +250,7 @@ class Conjunctions(DynamicProgram):
 
     def __init__(self, settings:Settings):
         self.settings = settings
-        self.db = DatabaseCore(settings=self.settings)
-        self.blocker = Blocker(settings=self.settings)
+        self.db = DatabaseCore(settings=self.settings) 
     
     @property
     def conjunctions(self):
@@ -266,13 +304,16 @@ class Conjunctions(DynamicProgram):
             number of records that the conjunctions should cover
         """
         df = pd.DataFrame()
+        
+        self.blocker = Blocker(settings=self.settings)
+
         for stats in self.df_conjunctions.to_dict(orient="records"):
 
             logging.info(f"""evaluating scheme {stats["scheme"]}""")
 
             if stats["rr"] < 0.99999:
                 logging.warning(f"""
-                    next conjunction may yield too many pairs;
+                    next conjunction exceeds reduction ratio limit;
                     stopping pair generation with scheme {stats["scheme"]}
                 """)
                 return df

@@ -1,4 +1,6 @@
+from dedupe import utils as du
 from dedupe.settings import Settings
+
 from dataclasses import dataclass
 from functools import cached_property
 from sqlalchemy import Column, String, Integer, Boolean
@@ -7,8 +9,46 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.schema import CreateSchema
 
+class TablesRecordLinkage:
+
+    @cached_property        
+    def maindf_link(self):
+        return type('df_link', (self.Attributes, self.Base), {
+                "__tablename__":"df_link",
+                "_index":Column(Integer, primary_key=True)
+            }
+        )
+
+    @cached_property    
+    def Neg_link(self):
+        return type('neg_link', (self.Attributes, self.Base), {
+                "__tablename__":"neg_link",
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
+            }
+        )
+
+    @cached_property    
+    def Unlabelled_link(self):
+        return type('unlabelled_link', (self.Attributes, self.Base), {
+                "__tablename__":"unlabelled_link",
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
+            }
+        )
+
+    @cached_property    
+    def Train_link(self):
+        return type('train_link', (self.Attributes, self.Base), {
+                "__tablename__":"train_link",
+                "_index":Column(Integer, primary_key=True),
+                "labelled":Column(Boolean)
+            }
+        )
+
+
 @dataclass
-class Tables:
+class Tables(TablesRecordLinkage):
     settings: Settings
     """
     Factory to create sql alchemy "Declarative Table" 
@@ -24,11 +64,16 @@ class Tables:
         """
         return (
             self.maindf, 
-            # self.Sample, 
             self.Pos, 
             self.Neg,
             self.Unlabelled,
             self.Train, 
+
+            self.maindf_link, 
+            self.Neg_link,
+            self.Unlabelled_link,
+            self.Train_link, 
+
             self.Labels,
             self.Distances,
             self.FullDistances,
@@ -91,7 +136,7 @@ class Tables:
                 "_index":Column(Integer, primary_key=True)
             }
         )
-        
+
     @cached_property            
     def Pos(self):
         return type('pos', (self.Attributes, self.Base), {
@@ -101,7 +146,6 @@ class Tables:
             }
         )
 
-
     @cached_property    
     def Neg(self):
         return type('neg', (self.Attributes, self.Base), {
@@ -110,6 +154,7 @@ class Tables:
                 "labelled":Column(Boolean)
             }
         )
+
 
     @cached_property    
     def Unlabelled(self):
@@ -183,6 +228,7 @@ class Tables:
                 "__tablename__":"clusters",
                 "_cluster_key":Column(Integer, primary_key=True, autoincrement=True),
                 "cluster":Column(Integer),
+                "_type":Column(Boolean),
                 "_index":Column(Integer)
             }
         )

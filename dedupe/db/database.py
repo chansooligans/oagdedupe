@@ -1,5 +1,6 @@
 from dedupe.settings import Settings
 from dedupe.db.tables import Tables
+from dedupe import utils as du
 
 from functools import cached_property
 import sqlalchemy
@@ -127,6 +128,52 @@ class DatabaseCore:
             FROM inverted_index_subset
             """)
 
+    def get_inverted_index_pairs_link(self, names, table):
+        """
+        see dedupe.block.learner.InvertedIndex;
+
+        Given forward index, construct inverted index. 
+        Then for each row in inverted index, get all "nC2" distinct 
+        combinations of size 2 from the array. 
+        
+        Concatenates and returns all distinct pairs.
+
+        Parameters
+        ----------
+        names : List[str]
+            list of block schemes
+        table : str
+            table name of forward index
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+        aliases = [f"signature{i}" for i in range(len(names))]
+        return self.query(f"""
+            WITH 
+                inverted_index AS (
+                    SELECT 
+                        {signatures(names)}, 
+                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
+                    FROM {self.settings.other.db_schema}.{table}
+                    GROUP BY {", ".join(aliases)}
+                ),
+                inverted_index_link AS (
+                    SELECT 
+                        {signatures(names)}, 
+                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
+                    FROM {self.settings.other.db_schema}.{table}_link
+                    GROUP BY {", ".join(aliases)}
+                )
+            SELECT _index_l, _index_r, True as blocked
+            FROM inverted_index t1
+            JOIN inverted_index_link t2
+                ON {" and ".join(
+                    [f"t1.{s} = t2.{s}" for s in aliases]
+                )}
+            """)
+
     @cached_property
     def blocking_schemes(self):
         """
@@ -250,13 +297,18 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
         ]
         return sum(columns, [])
 
-    @property
-    def fields_table(self):
-        return {
-            "comparisons":self.Train,
-            "full_comparisons":self.maindf,
-            "labels": self.Train
+    @du.recordlinkage
+    def fields_table(self, table, rl=""):
+        mapping = {
+            "comparisons":"Train",
+            "full_comparisons":"maindf",
+            "labels":"Train"
         }
+        
+        return (
+            aliased(getattr(self,mapping[table])), 
+            aliased(getattr(self,mapping[table]+rl))
+        )
         
     def labcol(self, table):
         if "comparisons" in table.__tablename__:
@@ -273,11 +325,10 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
         pd.DataFrame
         """
 
-        data = self.fields_table[table.__tablename__]
-
         with self.Session() as session:
-            dataL = aliased(data)
-            dataR = aliased(data)
+            
+            dataL, dataR = self.fields_table(table.__tablename__)
+            
             query = (
                 session
                 .query(
@@ -305,11 +356,27 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
         with self.Session() as session:
             query = (
                 session
-                .query(self.Clusters.cluster, self.maindf)
-                .join(self.maindf, self.Clusters._index == self.maindf._index)
+                .query(self.maindf, self.Clusters.cluster)
+                .outerjoin(self.Clusters.cluster, self.Clusters._index == self.maindf._index)
                 .order_by(self.Clusters.cluster)
                 )
             return pd.read_sql(query.statement, query.session.bind)
+
+    def get_clusters_link(self):
+        with self.Session() as session:
+            dflist = []
+            for _type in [True, False]:
+                subquery = session.query(
+                    self.Clusters.cluster,self.Clusters._index,self.Clusters._type
+                ).filter(self.Clusters._type==_type).subquery()
+                query = (
+                    session
+                    .query(self.maindf_link, subquery.c.cluster)
+                    .outerjoin(subquery, subquery.c._index["_index"] == self.maindf_link._index)
+                    .order_by(subquery.c.cluster)
+                    )
+                dflist.append(pd.read_sql(query.statement, query.session.bind))
+            return dflist
 
     def truncate_table(self, table):
         self.engine.execute(f"""

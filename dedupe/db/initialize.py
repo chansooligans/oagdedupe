@@ -2,6 +2,7 @@ from dedupe.settings import Settings
 from dedupe.distance.string import RayAllJaro
 from dedupe.db.tables import Tables
 from sqlalchemy import select, delete, func
+from dedupe import utils as du
 
 import itertools
 from dataclasses import dataclass
@@ -30,11 +31,11 @@ class Initialize(Tables):
             - pairs from neg are labelled as a non-match
     """
 
-    def _init_df(self, df):
-        logging.info(f"Building table {self.settings.other.db_schema}.df.")
+    def _init_df(self, df, rl=""):
+        logging.info(f"Building table {self.settings.other.db_schema}.df{rl}")
         with self.Session() as session:
             session.bulk_insert_mappings(
-                self.maindf, 
+                getattr(self,f"maindf{rl}"),
                 df.to_dict(orient='records')
             )
             session.commit()
@@ -54,51 +55,50 @@ class Initialize(Tables):
                 session.add(table)
             session.commit()
 
-    def _init_neg(self):
+    @du.recordlinkage_repeat
+    def _init_neg(self, rl=""):
         # create neg
         neg = (
-            select([self.maindf]).order_by(func.random()).limit(10)
+            select([getattr(self,f"maindf{rl}")]).order_by(func.random()).limit(10)
         )
         with self.Session() as session:
             records = session.execute(neg).all()
             for r in records:
-                table = self.Neg()
+                table = getattr(self,f"Neg{rl}")()
                 for attr in self.settings.other.attributes + ["_index"]:
                     setattr(table, attr, getattr(r[0], attr))
                 setattr(table, "labelled", True)
                 session.add(table)
             session.commit()
 
-    def _init_unlabelled(self):
+    @du.recordlinkage_repeat
+    def _init_unlabelled(self, rl=""):
         # create unlabelled
         unlabelled = (
-            select([self.maindf])
+            select([getattr(self, f"maindf{rl}")])
             .order_by(func.random())
             .limit(self.settings.other.n)
         )
         with self.Session() as session:
             records = session.execute(unlabelled).all()
             for r in records:
-                table = self.Unlabelled()
+                table = getattr(self,f"Unlabelled{rl}")()
                 for attr in self.settings.other.attributes + ["_index"]:
                     setattr(table, attr, getattr(r[0], attr))
                 setattr(table, "labelled", False)
                 session.add(table)
             session.commit()
 
-    def _init_train(self):
+    @du.recordlinkage_repeat
+    def _init_train(self, rl=""):
         
-        logging.info(f"Building table {self.settings.other.db_schema}.train.")
-        self._init_pos()
-        self._init_neg()
-        self._init_unlabelled()
-        
+        logging.info(f"Building table {self.settings.other.db_schema}.train{rl}")        
         # create train
         with self.Session() as session:
-            for tab in [self.Unlabelled, self.Pos, self.Neg]:
+            for tab in [getattr(self,f"Unlabelled{rl}"), self.Pos, getattr(self,f"Neg{rl}")]:
                 records = session.query(tab).all()
                 for r in records:
-                    train = self.Train()
+                    train = getattr(self,f"Train{rl}")()
                     for attr in self.settings.other.attributes + ["_index", "labelled"]:
                         setattr(train, attr, getattr(r, attr))
                     session.merge(train)
@@ -120,6 +120,21 @@ class Initialize(Tables):
             session.commit()
         self._label_distances()
 
+    def _init_labels_link(self):
+        logging.info(f"Building table {self.settings.other.db_schema}.labels_link.")
+        with self.Session() as session:
+            for l,tab,tab_link in [(1,self.Pos,self.Pos), (0,self.Neg,self.Neg_link)]:
+                records = session.query(tab).all()
+                records_link = session.query(tab_link).all()
+                for left,right in zip(records, records_link):
+                    label = self.Labels()
+                    label._index_l = left._index
+                    label._index_r = right._index
+                    label.label = l
+                    session.add(label)
+            session.commit()
+        self._label_distances()
+
     def _label_distances(self):
         """
         computes distances between pairs of records from labels table 
@@ -131,35 +146,36 @@ class Initialize(Tables):
             newtable=self.Labels
         )
 
-    def _resample(self):
+    @du.recordlinkage_repeat
+    def _resample(self, rl=""):
 
         # delete unlabelled from train
         with self.Session() as session:
             stmt = (
-                delete(self.Train).
-                where(self.Train.labelled==False)
+                delete(getattr(self,f"Train{rl}")).
+                where(getattr(self,f"Train{rl}").labelled==False)
             )
             session.execute(stmt)
             session.commit()
 
         # resample unlabelled
         self.engine.execute(f"""
-                TRUNCATE TABLE {self.settings.other.db_schema}.unlabelled;
+                TRUNCATE TABLE {self.settings.other.db_schema}.unlabelled{rl};
             """)
 
         # add to train
         with self.Session() as session:
      
-            records = session.query(self.Unlabelled).all()
+            records = session.query(getattr(self,f"Unlabelled{rl}")).all()
             for r in records:
-                train = self.Train()
+                train = getattr(self,f"Train{rl}")()
                 for attr in self.settings.other.attributes + ["_index", "labelled"]:
                     setattr(train, attr, getattr(r, attr))
                 session.merge(train)
             session.commit()
-        
 
-    def setup(self, df=None, reset=True, resample=False):
+    @du.recordlinkage
+    def setup(self, df=None, df2=None, reset=True, resample=False, rl=""):
         """
         runs table creation functions
 
@@ -183,11 +199,20 @@ class Initialize(Tables):
             logging.info(f"building tables in schema: {self.settings.other.db_schema}")
             if "_index" in df.columns:
                 raise ValueError("_index cannot be a column name")
+            
             self._init_df(df=df)
+            if self.settings.other.dedupe == False:
+                self._init_df(df=df2, rl="_link")
+
+            self._init_pos()
+            self._init_neg()
+            self._init_unlabelled()
             self._init_train()
-            self._init_labels()
+
+            getattr(self, f"_init_labels{rl}")()
 
         if resample:
             self._resample()
             self._label_distances()
+
     
