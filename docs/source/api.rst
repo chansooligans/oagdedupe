@@ -1,18 +1,29 @@
 =====
-Title
+API
 =====
 
-Subsection
-----------
 
-Some documentation.
+api
+===========
 
-Contents
---------
+.. automodule:: dedupe.api
+    :members:
 
-.. toctree::
-   :maxdepth: 2
+database
+===========
 
-   main
-   database
+.. automodule:: dedupe.db
+    :members:
 
+blocker
+===========
+
+.. automodule:: dedupe.block
+    :members:
+
+
+distance
+===========
+
+.. automodule:: dedupe.distance
+    :members:
