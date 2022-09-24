@@ -10,7 +10,21 @@ Contents
 --------
 
 .. toctree::
+   :caption: Usage
+
    usage
+
+.. toctree::
+   :caption: Examples
+
    examples
+
+.. toctree::
+   :caption: Overview
+
    overview
+
+.. toctree::
+   :caption: API Reference
+
    api
