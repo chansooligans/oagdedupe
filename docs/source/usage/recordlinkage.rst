@@ -1,7 +1,7 @@
 Record Linkage
 ----------------
 
-1. train model
+train model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Below is an example that dedupes voter records on name and address columns.
@@ -38,7 +38,7 @@ It uses a manual blocking scheme to narrow possible comparisons.
    # pre-processes data and stores pre-processed data, comparisons, ID matrices in SQLite db
    d.fit_blocks()
 
-2. start fastAPI
+start fastAPI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Run 
@@ -52,13 +52,13 @@ Run
 replacing `<project name>` and `<project folder>` with your project settings (for the example above, `test` and `./.dedupe`).
 
 
-3. label-studio
+label-studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Return to label-studio and start labelling. When the queue falls under 5 tasks, fastAPI will update the model with labelled samples then send more tasks to review.
 
 
-4. predictions
+predictions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To get predictions, simply run the `predict()` method.

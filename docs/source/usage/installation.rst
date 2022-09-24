@@ -12,7 +12,7 @@ To use oagdedupe, first install it using pip:
    pip install oagdedupe
 
 
-1. label-studio
+label-studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Start label-studio, e.g. on port 8089.
@@ -25,7 +25,7 @@ Start label-studio, e.g. on port 8089.
       -v `pwd`/cache/myfiles:/label-studio/files \
       heartexlabs/label-studio:latest label-studio
 
-2. postgres
+postgres
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 [insert instructions here about initializing postgres]

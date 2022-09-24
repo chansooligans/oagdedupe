@@ -10,7 +10,7 @@ Contents
 --------
 
 .. toctree::
-   :caption: Usage
+   :caption: Getting Started
    :numbered:
 
    usage/installation
@@ -19,27 +19,31 @@ Contents
    usage/recordlinkage
 
 .. toctree::
+   :caption: User Guide
+   :numbered:
+
+   userguide/intro
+   userguide/glossary
+   userguide/sampling
+   userguide/blocking
+   userguide/distance
+   userguide/classifier
+   userguide/active_learn_loop
+   userguide/cluster
+
+.. toctree::
    :caption: Examples
    :maxdepth: 2
 
    examples/example_dedupe
    examples/example_rl
-
-.. toctree::
-   :caption: Overview
-   :maxdepth: 2
-
-   overview/intro
-   overview/glossary
-   overview/sampling
-   overview/blocking
-   overview/distance
-   overview/classifier
-   overview/active_learn_loop
-   overview/cluster
    
 .. toctree::
    :caption: API Reference
    :maxdepth: 2
 
-   api
+   dedupe/api
+   dedupe/database
+   dedupe/blocker
+   dedupe/distance
+   dedupe/cluster
