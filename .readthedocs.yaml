@@ -8,6 +8,8 @@ version: 2
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/source/conf.py
+   extra_requirements:
+      - myst-parser
 
 # Optionally build your docs in additional formats such as PDF
 formats: all
@@ -16,8 +18,7 @@ formats: all
 python:
   version: "3.8"
   install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - sphinx
-        - myst-parser
+  - requirements: docs/requirements.txt
+  - method: pip
+    path: .
+      
