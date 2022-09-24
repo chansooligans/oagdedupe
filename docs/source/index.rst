@@ -1,7 +1,13 @@
-Welcome to Dedupe's documentation!
+oagdedupe
 ===================================
 
-**Dedupe** is a Python library for entity resolution: (deduplication and record linkage)
+**Dedupe** is a Python library for scalable entity resolution, using active learning to learn blocking configurations 
+and clasify matches. See :ref:`Getting Started<Getting Started>` for installation and setup instructions and 
+:ref:`User Guide<User Guide>` for more detailed methodology.
+
+The diagaram below shows an overview of the pipeline.
+
+.. image:: dedupe.png
 
 .. note::
    This project is under active development.
