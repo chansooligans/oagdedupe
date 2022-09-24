@@ -22,10 +22,7 @@ Set Up
 1. start label-studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Start label-studio, e.g. on port 8089.
-2. Once label-studio is running, log in (can make up any user/pw).
-    - Go to "Account & Settings" using icon on top-right
-    - Get Access Token and copy/paste into config file under `[LABEL_STUDIO]`, "API_KEY"
+Start label-studio, e.g. on port 8089.
 
 .. code-block:: console
 
@@ -68,15 +65,20 @@ Make a `dedupe.settings.Settings` object. For example:
          path_model="./.dedupe/test_model",  # where to save the model
          label_studio={
                "port": 8089,  # label studio port
-               "api_key": "83e2bc3da92741aa41c272829558c596faefa745",  # label studio port
-               "description": "chansoo test project",  # label studio description of project
+               "api_key": "[INSERT API KEY]",  # label studio port
+               "description": "[project name]",  # label studio description of project
          },
          fast_api={"port": 8090},  # fast api port
       ),
    )
    settings.save()
 
-See [dedupe/settings.py](./dedupe/settings.py) for the full settings code.
+To get label studio api_key:
+   1. log in (can make up any user/pw).
+   2. Go to "Account & Settings" using icon on top-right
+   3. Get Access Token and copy/paste into settings at `settings.other.label_studio["api_key"]` 
+
+See :ref:`dedupe.settings<Settings>` for the full settings code.
 
 
 Dedupe
@@ -140,5 +142,5 @@ To get predictions, simply run the `predict()` method.
    d = Dedupe(settings=Settings(name="test", folder="./.dedupe"))
    d.predict()
 
-See [./run.py](./run.py) for the full working example.
+See :ref:`run.py<Settings>` for the full working example.
 
