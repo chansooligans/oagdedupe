@@ -1,3 +1,0 @@
-[submodule "label-studio"]
-	path = label-studio
-	url = git@github.com:chansooligans/label-studio.git
