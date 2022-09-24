@@ -8,8 +8,8 @@ Schemes
 .. automodule:: dedupe.block.schemes
     :members:
     :undoc-members:
-    :private-members: __init__, __post_init__
-    :special-members:
+    :special-members: __init__, __post_init__
+    :private-members:
 
 Forward Indices
 #####################
@@ -17,8 +17,8 @@ Forward Indices
 .. automodule:: dedupe.block.blocker
     :members:
     :undoc-members:
-    :private-members: __init__, __post_init__
-    :special-members:
+    :special-members: __init__, __post_init__
+    :private-members:
 
 Best Conjunctions
 #####################
@@ -26,5 +26,5 @@ Best Conjunctions
 .. automodule:: dedupe.block.learner
     :members:
     :undoc-members:
-    :private-members: __init__, __post_init__
-    :special-members:
+    :special-members: __init__, __post_init__
+    :private-members:

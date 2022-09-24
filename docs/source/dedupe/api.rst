@@ -9,8 +9,8 @@ Dedupe
 .. autoclass:: dedupe.api.Dedupe
     :members:
     :undoc-members:
-    :private-members: __init__, __post_init__
-    :special-members:
+    :special-members: __init__, __post_init__
+    :private-members:
 
 Record Linkage
 #####################
@@ -19,4 +19,4 @@ Record Linkage
     :members:
     :undoc-members:
     :private-members:
-    :special-members:
+    :private-members:
