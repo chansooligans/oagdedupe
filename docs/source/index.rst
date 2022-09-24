@@ -40,7 +40,7 @@ Contents
    
 .. toctree::
    :caption: API Reference
-   :maxdepth: 2
+   :maxdepth: 1
 
    dedupe/api
    dedupe/database
