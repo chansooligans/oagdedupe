@@ -68,7 +68,6 @@ d.fit_blocks()
 # %%
 res, res2 = d.predict()
 
-
-
-
+# %%
+res["cluster"].value_counts()
 # %%

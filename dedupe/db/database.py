@@ -372,7 +372,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                 query = (
                     session
                     .query(self.maindf_link, subquery.c.cluster)
-                    .outerjoin(subquery, subquery.c._index == self.maindf_link._index)
+                    .outerjoin(subquery, subquery.c._index["_index"] == self.maindf_link._index)
                     .order_by(subquery.c.cluster)
                     )
                 dflist.append(pd.read_sql(query.statement, query.session.bind))
