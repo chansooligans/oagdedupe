@@ -1,6 +1,6 @@
 
 ************************************
-api
+API
 ************************************
 
 Dedupe
@@ -9,7 +9,7 @@ Dedupe
 .. autoclass:: dedupe.api.Dedupe
     :members:
     :undoc-members:
-    :private-members:
+    :private-members: __init__, __post_init__
     :special-members:
 
 Record Linkage
