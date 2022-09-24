@@ -9,9 +9,11 @@ Installation
 To use oagdedupe, first install it using pip:
 
 .. note::
+
    Not yet available -- git clone and install
 
 .. code-block:: console
+
    pip install oagdedupe
 
 Set Up
@@ -26,6 +28,7 @@ Set Up
     - Get Access Token and copy/paste into config file under `[LABEL_STUDIO]`, "API_KEY"
 
 .. code-block:: console
+
    docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
       --env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
       --env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
@@ -46,6 +49,7 @@ most importantly, need to create functions (dedupe/postgres/funcs.py)
 Make a `dedupe.settings.Settings` object. For example:
 
 .. code-block:: python
+
    from dedupe.settings import (
       Settings,
       SettingsOther,
@@ -86,6 +90,7 @@ Below is an example that dedupes voter records on name and address columns.
 It uses a manual blocking scheme to narrow possible comparisons.
 
 .. code-block:: python
+
    import glob
    import pandas as pd
    from dedupe.api import Dedupe
@@ -111,6 +116,7 @@ It uses a manual blocking scheme to narrow possible comparisons.
 Run 
 
 .. code-block:: console
+
    DEDUPER_NAME="<project name>";
    DEDUPER_FOLDER="<project folder>";
    python -m dedupe.fastapi.main
@@ -130,6 +136,7 @@ Return to label-studio and start labelling. When the queue falls under 5 tasks, 
 To get predictions, simply run the `predict()` method.
 
 .. code-block:: python
+   
    d = Dedupe(settings=Settings(name="test", folder="./.dedupe"))
    d.predict()
 
