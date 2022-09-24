@@ -1,7 +1,10 @@
 # Configuration file for the Sphinx documentation builder.
 
-# -- Project information
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 
+# -- Project information
 project = 'oagdedupe'
 author = 'Chansoo Song, Gautam Sisodia'
 
@@ -31,7 +34,7 @@ templates_path = ['_templates']
 
 # -- Options for HTML output
 
-html_theme = 'sphinx_rtd_theme'
+# html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'

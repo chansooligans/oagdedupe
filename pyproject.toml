@@ -31,6 +31,8 @@ psycopg2-binary = "^2.9.3"
 pathos = "^0.2.9"
 myst-parser = "^0.18.0"
 Sphinx = "^5.1.1"
+sphinx-rtd-theme = "^1.0.0"
+pydantic = "^1.10.2"
 
 [tool.poetry.dev-dependencies]
 

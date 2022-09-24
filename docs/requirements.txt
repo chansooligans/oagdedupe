@@ -61,3 +61,4 @@ urllib3==1.26.12
 zipp==3.8.1
     # via importlib-metadata
 myst-parser==0.18.0
+pydantic==1.10.2

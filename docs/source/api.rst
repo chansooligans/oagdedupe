@@ -2,8 +2,5 @@ API
 ===
 
 
-.. automodule:: dedupe.cluster.cluster
-    :autosummary:
-    :show-inheritance:
+.. automodule:: dedupe.api
     :members:
-    :undoc-members:   
