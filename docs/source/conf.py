@@ -22,6 +22,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.autosectionlabel'
 ]
 
 intersphinx_mapping = {
@@ -37,7 +38,7 @@ html_theme = 'sphinx_rtd_theme'
 
 html_theme_options = {
     "collapse_navigation" : False,
-    "navigation_depth": 3
+    "navigation_depth": 2
 }
 
 # -- Options for EPUB output

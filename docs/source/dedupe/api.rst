@@ -18,5 +18,5 @@ Record Linkage
 .. autoclass:: dedupe.api.RecordLinkage
     :members:
     :undoc-members:
-    :private-members:
+    :special-members: __init__, __post_init__
     :private-members:

@@ -13,7 +13,7 @@ with Diagram("Dedupe", show=False):
     rawdata >> preprocess 
 
     with Cluster("Active Learning Loop"):
-        sql = SQL("SQLite db")
+        sql = SQL("Postgres db")
         model = Custom("Model", "img/modAl.png") 
         preprocess >> model 
         preprocess >> sql 
@@ -24,10 +24,6 @@ with Diagram("Dedupe", show=False):
         sql >> Edge(color="darkgreen") << fastapi
         fastapi >> Edge(color="darkgreen") <<  labelstudio
     
-    streamlit = Custom("Streamlit Monitoring", "img/streamlit.png")
-    preprocess >> streamlit
-    model >> streamlit
-
     networkX = Custom("NetworkX", "img/networkX.png")
     fastapi >> networkX >> Storage("Predictions")
     
