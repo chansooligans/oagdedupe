@@ -60,3 +60,5 @@ d.fit_blocks()
 res = d.predict()
 
 # %%
+inverted_index = d.orm.get_inverted_index_pairs(["first_nchars_2_givenname"],"blocks_train")
+# %%

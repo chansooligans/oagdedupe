@@ -145,8 +145,7 @@ class DynamicProgram(InvertedIndex):
             "n_scheme": len(names)
         }
 
-    @du.recordlinkage
-    def get_coverage(self, names, rl=""):
+    def get_coverage(self, names):
         """
         Get comparisons using train data then merge with labelled data. 
 
@@ -167,7 +166,7 @@ class DynamicProgram(InvertedIndex):
         """
 
         
-        train_pairs = getattr(self,f"get_pairs_in_memory{rl}")(names=names)
+        train_pairs = self.get_pairs(names=names)
         
         coverage = self.db.get_labels().merge(train_pairs, how = 'left')
         coverage = coverage.fillna(0)
