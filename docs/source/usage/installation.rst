@@ -7,11 +7,45 @@ To use oagdedupe, first install it using pip:
 
    pip install oagdedupe
 
+.deduper
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a cache folder to store postgres and labelstudio data.
+
+```
+mkdir .deduper
+```
+
+postgres
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create a new file called `Dockerfile` with:
+
+.. code-block:: console
+   
+   FROM postgres:latest
+
+   RUN apt-get update
+   RUN apt-get -y install python3 postgresql-plpython3-14
+
+Then build and run:
+
+.. code-block:: console
+
+   docker build -t oagdedupe-postgres . ;
+   docker run -dp 8000:5432 \
+      --env POSTGRES_USER=username \
+      --env POSTGRES_PASSWORD=password \
+      --env POSTGRES_DB=db \
+      --env PGDATA=/var/lib/pgsql/data/pgdata \
+      -v `pwd`/.deduper:/var/lib/pgsql/data \
+      postgres 
 
 label-studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Start label-studio, e.g. on port 8089.
+Start label-studio using docker command below, updating `[LS_PORT]` to the 
+port on your host machine
 
 .. code-block:: console
 
@@ -20,10 +54,3 @@ Start label-studio, e.g. on port 8089.
       --env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
       -v `pwd`/cache/myfiles:/label-studio/files \
       heartexlabs/label-studio:latest label-studio
-
-postgres
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-[insert instructions here about initializing postgres]
-
-most importantly, need to create functions (dedupe/postgres/funcs.py)

@@ -2,8 +2,6 @@
 
 There are two types of entity resolution: deduplication and record linkage. Deduplication finds common entities in a single dataset. Record linkage finds common entities between a pair of datasets.
 
-#### Overview
-
 A quick overview of the pipeline include the steps:
 
 1. Initialize training sample
@@ -12,17 +10,3 @@ A quick overview of the pipeline include the steps:
 	b. Train binary classifier to learn 
 3. Run trained block learner and classifier on full data
 4. Cluster linkages 
-
-#### Set Up
-
-To run this package, you need four things:
-1. the dataframe to dedupe
-2. a postgres database 
-3. label-studio (used for labeling active learning samples)
-4. settings
-
-The easiest way to set up postgres and label-studio is with docker:
-
-[docker commands]
-
-[settings]
