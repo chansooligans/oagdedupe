@@ -49,7 +49,6 @@ class TablesRecordLinkage:
 
 @dataclass
 class Tables(TablesRecordLinkage):
-    settings: Settings
     """
     Factory to create sql alchemy "Declarative Table" 
     (https://docs.sqlalchemy.org/en/14/orm/declarative_tables.html)
@@ -57,6 +56,7 @@ class Tables(TablesRecordLinkage):
     We use builtin function type() to generate declarative table dynamically
     since attribute names are variable
     """
+    settings: Settings
 
     def setup_dynamic_declarative_mapping(self):
         """

@@ -9,7 +9,6 @@ import pandas as pd
 
 @dataclass
 class Blocker(BlockSchemes, Engine):
-    settings: Settings
     """
     Used to build forward indices. A forward index 
     is a table where rows are entities, columns are block schemes,
@@ -19,6 +18,7 @@ class Blocker(BlockSchemes, Engine):
     ----------
     settings : Settings
     """
+    settings: Settings
 
     def query_blocks(self, table, columns):
         """

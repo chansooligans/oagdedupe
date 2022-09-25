@@ -10,10 +10,10 @@ import pandas as pd
 
 @dataclass
 class ConnectedComponents(BaseCluster, DatabaseORM):
-    settings:Settings
     """
     Uses a graph to retrieve connected components
     """
+    settings:Settings
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)

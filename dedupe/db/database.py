@@ -22,11 +22,11 @@ def signatures(names):
 
 @dataclass
 class DatabaseCore:
-    settings: Settings
     """
     Object contains methods to query database using sqlalchemy CORE;
     It's easier to use sqlalchemy core than ORM for parallel operations.
     """
+    settings: Settings
 
     def query(self, sql):
         """
@@ -189,10 +189,10 @@ class DatabaseCore:
 
 @dataclass
 class Engine:
-    settings: Settings
     """
     manages non-ORM textual connections to database
     """
+    settings: Settings
 
     @cached_property
     def engine(self):
@@ -200,11 +200,11 @@ class Engine:
 
 @dataclass
 class DatabaseORM(Tables, DatabaseCore, Engine):
-    settings: Settings
     """
     Object to query database using sqlalchemy ORM. 
     Uses the Session object as interface to the database.
     """
+    settings: Settings
 
     def get_train(self):
         """

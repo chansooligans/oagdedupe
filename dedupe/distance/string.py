@@ -18,11 +18,11 @@ def ray_distance(pairs):
 
 @dataclass
 class RayAllJaro(BaseDistance, DatabaseORM):
-    settings: Settings
     """
     Interface to compute distance between comparison pairs along 
     common attributes.
     """
+    settings: Settings
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)

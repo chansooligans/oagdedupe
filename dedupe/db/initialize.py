@@ -10,7 +10,6 @@ import logging
 
 @dataclass
 class Initialize(Tables):
-    settings:Settings
     """
     Object used to initialize SQL tables using sqlalchemy
 
@@ -30,6 +29,7 @@ class Initialize(Tables):
             - pairs from pos are labelled as a match
             - pairs from neg are labelled as a non-match
     """
+    settings:Settings
 
     def _init_df(self, df, rl=""):
         logging.info(f"Building table {self.settings.other.db_schema}.df{rl}")
