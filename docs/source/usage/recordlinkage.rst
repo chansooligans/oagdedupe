@@ -1,12 +1,11 @@
 Record Linkage
 ----------------
 
+Below is an example that links `df` to `df2`, on attributes columns specified 
+in settings (dataframes should share these columns).
+
 train model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Below is an example that dedupes voter records on name and address columns.
-
-It uses a manual blocking scheme to narrow possible comparisons.
 
 .. code-block:: python
 

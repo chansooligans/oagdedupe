@@ -24,7 +24,7 @@ Make a `dedupe.settings.Settings` object. For example:
          label_studio={
                "port": 8089,  # label studio port
                "api_key": "[INSERT API KEY]",  # label studio port
-               "description": "[project name]",  # label studio description of project
+               "description": "[your project name]",  # label studio description of project
          },
          fast_api={"port": 8090},  # fast api port
       ),
