@@ -10,6 +10,7 @@ import pandas as pd
 import itertools
 from multiprocessing import Pool
 import logging
+import tqdm
 
 class InvertedIndex:
     """
@@ -251,13 +252,17 @@ class Conjunctions(DynamicProgram):
         """
         Computes conjunctions for each block scheme in parallel
         """
-        p = Pool(self.settings.other.cpus)
-        res = p.map(
-            self.getBest, 
-            [tuple([o]) for o in self.db.blocking_schemes]
-        )
-        p.close()
-        p.join()
+        logging.info("note:due to caching, iterations get progressively faster")
+        schemes = [tuple([o]) for o in self.db.blocking_schemes]
+        with Pool(self.settings.other.cpus) as p:
+            res = list(tqdm.tqdm(
+                p.imap(
+                    self.getBest, 
+                    schemes
+                ), 
+                total=len(schemes)
+            ))
+        
         return res
     
     @cached_property
