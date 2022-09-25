@@ -3,17 +3,8 @@
 oagdedupe is a Python library for scalable entity resolution, using active 
 learning to learn blocking configurations, generate comparison pairs, 
 then clasify matches. 
-
-## page contents
-- [Documentation](#documentation)
-- [Installation](#installation)
-    - [label-studio](#label-studio)
-    - [postgres](#postgres)
-    - [project settings](#project-settings)
-- [dedupe](#dedupe-example)
-- [record-linkage](#record-linkage-example)
-    
-# Documentation<a name="#documentation"></a>
+  
+# documentation<a name="#documentation"></a>
 
 You can find the documentation of oagdedupe at https://deduper.readthedocs.io/en/latest/, 
 where you can find [Getting started](https://deduper.readthedocs.io/en/latest/usage/installation.html), 
@@ -21,7 +12,7 @@ the [api reference](https://deduper.readthedocs.io/en/latest/dedupe/api.html),
 [guide to methodology](https://deduper.readthedocs.io/en/latest/userguide/intro.html),
 and [examples](https://deduper.readthedocs.io/en/latest/examples/example_dedupe.html).
 
-# Installation<a name="#installation"></a>
+# installation<a name="#installation"></a>
 
 ```
 # PyPI
