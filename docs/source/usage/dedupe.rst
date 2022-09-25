@@ -1,12 +1,10 @@
 Dedupe
 ----------------
 
+Below is an example that dedupes `df` on attributes columns specified in settings.
+
 train model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Below is an example that dedupes voter records on name and address columns.
-
-It uses a manual blocking scheme to narrow possible comparisons.
 
 .. code-block:: python
 
