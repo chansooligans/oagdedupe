@@ -1,8 +1,18 @@
 [tool.poetry]
 name = "dedupe"
 version = "0.1.0"
-description = ""
-authors = ["Chansoo Song"]
+description = "oagdedupe is a Python library for scalable entity resolution, using active 
+learning to learn blocking configurations, generate comparison pairs, 
+then clasify matches."
+readme = "README.md"
+homepage = ""
+repository = "https://github.com/chansooligans/deduper"
+documentation = "https://deduper.readthedocs.io/en/latest/"
+keywords = ["dedupe", "entity resolution", "record linkage", "blockign"]
+authors = [
+    "Chansoo Song",
+    "Gautam Sisodia"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
@@ -30,7 +40,7 @@ autodocsumm = {version = "^0.2.9", optional = true}
 psycopg2-binary = "^2.9.3"
 pathos = "^0.2.9"
 myst-parser = "^0.18.0"
-Sphinx = ">=5.1.1, !=5.2.0.post0"
+Sphinx = "^5.1.1, !=5.2.0.post0"
 sphinx-rtd-theme = "^1.0.0"
 pydantic = "^1.10.2"
 protobuf = "^3.20.2"
