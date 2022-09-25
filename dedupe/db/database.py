@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import aliased
 from dataclasses import dataclass
 import pandas as pd
+import numpy as np
 
 def check_unnest(name):
     if "ngrams" in name:
@@ -186,6 +187,26 @@ class DatabaseCore:
         return self.query(
             f"SELECT * FROM {self.settings.other.db_schema}.blocks_train LIMIT 1"
         ).columns[1:].tolist()
+
+    @du.recordlinkage_both
+    def n(self, rl=""):
+        return self.query(
+            f"SELECT count(*) FROM {self.settings.other.db_schema}.df{rl}"
+        )["count"].values[0]
+
+    @property
+    def n_comparisons(self):
+        """number of total possible comparisons"""
+        n = self.n()
+        if self.settings.other.dedupe == False:
+            return np.product(n)
+        return (n * (n-1))/2
+    
+    @property
+    def min_rr(self):
+        """minimum reduction ratio"""
+        reduced = (self.n_comparisons - self.settings.other.max_compare) 
+        return reduced / self.n_comparisons
 
 @dataclass
 class Engine:

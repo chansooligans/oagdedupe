@@ -135,15 +135,9 @@ class DynamicProgram(InvertedIndex):
                 - number of pairs generated
                 - length of conjunction
         """
-        
-        n = self.settings.other.n
-        n_comparisons = (n * (n-1))/2
-        if self.settings.other.dedupe == False:
-            n_comparisons = n ** 2
-
         return {
             "scheme": names,
-            "rr":1 - (n_pairs / (n_comparisons)),
+            "rr":1 - (n_pairs / (self.db.n_comparisons)),
             "positives":coverage.loc[coverage["label"]==1, "blocked"].mean(),
             "negatives":coverage.loc[coverage["label"]==0, "blocked"].mean(),
             "n_pairs": n_pairs,
@@ -251,7 +245,7 @@ class Conjunctions(DynamicProgram):
     def __init__(self, settings:Settings):
         self.settings = settings
         self.db = DatabaseCore(settings=self.settings) 
-    
+
     @property
     def conjunctions(self):
         """
@@ -311,7 +305,7 @@ class Conjunctions(DynamicProgram):
 
             logging.info(f"""evaluating scheme {stats["scheme"]}""")
 
-            if stats["rr"] < 0.99999:
+            if stats["rr"] < self.db.min_rr:
                 logging.warning(f"""
                     next conjunction exceeds reduction ratio limit;
                     stopping pair generation with scheme {stats["scheme"]}
