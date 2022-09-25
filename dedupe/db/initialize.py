@@ -1,8 +1,8 @@
-from dedupe.settings import Settings
-from dedupe.distance.string import RayAllJaro
-from dedupe.db.tables import Tables
+from oagdedupe.settings import Settings
+from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.db.tables import Tables
 from sqlalchemy import select, delete, func
-from dedupe import utils as du
+from oagdedupe import utils as du
 
 import itertools
 from dataclasses import dataclass

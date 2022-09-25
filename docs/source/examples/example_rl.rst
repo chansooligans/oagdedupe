@@ -3,11 +3,11 @@ Record Linkage Example
 
 .. code-block:: python
 
-    from dedupe.settings import (
+    from oagdedupe.settings import (
         Settings,
         SettingsOther,
     )
-    from dedupe.api import RecordLinkage
+    from oagdedupe.api import RecordLinkage
 
     import glob
     import pandas as pd

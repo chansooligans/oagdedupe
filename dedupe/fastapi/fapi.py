@@ -1,7 +1,7 @@
-from dedupe.labelstudio.lsapi import LabelStudioAPI
-from dedupe.db.database import Engine
-from dedupe.settings import Settings
-from dedupe.api import Dedupe
+from oagdedupe.labelstudio.lsapi import LabelStudioAPI
+from oagdedupe.db.database import Engine
+from oagdedupe.settings import Settings
+from oagdedupe.api import Dedupe
 
 from dataclasses import dataclass
 from typing import List

@@ -1,7 +1,7 @@
-from dedupe.settings import Settings
-from dedupe.block.schemes import BlockSchemes
-from dedupe.db.database import Engine
-from dedupe import utils as du
+from oagdedupe.settings import Settings
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.db.database import Engine
+from oagdedupe import utils as du
 
 from dataclasses import dataclass
 import logging

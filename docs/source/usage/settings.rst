@@ -5,7 +5,7 @@ Make a `dedupe.settings.Settings` object. For example:
 
 .. code-block:: python
 
-   from dedupe.settings import (
+   from oagdedupe.settings import (
       Settings,
       SettingsOther,
    )

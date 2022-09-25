@@ -6,7 +6,7 @@ API
 Dedupe
 #####################
 
-.. autoclass:: dedupe.api.Dedupe
+.. autoclass:: oagdedupe.api.Dedupe
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__
@@ -15,7 +15,7 @@ Dedupe
 Record Linkage
 #####################
 
-.. autoclass:: dedupe.api.RecordLinkage
+.. autoclass:: oagdedupe.api.RecordLinkage
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

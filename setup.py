@@ -9,7 +9,7 @@ with open('requirements.txt') as f:
             requirements.append(line)
 
 setuptools.setup(
-    name="dedupe",  # name of your python package
+    name="oagdedupe",  # name of your python package
     version="2.0",
     author="Chansoo Song",
     packages=setuptools.find_packages(),

@@ -1,6 +1,6 @@
-from dedupe.base import BaseDistance
-from dedupe.db.database import DatabaseORM
-from dedupe.settings import Settings
+from oagdedupe.base import BaseDistance
+from oagdedupe.db.database import DatabaseORM
+from oagdedupe.settings import Settings
 
 from dataclasses import dataclass
 from jellyfish import jaro_winkler_similarity

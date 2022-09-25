@@ -1,7 +1,7 @@
-from dedupe.fastapi import fapi
-from dedupe.fastapi import app
-from dedupe.labelstudio import lsapi
-from dedupe.settings import get_settings_from_env
+from oagdedupe.fastapi import fapi
+from oagdedupe.fastapi import app
+from oagdedupe.labelstudio import lsapi
+from oagdedupe.settings import get_settings_from_env
 from typing import Union
 
 import time

@@ -1,5 +1,5 @@
-from dedupe import utils as du
-from dedupe.settings import Settings
+from oagdedupe import utils as du
+from oagdedupe.settings import Settings
 
 from dataclasses import dataclass
 from functools import cached_property

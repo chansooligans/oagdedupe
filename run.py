@@ -5,11 +5,11 @@ if get_ipython() is not None:
     get_ipython().run_line_magic("autoreload", "2")
 
 # %%
-from dedupe.settings import (
+from oagdedupe.settings import (
     Settings,
     SettingsOther,
 )
-from dedupe.api import Dedupe
+from oagdedupe.api import Dedupe
 
 import glob
 import pandas as pd

@@ -1,6 +1,6 @@
-from dedupe.settings import Settings
-from dedupe.db.tables import Tables
-from dedupe import utils as du
+from oagdedupe.settings import Settings
+from oagdedupe.db.tables import Tables
+from oagdedupe import utils as du
 
 from functools import cached_property
 import sqlalchemy

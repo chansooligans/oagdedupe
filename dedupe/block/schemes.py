@@ -1,4 +1,4 @@
-from dedupe.settings import Settings
+from oagdedupe.settings import Settings
 
 class BlockSchemesHelper:
     """

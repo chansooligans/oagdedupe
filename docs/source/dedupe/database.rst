@@ -5,7 +5,7 @@ Database
 SQLalchemy ORM Tables
 #####################
 
-.. automodule:: dedupe.db.tables
+.. automodule:: oagdedupe.db.tables
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__
@@ -14,7 +14,7 @@ SQLalchemy ORM Tables
 Initialize
 #####################
 
-.. automodule:: dedupe.db.initialize
+.. automodule:: oagdedupe.db.initialize
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__
@@ -23,7 +23,7 @@ Initialize
 Database Interface
 #####################
 
-.. automodule:: dedupe.db.database
+.. automodule:: oagdedupe.db.database
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

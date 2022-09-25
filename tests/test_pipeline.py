@@ -1,8 +1,8 @@
 # # %%
-# from dedupe.settings import Settings, SettingsOther
-# from dedupe.api import Dedupe
+# from oagdedupe.settings import Settings, SettingsOther
+# from oagdedupe.api import Dedupe
 
-# # from dedupe.api import RecordLinkage
+# # from oagdedupe.api import RecordLinkage
 # from pytest import fixture
 
 # from faker import Faker

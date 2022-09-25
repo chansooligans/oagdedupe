@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from dedupe.settings import Settings
+from oagdedupe.settings import Settings
 
 from dataclasses import dataclass
 from typing import List, Dict, Optional
