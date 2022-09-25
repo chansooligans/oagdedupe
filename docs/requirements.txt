@@ -60,5 +60,6 @@ urllib3==1.26.12
     # via requests
 zipp==3.8.1
     # via importlib-metadata
+sphinx!=5.2.0.post0
 myst-parser==0.18.0
 pydantic==1.10.2
