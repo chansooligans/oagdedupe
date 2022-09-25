@@ -2206,7 +2206,7 @@ book = ["jupytext", "autodocsumm"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8, <3.11"
-content-hash = "676039347d04923b8b19448a73378e66cd95fed83fa0b2f6d1853192defc8cb1"
+content-hash = "b36fe5232bf540e05b4bfff4905461447589c2967e718dd2a7c0ac23f8ff29ad"
 
 [metadata.files]
 aiosignal = [
