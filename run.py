@@ -25,6 +25,7 @@ settings = Settings(
         dedupe=True,
         n=5000,
         k=3,
+        max_compare=200_000,
         cpus=20,  # parallelize distance computations
         attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
         path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
@@ -47,8 +48,10 @@ files = glob.glob(
 df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
 for attr in settings.other.attributes:
     df[attr] = df[attr].astype(str)
+df = df.sample(100_000)
 
 # %%
+%%time
 d = Dedupe(settings=settings)
 d.initialize(df=df, reset=True)
 
