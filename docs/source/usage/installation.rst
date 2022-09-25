@@ -43,7 +43,7 @@ port on your host machine
       --env POSTGRES_DB=db \
       --env PGDATA=/var/lib/pgsql/data/pgdata \
       -v `pwd`/.dedupe:/var/lib/pgsql/data \
-      postgres:latest
+      chansoosong/oagdedupe-postgres 
 
 label-studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,8 +53,10 @@ port on your host machine
 
 .. code-block:: console
 
-   docker run -it -p [LS_PORT]:8080 -v `pwd`/cache/mydata:/label-studio/data \
+   docker run --rm -it -dp `[LS_PORT]`:8080 \
+      --name oagdedupe-labelstudio \
       --env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
       --env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
+      -v `pwd`/.dedupe:/label-studio/data \
       -v `pwd`/.dedupe:/label-studio/files \
       heartexlabs/label-studio:latest label-studio
