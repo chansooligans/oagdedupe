@@ -1,7 +1,7 @@
-from dedupe.db.database import DatabaseORM,DatabaseCore
-from dedupe.settings import Settings
-from dedupe.block import Blocker
-from dedupe import utils as du
+from oagdedupe.db.database import DatabaseORM,DatabaseCore
+from oagdedupe.settings import Settings
+from oagdedupe.block import Blocker
+from oagdedupe import utils as du
 
 from dataclasses import dataclass
 from typing import List

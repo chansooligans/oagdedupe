@@ -47,7 +47,7 @@ most importantly, need to create functions (dedupe/postgres/funcs.py)
 
 Make a `dedupe.settings.Settings` object. For example:
 ```py
-from dedupe.settings import (
+from oagdedupe.settings import (
     Settings,
     SettingsOther,
 )
@@ -89,7 +89,7 @@ Below is an example that dedupes `df` on attributes columns specified in setting
 ```py
 import glob
 import pandas as pd
-from dedupe.api import Dedupe
+from oagdedupe.api import Dedupe
 
 d = Dedupe(settings=settings)
 d.initialize(df=df, reset=True)
@@ -108,7 +108,7 @@ in settings (dataframes should share these columns).
 ```py
 import glob
 import pandas as pd
-from dedupe.api import RecordLinkage
+from oagdedupe.api import RecordLinkage
 
 d = RecordLinkage(settings=settings)
 d.initialize(df=df, df2=df2, reset=True)

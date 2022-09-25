@@ -17,11 +17,11 @@ for attr in attributes:
     df[attr] = df[attr].astype(str)
 
 # %%
-from dedupe.api import Dedupe
-from dedupe.distance.string import RayAllJaro
-from dedupe.block import blockers 
-from dedupe.block import algos
-from dedupe.train.threshold import Threshold
+from oagdedupe.api import Dedupe
+from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.block import blockers 
+from oagdedupe.block import algos
+from oagdedupe.train.threshold import Threshold
 
 manual_blocker = blockers.ManualBlocker([
     [

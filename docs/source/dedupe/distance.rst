@@ -5,7 +5,7 @@ Distance
 Distance
 #####################
 
-.. automodule:: dedupe.distance.string
+.. automodule:: oagdedupe.distance.string
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

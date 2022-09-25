@@ -1,9 +1,9 @@
-from dedupe.distance.string import RayAllJaro
-from dedupe.cluster.cluster import ConnectedComponents
-from dedupe.settings import Settings
-from dedupe.block import Blocker, Conjunctions
-from dedupe.db.initialize import Initialize
-from dedupe.db.database import DatabaseORM
+from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.cluster.cluster import ConnectedComponents
+from oagdedupe.settings import Settings
+from oagdedupe.block import Blocker, Conjunctions
+from oagdedupe.db.initialize import Initialize
+from oagdedupe.db.database import DatabaseORM
 
 import requests
 import json

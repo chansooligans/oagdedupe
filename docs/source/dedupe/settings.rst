@@ -5,7 +5,7 @@ Settings
 Settings
 #####################
 
-.. automodule:: dedupe.settings
+.. automodule:: oagdedupe.settings
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

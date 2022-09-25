@@ -1,4 +1,4 @@
-from dedupe.settings import Settings
+from oagdedupe.settings import Settings
 
 from sqlalchemy import create_engine
 from dataclasses import dataclass

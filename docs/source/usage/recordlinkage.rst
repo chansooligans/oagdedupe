@@ -11,7 +11,7 @@ train model
 
    import glob
    import pandas as pd
-   from dedupe.api import Dedupe
+   from oagdedupe.api import Dedupe
 
    files = glob.glob(
       "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"

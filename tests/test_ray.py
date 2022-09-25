@@ -1,6 +1,6 @@
 # %%
-from dedupe.distance.string import RayAllJaro
-from dedupe.settings import Settings
+from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.settings import Settings
 import pytest
 from pytest import fixture
 

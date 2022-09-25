@@ -1,7 +1,7 @@
-from dedupe.base import BaseCluster
-from dedupe.settings import Settings
-from dedupe.db.database import DatabaseORM
-from dedupe import utils as du
+from oagdedupe.base import BaseCluster
+from oagdedupe.settings import Settings
+from oagdedupe.db.database import DatabaseORM
+from oagdedupe import utils as du
 
 from dataclasses import dataclass
 import networkx as nx

@@ -5,7 +5,7 @@ Utils
 Record Linkage Decorators
 #####################
 
-.. automodule:: dedupe.utils
+.. automodule:: oagdedupe.utils
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

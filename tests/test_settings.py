@@ -1,4 +1,4 @@
-from dedupe.settings import (
+from oagdedupe.settings import (
     Settings,
     SettingsOther,
     SettingsService,

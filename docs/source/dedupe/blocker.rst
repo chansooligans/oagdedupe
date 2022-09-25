@@ -5,7 +5,7 @@ Blocker
 Schemes
 #####################
 
-.. automodule:: dedupe.block.schemes
+.. automodule:: oagdedupe.block.schemes
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__
@@ -14,7 +14,7 @@ Schemes
 Forward Indices
 #####################
 
-.. automodule:: dedupe.block.blocker
+.. automodule:: oagdedupe.block.blocker
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__
@@ -23,7 +23,7 @@ Forward Indices
 Best Conjunctions
 #####################
 
-.. automodule:: dedupe.block.learner
+.. automodule:: oagdedupe.block.learner
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

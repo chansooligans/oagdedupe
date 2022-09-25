@@ -3,11 +3,11 @@ Dedupe Example
 
 .. code-block:: python
 
-    from dedupe.settings import (
+    from oagdedupe.settings import (
         Settings,
         SettingsOther,
     )
-    from dedupe.api import Dedupe
+    from oagdedupe.api import Dedupe
 
     import glob
     import pandas as pd
