@@ -36,10 +36,10 @@ class BlockSchemesHelper:
         ]
 
 class BlockSchemes(BlockSchemesHelper):
-    settings: Settings
     """
     Contains all block schemes.
     """
+    settings: Settings
 
     @property
     def block_schemes(self):

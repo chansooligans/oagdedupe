@@ -163,7 +163,6 @@ class APIAnnotations:
 
 @dataclass
 class APIWebhooks:
-
     settings: Settings
 
     def get_webhooks(self):
