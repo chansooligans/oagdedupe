@@ -28,7 +28,7 @@ Contents
    :caption: User Guide
    :numbered:
 
-   userguide/Intro
+   userguide/intro
    userguide/glossary
    userguide/sampling
    userguide/blocking
