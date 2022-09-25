@@ -8,10 +8,10 @@ def create_functions(settings: Settings):
     engine = create_engine(settings.other.path_database, echo=False)
 
     engine.execute("""
-        create extension pg_trgm;
-        create extension plpython3u;
-        create language pg_trgm;
-        create language plpython3u;
+        CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        CREATE EXTENSION IF NOT EXISTS plpython3u;
+        CREATE OR REPLACE LANGUAGE pg_trgm;
+        CREATE OR REPLACE LANGUAGE plpython3u;
     """)
 
     engine.execute("""
@@ -94,7 +94,4 @@ def create_functions(settings: Settings):
         $$ 
         LANGUAGE plpython3u;
     """)
-
-
-
 
