@@ -1,4 +1,5 @@
-# Key Terms
+Key Terms
+----------------
 
 .. list-table:: Terms
    :widths: 25 25 50
