@@ -32,7 +32,7 @@ settings = Settings(
         path_model="./.dedupe/test_model_rl",  # where to save the model
         label_studio={
             "port": 8089,  # label studio port
-            "api_key": "83e2bc3da92741aa41c272829558c596faefa745",  # label studio port
+            "api_key": "33344e8a477f8adc3eb6aa1e41444bde76285d96",  # label studio port
             "description": "chansoo test project",  # label studio description of project
         },
         fast_api={"port": 8090},  # fast api port

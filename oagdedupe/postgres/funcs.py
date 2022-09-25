@@ -8,6 +8,13 @@ def create_functions(settings: Settings):
     engine = create_engine(settings.other.path_database, echo=False)
 
     engine.execute("""
+        CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        CREATE EXTENSION IF NOT EXISTS plpython3u;
+        CREATE OR REPLACE LANGUAGE pg_trgm;
+        CREATE OR REPLACE LANGUAGE plpython3u;
+    """)
+
+    engine.execute("""
         CREATE OR REPLACE FUNCTION first_nchars(s text, n integer) RETURNS text
         AS $$
         return s[:n]

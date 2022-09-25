@@ -3,14 +3,6 @@
 oagdedupe is a Python library for scalable entity resolution, using active 
 learning to learn blocking configurations, generate comparison pairs, 
 then clasify matches. 
-  
-# documentation<a name="#documentation"></a>
-
-You can find the documentation of oagdedupe at https://deduper.readthedocs.io/en/latest/, 
-where you can find [Getting started](https://deduper.readthedocs.io/en/latest/usage/installation.html), 
-the [api reference](https://deduper.readthedocs.io/en/latest/dedupe/api.html), 
-[guide to methodology](https://deduper.readthedocs.io/en/latest/userguide/intro.html),
-and [examples](https://deduper.readthedocs.io/en/latest/examples/example_dedupe.html).
 
 # installation<a name="#installation"></a>
 
@@ -19,21 +11,13 @@ and [examples](https://deduper.readthedocs.io/en/latest/examples/example_dedupe.
 pip install oagdedupe
 ```
 
-## label-studio<a name="#label-studio"></a>
+# documentation<a name="#documentation"></a>
 
-Start label-studio using docker command below, updating `[LS_PORT]` to the 
-port on your host machine
+You can find the documentation of oagdedupe at https://deduper.readthedocs.io/en/latest/, 
+where you can find: 
 
-```
-docker run -it -p [LS_PORT]:8080 -v `pwd`/cache/mydata:/label-studio/data \
-	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
-	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
-	-v `pwd`/cache/myfiles:/label-studio/files \
-	heartexlabs/label-studio:latest label-studio
-```
+- [Installation and Getting Started](https://deduper.readthedocs.io/en/latest/usage/installation.html)
+- [Examples](https://deduper.readthedocs.io/en/latest/examples/example_dedupe.html)
+- the [API reference](https://deduper.readthedocs.io/en/latest/dedupe/api.html)
+- [User Guide / Methodology](https://deduper.readthedocs.io/en/latest/userguide/intro.html)
 
-## postgres<a name="#postgres"></a>
-
-[insert instructions here about initializing postgres]
-
-most importantly, need to create functions (dedupe/postgres/funcs.py)
