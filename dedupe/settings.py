@@ -40,6 +40,9 @@ class SettingsOther(BaseModel):
     """maximum length of blocking scheme conjunctions"""
     k: int = 3
 
+    """maximum number of comparisons"""
+    max_compare: int = 1_000_000
+
     """entity attribute names"""
     attributes: Optional[List[str]] = ["name", "addr"]
 
