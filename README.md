@@ -1,6 +1,18 @@
-# dedupe  
+# oagdedupe  
 
-#### 1. start label-studio
+oagdedupe is a Python library for scalable entity resolution, using active 
+learning to learn blocking configurations and clasify matches. 
+
+## page contents
+- [Installation](#installation)
+- []
+
+
+# Installation<a name="#installation"></a>
+
+[tbd]
+
+## start label-studio<a name="#label-studio"></a>
 
 1. Start label-studio, e.g. on port 8089.
 2. Once label-studio is running, log in (can make up any user/pw).
@@ -15,13 +27,13 @@ docker run -it -p 8089:8080 -v `pwd`/cache/mydata:/label-studio/data \
 	heartexlabs/label-studio:latest label-studio
 ```
 
-#### 1b. postgres
+## postgres<a name="#postgres"></a>
 
 [insert instructions here about initializing postgres]
 
 most importantly, need to create functions (dedupe/postgres/funcs.py)
 
-#### 2. Define project settings
+## project settings<a name="#project-settings"></a>
 
 Make a `dedupe.settings.Settings` object. For example:
 ```py
@@ -53,7 +65,9 @@ settings.save()
 ```
 See [dedupe/settings.py](./dedupe/settings.py) for the full settings code.
 
-#### 3. train model
+# dedupe example<a name="#dedupe-example"></a>
+
+## train dedupe<a name="#train-dedupe"></a>
 
 Below is an example that dedupes voter records on name and address columns.
 
@@ -80,7 +94,7 @@ d.initialize(df=df, reset=True)
 d.fit_blocks()
 ```
 
-#### 4. start fastAPI
+## active learn dedupe<a name="#active-learn-dedupe"></a>
 
 Run 
 
@@ -92,12 +106,57 @@ replacing `<project name>` and `<project folder>` with your project settings (fo
 
 Then return to label-studio and start labelling. When the queue falls under 5 tasks, fastAPI will update the model with labelled samples then send more tasks to review.
 
-#### 5. predictions
+## predictions<a name="#predictions"></a>
 
 To get predictions, simply run the `predict()` method.
 
 ```py
 d = Dedupe(settings=Settings(name="test", folder="./.dedupe"))
+d.predict()
+```
+
+See [./run.py](./run.py) for the full working example.
+
+
+# record-linkage example<a name="#record-linkage-example"></a>
+
+## train record-linkage<a name="#train-record-linkage"></a>
+
+Below is an example that dedupes voter records on name and address columns.
+
+It uses a manual blocking scheme to narrow possible comparisons.
+
+```py
+import glob
+import pandas as pd
+from dedupe.api import RecordLinkage
+
+d = RecordLinkage(settings=settings)
+d.initialize(df=df, df2=df2, reset=True)
+
+# %%
+# pre-processes data and stores pre-processed data, comparisons, ID matrices in SQLite db
+d.fit_blocks()
+```
+
+## active learn record-linkage<a name="#active-learn-record-linkage"></a>
+
+Run 
+
+```sh
+DEDUPER_NAME="<project name>" DEDUPER_FOLDER="<project folder>"  python -m dedupe.fastapi.main
+```
+
+replacing `<project name>` and `<project folder>` with your project settings (for the example above, `test` and `./.dedupe`).
+
+Then return to label-studio and start labelling. When the queue falls under 5 tasks, fastAPI will update the model with labelled samples then send more tasks to review.
+
+## predictions<a name="#predictions"></a>
+
+To get predictions, simply run the `predict()` method.
+
+```py
+d = RecordLinkage(settings=Settings(name="test", folder="./.dedupe"))
 d.predict()
 ```
 
