@@ -6,7 +6,7 @@ readme = "README.md"
 homepage = ""
 repository = "https://github.com/chansooligans/oagdedupe"
 documentation = "https://deduper.readthedocs.io/en/latest/"
-keywords = ["dedupe", "entity resolution", "record linkage", "blockign"]
+keywords = ["dedupe", "entity resolution", "record linkage", "blocking"]
 authors = [
     "Chansoo Song",
     "Gautam Sisodia"
