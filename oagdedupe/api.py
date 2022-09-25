@@ -4,6 +4,7 @@ from oagdedupe.settings import Settings
 from oagdedupe.block import Blocker, Conjunctions
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.database import DatabaseORM
+from oagdedupe.postgres import funcs
 
 import requests
 import json
@@ -94,6 +95,7 @@ class Dedupe(FitModel, BaseModel):
         self.settings.sync()
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
+        funcs.create_functions(settings=self.settings)
     
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""
@@ -151,6 +153,7 @@ class RecordLinkage(FitModel, BaseModel):
         self.settings.sync()
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
+        funcs.create_functions(settings=self.settings)
     
     def predict(self) -> pd.DataFrame:
         """get clusters of matches and return cluster IDs"""

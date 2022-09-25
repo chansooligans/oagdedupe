@@ -1,24 +1,29 @@
-.PHONY: tests_all, serve, reset, clear_cache, build, docker-run, lint, label-studio, book, serve
+.PHONY: tests_all, lint, serve, postgres, label-studio, book, serve
 
 tests_all:
 	poetry run pytest -v
-
-clear_cache:
-	rm cache/*
 	
 lint:
 	flake8 --ignore W291 dedupe --max-line-length=180
 	flake8 --ignore W291 app --max-line-length=180
 
 postgres:
-	. dedupe/postgres/postgres.sh;
-	python3 dedupe/postgres/funcs.py;
+	docker run --rm -dp 8000:5432 \
+      --name oagdedupe-postgres \
+      --env POSTGRES_USER=username \
+      --env POSTGRES_PASSWORD=password \
+      --env POSTGRES_DB=db \
+      --env PGDATA=/var/lib/pgsql/data/pgdata \
+      -v `pwd`/.dedupe:/var/lib/pgsql/data \
+      chansoosong/oagdedupe-postgres 
 
 label-studio:
-	docker run -it -p $(port):8080 -v `pwd`/cache/mydata:/label-studio/data \
+	docker run --rm -it -dp $(port):8080 \
+	--name oagdedupe-labelstudio \
 	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
 	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
-	-v `pwd`/cache/myfiles:/label-studio/files \
+	-v `pwd`/.dedupe:/label-studio/data \
+	-v `pwd`/.dedupe:/label-studio/files \
 	heartexlabs/label-studio:latest label-studio
 
 fast-api:
