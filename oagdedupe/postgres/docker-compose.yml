@@ -19,8 +19,14 @@ services:
     # env_file:
     #   - proj.env
 
-  # adminer:
-  #   image: adminer
-  #   restart: always
-  #   ports:
-  #     - 8002:8080
+  label_studio:
+    image: heartexlabs/label-studio:latest
+    container_name: label-studio
+    ports:
+      - 8089:8080
+    environment:
+      LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: true
+      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /label-studio/files
+    volumes:
+      - ./.dedupe/labelstudio:/label-studio/data
+      - ./.dedupe/myfiles:/label-studio/files
