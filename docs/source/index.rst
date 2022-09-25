@@ -2,8 +2,8 @@ oagdedupe
 ===================================
 
 **Dedupe** is a Python library for scalable entity resolution, using active learning to learn blocking configurations 
-and clasify matches. See :ref:`Getting Started<Getting Started>` for installation and setup instructions and 
-:ref:`User Guide<User Guide>` for more detailed methodology.
+and clasify matches. See :ref:`Getting Started<Installation>` for installation and setup instructions and 
+:ref:`User Guide<#user-guide-intro>` for more detailed methodology.
 
 The diagaram below shows an overview of the pipeline.
 
@@ -28,7 +28,7 @@ Contents
    :caption: User Guide
    :numbered:
 
-   userguide/intro
+   userguide/Intro
    userguide/glossary
    userguide/sampling
    userguide/blocking

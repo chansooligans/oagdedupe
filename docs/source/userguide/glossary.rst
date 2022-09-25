@@ -2,7 +2,7 @@ Key Terms
 ----------------
 
 .. list-table:: Terms
-   :widths: 25 25 50
+   :widths: 25 100
    :header-rows: 1
 
    * - Term
