@@ -1,4 +1,4 @@
-# Intro
+# Intro<a name="#user-guide-intro"></a>
 
 This package is for entity resolution at scale.
 
