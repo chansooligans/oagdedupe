@@ -388,7 +388,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
             query = (
                 session
                 .query(self.maindf, self.Clusters.cluster)
-                .outerjoin(self.Clusters.cluster, self.Clusters._index == self.maindf._index)
+                .outerjoin(self.Clusters, self.Clusters._index == self.maindf._index)
                 .order_by(self.Clusters.cluster)
                 )
             return pd.read_sql(query.statement, query.session.bind)
