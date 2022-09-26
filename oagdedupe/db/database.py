@@ -53,8 +53,14 @@ class DatabaseCore:
             """
         )
 
+    def forward_index_to_comparison(self):
+        return {
+            "blocks_train":"comparisons",
+            "blocks_df":"full_comparisons"
+        }
+
     @du.recordlinkage
-    def get_inverted_index_pairs(self, names, table, rl=""):
+    def save_comparison_pairs(self, names, table, rl=""):
         """
         see dedupe.block.learner.InvertedIndex;
 
@@ -82,7 +88,10 @@ class DatabaseCore:
         else:
             where = ""
 
-        res = self.query(f"""
+        newtable = self.forward_index_to_comparison[table]
+        self.truncate_table(newtable)
+
+        self.engine.execute(f"""
             WITH 
                 inverted_index AS (
                     SELECT 
@@ -98,6 +107,7 @@ class DatabaseCore:
                     FROM {self.settings.other.db_schema}.{table}{rl}
                     GROUP BY {", ".join(aliases)}
                 )
+            INSERT INTO {self.settings.other.db_schema}.{newtable}
             SELECT distinct _index_l, _index_r
             FROM inverted_index t1
             JOIN inverted_index_link t2
@@ -107,9 +117,16 @@ class DatabaseCore:
             {where}
             GROUP BY _index_l, _index_r
             HAVING count(*) = 1
-            """)
+            ON CONFLICT DO NOTHING
+            """
+        )
 
-        return res
+    def get_n_pairs(self, table):
+        newtable = self.forward_index_to_comparison[table]
+        return self.query(f"""
+            SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
+        """)["count"].values[0]
+
 
     @du.recordlinkage
     def get_inverted_index_stats(self, names, table, rl=""):

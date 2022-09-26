@@ -18,15 +18,15 @@ class InvertedIndex:
     where keys are signatures and values are arrays of entity IDs
     """
 
-    def get_stats(self, names, table, rl=""):
+    def get_stats(self, names:tuple, table, rl=""):
         """
-        Given forward index, compute stats for blocking scheme's 
-        inverted index.
+        Given forward index, compute stats for comparison pairs 
+        generated using blocking scheme's inverted index.
 
         Parameters
         ----------
-        names : List[str]
-            list of block schemes
+        names : tuple
+            tuple of block schemes
         table : str
             table name of forward index
 
@@ -64,7 +64,7 @@ class DynamicProgram(InvertedIndex):
         arr: tuple
             tuple of block schemes
         """
-        return self.get_stats(names=list(arr), table="blocks_train")
+        return self.get_stats(names=arr, table="blocks_train")
 
     def keep_if(self, x):
         """
@@ -116,7 +116,7 @@ class DynamicProgram(InvertedIndex):
         
         for n in range(1,self.settings.other.k):
             scores = [
-                self.score(tuple(sorted(dp[n-1]["scheme"] + [x[0]]))) 
+                self.score(tuple(sorted(dp[n-1]["scheme"] + x))) 
                 for x in self.db.blocking_schemes
                 if x not in dp[n-1]["scheme"]
             ]
@@ -145,41 +145,30 @@ class Conjunctions(DynamicProgram):
                 p.imap(self.get_best, self.db.blocking_schemes), 
                 total=len(self.db.blocking_schemes)
             ))
-        
-        res = sum([sublist for sublist in res if sublist], [])
-        for x in res:
-            x["scheme"] = "|".join(x["scheme"])
         return res
 
     @cached_property
     def conjunctions_list(self):
         """
-        deduplicates list of stats and sorts 
+        flattens, dedupes, and sorts;
         """
         logging.info(f"getting best conjunctions")   
-        res = [dict(t) for t in {tuple(d.items()) for d in self.conjunctions}]
+        # flatten
+        res = sum([sublist for sublist in self.conjunctions if sublist], [])
+        # dedupe
+        res = [dict(t) for t in {tuple(d.items()) for d in res}]
+        # sort
         res = sorted(res, key=self.max_order, reverse=True)
         return res
 
-    @property
-    def newtablemap(self):
-        return {
-            "comparisons":self.orm.Comparisons,
-            "full_comparisons":self.orm.FullComparisons
-        }
-
-    def check_rr(self, df, stats):
+    def check_rr(self, stats):
         """
         check if new block scheme is below minium reduction ratio
         """
         if stats["rr"] < self.db.min_rr:
-            logging.warning(f"""
-                next conjunction exceeds reduction ratio limit;
-                stopping pair generation with scheme {stats["scheme"]}
-            """)
             return True
 
-    def add_new_comparisons(self, df, stats, table):
+    def add_new_comparisons(self, stats, table):
         """
         get comparison pairs for the blocking scheme;
         then append to df and drop duplicates;
@@ -193,7 +182,8 @@ class Conjunctions(DynamicProgram):
         stats: dict
             stats for new block scheme
         table: str
-            get pairs from table using new block scheme
+            table used to get pairs (either blocks_train for sample or 
+            blocks_df for full df)
         
         Returns
         ----------
@@ -201,17 +191,11 @@ class Conjunctions(DynamicProgram):
         """
         if table == "blocks_df":
             self.blocker.build_forward_indices_full(stats["scheme"])
-        df = pd.concat([
-            df,
-            self.db.get_inverted_index_pairs(
-                names=stats["scheme"].split("|"), 
-                table=table
-            )
-        ], axis=0).drop_duplicates()
-        logging.info(f"""{len(df)} comparison pairs gathered""")
-        return df
+        self.db.save_comparison_pairs(names=stats["scheme"], table=table)
+        n = self.db.get_n_pairs(table=table)
+        return n
 
-    def get_comparisons(
+    def save_comparisons(
             self, 
             table, 
             n_covered
@@ -222,43 +206,20 @@ class Conjunctions(DynamicProgram):
         Parameters
         ----------
         table: str
-            get pairs from table (either blocks_train for sample or 
+            table used to get pairs (either blocks_train for sample or 
             blocks_df for full df)
         n_covered: int
             number of records that the conjunctions should cover
-        """
-        df = pd.DataFrame()        
+        """    
         self.blocker = Blocker(settings=self.settings)
         for stats in self.conjunctions_list:
-            if self.check_rr(df, stats):
-                return df
-            df = self.add_new_comparisons(df, stats, table)
-            if len(df) > n_covered:
-                return df
-
-    def save_best(
-        self, 
-        table, 
-        newtable,
-        n_covered
-    ):
-        """
-        Applies subset of best conjunction to obtain comparison pairs.
-
-        Parameters
-        ----------
-        table: str
-            get pairs from table (either blocks_train for sample or 
-            blocks_df for full df)
-        newtable: str
-            table to save output (either comparisons for sample or 
-            full_comparisons for full df)
-        n_covered: int
-            number of records that the conjunctions should cover
-        """
-        comparisons = self.get_comparisons(table=table,n_covered=n_covered)
-        self.orm = DatabaseORM(settings=self.settings)
-        self.orm.truncate_table(newtable)
-        self.orm.bulk_insert(
-            df=comparisons, to_table=self.newtablemap[newtable]
-        )
+            if self.check_rr(stats):
+                logging.warning(f"""
+                    next conjunction exceeds reduction ratio limit;
+                    stopping pair generation with scheme {stats["scheme"]}
+                """)
+                return 
+            n_pairs = self.add_new_comparisons(stats, table)
+            if n_pairs > n_covered:
+                logging.info(f"""{n} comparison pairs gathered""")
+                return 

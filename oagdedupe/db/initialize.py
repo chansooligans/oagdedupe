@@ -1,6 +1,6 @@
 from oagdedupe.settings import Settings
 from oagdedupe.distance.string import RayAllJaro
-from oagdedupe.db.tables import Tables
+from oagdedupe.db.database import DatabaseORM
 from sqlalchemy import select, delete, func
 from oagdedupe import utils as du
 
@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import logging
 
 @dataclass
-class Initialize(Tables):
+class Initialize(DatabaseORM):
     """
     Object used to initialize SQL tables using sqlalchemy
 
@@ -31,14 +31,13 @@ class Initialize(Tables):
     """
     settings:Settings
 
-    def _init_df(self, df, rl=""):
+    @du.recordlinkage_repeat
+    def _init_df(self, df=None, df_link=None, rl=""):
         logging.info(f"Building table {self.settings.other.db_schema}.df{rl}")
-        with self.Session() as session:
-            session.bulk_insert_mappings(
-                getattr(self,f"maindf{rl}"),
-                df.to_dict(orient='records')
-            )
-            session.commit()
+        self.bulk_insert(
+            df=locals()[f"df{rl}"],
+            to_table=getattr(self, f"maindf{rl}"),
+        )
 
     def _init_pos(self):
         # create pos
@@ -200,10 +199,7 @@ class Initialize(Tables):
             if "_index" in df.columns:
                 raise ValueError("_index cannot be a column name")
             
-            self._init_df(df=df)
-            if self.settings.other.dedupe == False:
-                self._init_df(df=df2, rl="_link")
-
+            self._init_df(df=df, df_link=df2)
             self._init_pos()
             self._init_neg()
             self._init_unlabelled()
