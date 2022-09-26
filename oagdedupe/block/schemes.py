@@ -1,9 +1,12 @@
+"""This module contains blocking schemes
+"""
 from oagdedupe.settings import Settings
+
 
 class BlockSchemesHelper:
     """
-    Attributes used to help build SQL queries, which are used to 
-    build forward indices. 
+    Attributes used to help build SQL queries, which are used to
+    build forward indices.
     """
 
     @property
@@ -13,12 +16,12 @@ class BlockSchemesHelper:
         """
         mapping = {}
         for attribute in self.settings.other.attributes:
-            for scheme,nlist in self.block_schemes:
+            for scheme, nlist in self.block_schemes:
                 for n in nlist:
                     if n:
-                        mapping[f"{scheme}_{n}_{attribute}"]=f"{scheme}({attribute},{n})"
+                        mapping[f"{scheme}_{n}_{attribute}"] = f"{scheme}({attribute},{n})"
                     else:
-                        mapping[f"{scheme}_{attribute}"]=f"{scheme}({attribute})"
+                        mapping[f"{scheme}_{attribute}"] = f"{scheme}({attribute})"
         return mapping
 
     @property
@@ -31,9 +34,10 @@ class BlockSchemesHelper:
             if n
             else f"{scheme}({attribute}) as {scheme}_{attribute}"
             for attribute in self.settings.other.attributes
-            for scheme,nlist in self.block_schemes
+            for scheme, nlist in self.block_schemes
             for n in nlist
         ]
+
 
 class BlockSchemes(BlockSchemesHelper):
     """
@@ -48,9 +52,9 @@ class BlockSchemes(BlockSchemesHelper):
         The block scheme name should correspond to a postgres function
         """
         return [
-            ("first_nchars", [2,4,6]),
-            ("last_nchars", [2,4,6]),
-            ("find_ngrams",[2,4,6]),
+            ("first_nchars", [2, 4, 6]),
+            ("last_nchars", [2, 4, 6]),
+            ("find_ngrams", [2, 4, 6]),
             ("acronym", [None]),
             ("exactmatch", [None])
         ]
@@ -65,6 +69,6 @@ class BlockSchemes(BlockSchemesHelper):
             if n
             else f"{scheme}_{attribute}"
             for attribute in self.settings.other.attributes
-            for scheme,nlist in self.block_schemes
+            for scheme, nlist in self.block_schemes
             for n in nlist
         ]

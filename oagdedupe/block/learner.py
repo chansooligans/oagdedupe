@@ -1,26 +1,26 @@
-from oagdedupe.db.database import DatabaseORM,DatabaseCore
+"""This module contains objects used to construct learn the best
+block scheme conjunctions and uses these to generate comparison pairs.
+"""
+
+from functools import lru_cache, cached_property
+import logging
+from multiprocessing import Pool
+import tqdm
+
+from oagdedupe.db.database import DatabaseCore
 from oagdedupe.settings import Settings
 from oagdedupe.block import Blocker
-from oagdedupe import utils as du
 
-from dataclasses import dataclass
-from typing import List
-from functools import lru_cache, cached_property
-import pandas as pd
-import itertools
-from multiprocessing import Pool
-import logging
-import tqdm
 
 class InvertedIndex:
     """
-    Used to build inverted index. An inverted index is dataframe 
+    Used to build inverted index. An inverted index is dataframe
     where keys are signatures and values are arrays of entity IDs
     """
 
-    def get_stats(self, names:tuple, table, rl=""):
+    def get_stats(self, names: tuple, table, rl=""):
         """
-        Given forward index, compute stats for comparison pairs 
+        Given forward index, compute stats for comparison pairs
         generated using blocking scheme's inverted index.
 
         Parameters
@@ -33,7 +33,7 @@ class InvertedIndex:
         Returns
         ----------
         dict
-            returns statistics evaluating the conjunction: 
+            returns statistics evaluating the conjunction:
                 - reduction ratio
                 - percent of positive pairs blocked
                 - percent of negative pairs blocked
@@ -44,7 +44,7 @@ class InvertedIndex:
             table=table
         )
         res["scheme"] = names
-        res["rr"]= 1 - (res["n_pairs"] / (self.db.n_comparisons))
+        res["rr"] = 1 - (res["n_pairs"] / (self.db.n_comparisons))
         return res
 
 
@@ -55,7 +55,7 @@ class DynamicProgram(InvertedIndex):
     """
 
     @lru_cache
-    def score(self, arr:tuple):
+    def score(self, arr: tuple):
         """
         Wraps get_stats() function with @lru_cache decorator for caching.
 
@@ -99,7 +99,7 @@ class DynamicProgram(InvertedIndex):
         dp[n] = max(filtered, key=self._max_key)
         return dp
 
-    def get_best(self, scheme:tuple):
+    def get_best(self, scheme: tuple):
         """
         Dynamic programming implementation to get best conjunction.
 
@@ -113,27 +113,28 @@ class DynamicProgram(InvertedIndex):
 
         if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99):
             return None
-        
-        for n in range(1,self.settings.other.k):
+
+        for n in range(1, self.settings.other.k):
             scores = [
-                self.score(tuple(sorted(dp[n-1]["scheme"] + x))) 
+                self.score(tuple(sorted(dp[n - 1]["scheme"] + x))) 
                 for x in self.db.blocking_schemes
-                if x not in dp[n-1]["scheme"]
+                if x not in dp[n - 1]["scheme"]
             ]
             if len(scores) == 0:
                 return dp[:n]
             dp = self._filter_and_sort(dp, n, scores)
         return dp
 
+
 class Conjunctions(DynamicProgram):
     """
-    For each block scheme, get the best block scheme conjunctions of 
+    For each block scheme, get the best block scheme conjunctions of
     lengths 1 to k using greedy dynamic programming approach.
     """
 
-    def __init__(self, settings:Settings):
+    def __init__(self, settings: Settings):
         self.settings = settings
-        self.db = DatabaseCore(settings=self.settings) 
+        self.db = DatabaseCore(settings=self.settings)
 
     @property
     def _conjunctions(self):
@@ -142,7 +143,7 @@ class Conjunctions(DynamicProgram):
         """
         with Pool(self.settings.other.cpus) as p:
             res = list(tqdm.tqdm(
-                p.imap(self.get_best, self.db.blocking_schemes), 
+                p.imap(self.get_best, self.db.blocking_schemes),
                 total=len(self.db.blocking_schemes)
             ))
         return res
@@ -157,7 +158,7 @@ class Conjunctions(DynamicProgram):
         ----------
         List[dict]
         """
-        logging.info(f"getting best conjunctions")   
+        logging.info("getting best conjunctions")   
         # flatten
         res = sum([sublist for sublist in self._conjunctions if sublist], [])
         # dedupe
@@ -176,11 +177,11 @@ class Conjunctions(DynamicProgram):
 
     def _add_new_comparisons(self, stats, table):
         """
-        Computes pairs for conjunction and appends to comparisons or 
+        Computes pairs for conjunction and appends to comparisons or
         full_comparisons table.
 
         When training on sample, forward indices are pre-computed;
-        But for full data, forward indices construction can be expensive, 
+        But for full data, forward indices construction can be expensive,
         so they are computed here as needed.
 
         Parameters
@@ -190,9 +191,9 @@ class Conjunctions(DynamicProgram):
         stats: dict
             stats for new block scheme
         table: str
-            table used to get pairs (either blocks_train for sample or 
+            table used to get pairs (either blocks_train for sample or
             blocks_df for full df)
-        
+
         Returns
         ----------
         int
@@ -205,28 +206,29 @@ class Conjunctions(DynamicProgram):
         return n
 
     def save_comparisons(
-            self, 
-            table, 
+            self,
+            table,
             n_covered
-        ):
+    ):
         """
         Iterates through best conjunction from best to worst.
-        
-        For each conjunction, append comparisons to "comparisons" 
+
+        For each conjunction, append comparisons to "comparisons"
         or "full_comparisons" (if using full data).
 
-        Stop if (a) subsequent conjunction yields a reduction ratio 
-        below the minimum rr setting or (b) the number of comparison 
+        Stop if (a) subsequent conjunction yields a reduction ratio
+        below the minimum rr setting or (b) the number of comparison
         pairs gathered exceeds n_covered.
 
         Parameters
         ----------
         table: str
-            table used to get pairs (either blocks_train for sample or 
+            table used to get pairs (either blocks_train for sample or
             blocks_df for full df)
         n_covered: int
             number of records that the conjunctions should cover
-        """    
+        """
+        # define here to avoid engine pickle error with multiprocess
         self.blocker = Blocker(settings=self.settings)
         self.db.truncate_table(self.db.comptab_map[table])
         for stats in self.conjunctions_list:
@@ -239,4 +241,4 @@ class Conjunctions(DynamicProgram):
             n_pairs = self._add_new_comparisons(stats, table)
             logging.info(f"""{n_pairs} comparison pairs gathered""")
             if n_pairs > n_covered:
-                return 
+                return
