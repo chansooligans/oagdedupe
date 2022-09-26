@@ -27,7 +27,7 @@ label-studio:
 	heartexlabs/label-studio:latest label-studio
 
 fast-api:
-	python dedupe/fastapi/main.py 
+	python oagdedupe/fastapi/main.py 
 
 book:
 	poetry run jb build book

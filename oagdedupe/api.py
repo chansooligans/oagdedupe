@@ -112,7 +112,9 @@ class Dedupe(FitModel, BaseModel):
         # fit block scheme conjunctions to full data
         self.blocker.init_forward_index_full()
         self.cover.save_best(
-            table="blocks_df", newtable="full_comparisons", n_covered=n_covered
+            table="blocks_df", 
+            newtable="full_comparisons", 
+            n_covered=self.settings.other.n_covered
         )
 
         # get distances
@@ -165,12 +167,14 @@ class RecordLinkage(FitModel, BaseModel):
             idxmat[y == 1].astype(int), scores[y == 1]
         )
 
-    def fit_blocks(self, n_covered=500_000):
+    def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
         self.blocker.init_forward_index_full()
         self.cover.save_best(
-            table="blocks_df", newtable="full_comparisons", n_covered=n_covered
+            table="blocks_df", 
+            newtable="full_comparisons", 
+            n_covered=self.settings.other.n_covered
         )
 
         # get distances

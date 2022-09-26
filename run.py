@@ -26,6 +26,7 @@ settings = Settings(
         n=5000,
         k=3,
         max_compare=200_000,
+        n_covered=5000,
         cpus=20,  # parallelize distance computations
         attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
         path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
@@ -58,7 +59,3 @@ d.initialize(df=df, reset=True)
 # %%
 d.fit_blocks()
 res = d.predict()
-
-# %%
-inverted_index = d.orm.get_inverted_index_pairs(["first_nchars_2_givenname"],"blocks_train")
-# %%

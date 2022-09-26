@@ -43,6 +43,9 @@ class SettingsOther(BaseModel):
     """maximum number of comparisons"""
     max_compare: int = 1_000_000
 
+    """maximum number of comparisons"""
+    n_covered: int = 500_000
+
     """entity attribute names"""
     attributes: Optional[List[str]] = ["name", "addr"]
 
