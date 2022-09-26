@@ -4,8 +4,7 @@ tests_all:
 	poetry run pytest -v
 	
 lint:
-	flake8 --ignore W291 dedupe --max-line-length=180
-	flake8 --ignore W291 app --max-line-length=180
+	flake8 --ignore W291 oagdedupe --max-line-length=180
 
 postgres:
 	docker run --rm -dp 8000:5432 \
