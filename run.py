@@ -61,3 +61,5 @@ d.fit_blocks()
 
 # %%
 res = d.predict()
+
+# %%

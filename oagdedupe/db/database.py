@@ -22,18 +22,7 @@ def signatures(names):
     ])
 
 @dataclass
-class Engine:
-    """
-    manages non-ORM textual connections to database
-    """
-    settings: Settings
-
-    @cached_property
-    def engine(self):
-        return create_engine(self.settings.other.path_database)
-
-@dataclass
-class DatabaseCore(Engine):
+class DatabaseCore:
     """
     Object contains methods to query database using sqlalchemy CORE;
     It's easier to use sqlalchemy core than ORM for parallel operations.
@@ -51,9 +40,11 @@ class DatabaseCore(Engine):
         return res
 
     def truncate_table(self, table):
-        self.engine.execute(f"""
+        engine = create_engine(self.settings.other.path_database)
+        engine.execute(f"""
             TRUNCATE TABLE {self.settings.other.db_schema}.{table};
         """)
+        engine.dispose()
 
     def get_labels(self):
         """
@@ -107,7 +98,8 @@ class DatabaseCore(Engine):
 
         newtable = self.comptab_map[table] 
 
-        self.engine.execute(f"""
+        engine = create_engine(self.settings.other.path_database)
+        engine.execute(f"""
             INSERT INTO {self.settings.other.db_schema}.{newtable}
             (
                 WITH 
@@ -138,6 +130,7 @@ class DatabaseCore(Engine):
             ON CONFLICT DO NOTHING
             """
         )
+        engine.dispose()
 
     def get_n_pairs(self, table):
         newtable = self.comptab_map[table]
@@ -252,6 +245,19 @@ class DatabaseCore(Engine):
         """minimum reduction ratio"""
         reduced = (self.n_comparisons - self.settings.other.max_compare) 
         return reduced / self.n_comparisons
+
+
+@dataclass
+class Engine:
+    """
+    manages non-ORM textual connections to database
+    """
+    settings: Settings
+
+    @cached_property
+    def engine(self):
+        return create_engine(self.settings.other.path_database)
+
 
 @dataclass
 class DatabaseORM(Tables, DatabaseCore):

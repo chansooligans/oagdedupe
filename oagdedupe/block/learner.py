@@ -66,7 +66,7 @@ class DynamicProgram(InvertedIndex):
         """
         return self.get_stats(names=arr, table="blocks_train")
 
-    def keep_if(self, x):
+    def _keep_if(self, x):
         """
         filters for block scheme stats
         """
@@ -77,7 +77,7 @@ class DynamicProgram(InvertedIndex):
             (sum(["_ngrams" in _ for _ in x["scheme"]]) <= 1)
         )
 
-    def max_order(self, x):
+    def _max_key(self, x):
         """
         block scheme stats ordering
         """
@@ -87,16 +87,16 @@ class DynamicProgram(InvertedIndex):
             -x["negatives"]
         )
 
-    def filter_and_sort(self, dp, n, scores):
+    def _filter_and_sort(self, dp, n, scores):
         """
         apply filters and sort block schemes
         """
         filtered = [
             x
             for x in scores
-            if self.keep_if(x)
+            if self._keep_if(x)
         ]
-        dp[n] = max(filtered, key=self.max_order)
+        dp[n] = max(filtered, key=self._max_key)
         return dp
 
     def get_best(self, scheme:tuple):
@@ -122,7 +122,7 @@ class DynamicProgram(InvertedIndex):
             ]
             if len(scores) == 0:
                 return dp[:n]
-            dp = self.filter_and_sort(dp, n, scores)
+            dp = self._filter_and_sort(dp, n, scores)
         return dp
 
 class Conjunctions(DynamicProgram):
@@ -136,7 +136,7 @@ class Conjunctions(DynamicProgram):
         self.db = DatabaseCore(settings=self.settings) 
 
     @property
-    def conjunctions(self):
+    def _conjunctions(self):
         """
         Computes conjunctions for each block scheme in parallel
         """
@@ -150,30 +150,38 @@ class Conjunctions(DynamicProgram):
     @cached_property
     def conjunctions_list(self):
         """
-        flattens, dedupes, and sorts;
+        attribute containing list of conjunctions;
+        sorted by reduction ratio, positive coverage, negative coverage
+
+        Returns
+        ----------
+        List[dict]
         """
         logging.info(f"getting best conjunctions")   
         # flatten
-        res = sum([sublist for sublist in self.conjunctions if sublist], [])
+        res = sum([sublist for sublist in self._conjunctions if sublist], [])
         # dedupe
         res = [dict(t) for t in {tuple(d.items()) for d in res}]
         # sort
-        res = sorted(res, key=self.max_order, reverse=True)
+        res = sorted(res, key=self._max_key, reverse=True)
         return res
 
-    def check_rr(self, stats):
+    def _check_rr(self, stats):
         """
         check if new block scheme is below minium reduction ratio
         """
         if stats["rr"] < self.db.min_rr:
             return True
+        return False
 
-    def add_new_comparisons(self, stats, table):
+    def _add_new_comparisons(self, stats, table):
         """
-        get comparison pairs for the blocking scheme;
-        then append to df and drop duplicates;
-        if table is blocks_df, compute forward indices 
-        since they have not yet been computed
+        Computes pairs for conjunction and appends to comparisons or 
+        full_comparisons table.
+
+        When training on sample, forward indices are pre-computed;
+        But for full data, forward indices construction can be expensive, 
+        so they are computed here as needed.
 
         Parameters
         ----------
@@ -187,7 +195,8 @@ class Conjunctions(DynamicProgram):
         
         Returns
         ----------
-        pd.DataFrame
+        int
+            total number of pairs gathered so far
         """
         if table == "blocks_df":
             self.blocker.build_forward_indices_full(stats["scheme"])
@@ -201,7 +210,14 @@ class Conjunctions(DynamicProgram):
             n_covered
         ):
         """
-        Applies subset of best conjunction to obtain comparison pairs.
+        Iterates through best conjunction from best to worst.
+        
+        For each conjunction, append comparisons to "comparisons" 
+        or "full_comparisons" (if using full data).
+
+        Stop if (a) subsequent conjunction yields a reduction ratio 
+        below the minimum rr setting or (b) the number of comparison 
+        pairs gathered exceeds n_covered.
 
         Parameters
         ----------
@@ -214,13 +230,13 @@ class Conjunctions(DynamicProgram):
         self.blocker = Blocker(settings=self.settings)
         self.db.truncate_table(self.db.comptab_map[table])
         for stats in self.conjunctions_list:
-            if self.check_rr(stats):
+            if self._check_rr(stats):
                 logging.warning(f"""
                     next conjunction exceeds reduction ratio limit;
                     stopping pair generation with scheme {stats["scheme"]}
                 """)
                 return 
-            n_pairs = self.add_new_comparisons(stats, table)
+            n_pairs = self._add_new_comparisons(stats, table)
             logging.info(f"""{n_pairs} comparison pairs gathered""")
             if n_pairs > n_covered:
                 return 
