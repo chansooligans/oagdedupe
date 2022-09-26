@@ -22,7 +22,18 @@ def signatures(names):
     ])
 
 @dataclass
-class DatabaseCore:
+class Engine:
+    """
+    manages non-ORM textual connections to database
+    """
+    settings: Settings
+
+    @cached_property
+    def engine(self):
+        return create_engine(self.settings.other.path_database)
+
+@dataclass
+class DatabaseCore(Engine):
     """
     Object contains methods to query database using sqlalchemy CORE;
     It's easier to use sqlalchemy core than ORM for parallel operations.
@@ -39,6 +50,11 @@ class DatabaseCore:
         engine.dispose()
         return res
 
+    def truncate_table(self, table):
+        self.engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.{table};
+        """)
+
     def get_labels(self):
         """
         query the labels table
@@ -53,7 +69,8 @@ class DatabaseCore:
             """
         )
 
-    def forward_index_to_comparison(self):
+    @property
+    def comptab_map(self):
         return {
             "blocks_train":"comparisons",
             "blocks_df":"full_comparisons"
@@ -88,41 +105,42 @@ class DatabaseCore:
         else:
             where = ""
 
-        newtable = self.forward_index_to_comparison[table]
-        self.truncate_table(newtable)
+        newtable = self.comptab_map[table] 
 
         self.engine.execute(f"""
-            WITH 
-                inverted_index AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
-                    FROM {self.settings.other.db_schema}.{table}
-                    GROUP BY {", ".join(aliases)}
-                ),
-                inverted_index_link AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
-                    FROM {self.settings.other.db_schema}.{table}{rl}
-                    GROUP BY {", ".join(aliases)}
-                )
             INSERT INTO {self.settings.other.db_schema}.{newtable}
-            SELECT distinct _index_l, _index_r
-            FROM inverted_index t1
-            JOIN inverted_index_link t2
-                ON {" and ".join(
-                    [f"t1.{s} = t2.{s}" for s in aliases]
-                )}
-            {where}
-            GROUP BY _index_l, _index_r
-            HAVING count(*) = 1
+            (
+                WITH 
+                    inverted_index AS (
+                        SELECT 
+                            {signatures(names)}, 
+                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
+                        FROM {self.settings.other.db_schema}.{table}
+                        GROUP BY {", ".join(aliases)}
+                    ),
+                    inverted_index_link AS (
+                        SELECT 
+                            {signatures(names)}, 
+                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
+                        FROM {self.settings.other.db_schema}.{table}{rl}
+                        GROUP BY {", ".join(aliases)}
+                    )
+                SELECT distinct _index_l, _index_r
+                FROM inverted_index t1
+                JOIN inverted_index_link t2
+                    ON {" and ".join(
+                        [f"t1.{s} = t2.{s}" for s in aliases]
+                    )}
+                {where}
+                GROUP BY _index_l, _index_r
+                HAVING count(*) = 1
+            )
             ON CONFLICT DO NOTHING
             """
         )
 
     def get_n_pairs(self, table):
-        newtable = self.forward_index_to_comparison[table]
+        newtable = self.comptab_map[table]
         return self.query(f"""
             SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
         """)["count"].values[0]
@@ -236,18 +254,7 @@ class DatabaseCore:
         return reduced / self.n_comparisons
 
 @dataclass
-class Engine:
-    """
-    manages non-ORM textual connections to database
-    """
-    settings: Settings
-
-    @cached_property
-    def engine(self):
-        return create_engine(self.settings.other.path_database)
-
-@dataclass
-class DatabaseORM(Tables, DatabaseCore, Engine):
+class DatabaseORM(Tables, DatabaseCore):
     """
     Object to query database using sqlalchemy ORM. 
     Uses the Session object as interface to the database.
@@ -425,11 +432,6 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                     )
                 dflist.append(pd.read_sql(query.statement, query.session.bind))
             return dflist
-
-    def truncate_table(self, table):
-        self.engine.execute(f"""
-            TRUNCATE TABLE {self.settings.other.db_schema}.{table};
-        """)
 
     def _update_table(self, df, to_table):
         with self.Session() as session:    

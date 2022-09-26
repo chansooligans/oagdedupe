@@ -212,6 +212,7 @@ class Conjunctions(DynamicProgram):
             number of records that the conjunctions should cover
         """    
         self.blocker = Blocker(settings=self.settings)
+        self.db.truncate_table(self.db.comptab_map[table])
         for stats in self.conjunctions_list:
             if self.check_rr(stats):
                 logging.warning(f"""
@@ -220,6 +221,6 @@ class Conjunctions(DynamicProgram):
                 """)
                 return 
             n_pairs = self.add_new_comparisons(stats, table)
+            logging.info(f"""{n_pairs} comparison pairs gathered""")
             if n_pairs > n_covered:
-                logging.info(f"""{n} comparison pairs gathered""")
                 return 

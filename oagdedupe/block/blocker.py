@@ -111,7 +111,7 @@ class Blocker(BlockSchemes, Engine):
         columns : List[str]
             block schemes to include in forward index
         """
-        for col in columns.split("|"):
+        for col in columns:
             exists = pd.read_sql(
                 f"SELECT * FROM {self.settings.other.db_schema}.blocks_df LIMIT 1", 
                 con=self.engine
