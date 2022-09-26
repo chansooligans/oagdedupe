@@ -39,6 +39,13 @@ class DatabaseCore:
         engine.dispose()
         return res
 
+    def truncate_table(self, table):
+        engine = create_engine(self.settings.other.path_database)
+        engine.execute(f"""
+            TRUNCATE TABLE {self.settings.other.db_schema}.{table};
+        """)
+        engine.dispose()
+
     def get_labels(self):
         """
         query the labels table
@@ -53,83 +60,15 @@ class DatabaseCore:
             """
         )
 
-    def get_inverted_index(self, names, table):
-        """
-        see dedupe.block.learner.InvertedIndex;
+    @property
+    def comptab_map(self):
+        return {
+            "blocks_train":"comparisons",
+            "blocks_df":"full_comparisons"
+        }
 
-        Given forward index, construct inverted index. 
-        Then for each row in inverted index, get all "nC2" distinct 
-        combinations of size 2 from the array. 
-        
-        Returns inverted Index
-
-        Parameters
-        ----------
-        names : List[str]
-            list of block schemes
-        table : str
-            table name of forward index
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        return self.query(
-            f"""
-            WITH 
-                inverted_index AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        ARRAY_AGG(_index ORDER BY _index asc) as array_agg
-                    FROM {self.settings.other.db_schema}.{table}
-                    GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
-                )
-            SELECT * 
-            FROM inverted_index
-            WHERE array_length(array_agg, 1) > 1
-            """
-        )
-
-    def get_inverted_index_pairs(self, names, table):
-        """
-        see dedupe.block.learner.InvertedIndex;
-
-        Given forward index, construct inverted index. 
-        Then for each row in inverted index, get all "nC2" distinct 
-        combinations of size 2 from the array. 
-        
-        Concatenates and returns all distinct pairs.
-
-        Parameters
-        ----------
-        names : List[str]
-            list of block schemes
-        table : str
-            table name of forward index
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        return self.query(f"""
-            WITH 
-                inverted_index AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        ARRAY_AGG(_index ORDER BY _index asc) as array_agg
-                    FROM {self.settings.other.db_schema}.{table}
-                    GROUP BY {", ".join([f"signature{i}" for i in range(len(names))])}
-                ),
-                inverted_index_subset AS (
-                    SELECT unnest_2d_1d(combinations(array_agg)) as pairs
-                    FROM inverted_index
-                    WHERE array_length(array_agg, 1) > 1
-                )
-            SELECT pairs[1] as _index_l, pairs[2] as _index_r, True as blocked
-            FROM inverted_index_subset
-            """)
-
-    def get_inverted_index_pairs_link(self, names, table):
+    @du.recordlinkage
+    def save_comparison_pairs(self, names, table, rl=""):
         """
         see dedupe.block.learner.InvertedIndex;
 
@@ -151,7 +90,82 @@ class DatabaseCore:
         pd.DataFrame
         """
         aliases = [f"signature{i}" for i in range(len(names))]
+
+        if rl == "":
+            where = "WHERE t1._index_l < t2._index_r"
+        else:
+            where = ""
+
+        newtable = self.comptab_map[table] 
+
+        engine = create_engine(self.settings.other.path_database)
+        engine.execute(f"""
+            INSERT INTO {self.settings.other.db_schema}.{newtable}
+            (
+                WITH 
+                    inverted_index AS (
+                        SELECT 
+                            {signatures(names)}, 
+                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
+                        FROM {self.settings.other.db_schema}.{table}
+                        GROUP BY {", ".join(aliases)}
+                    ),
+                    inverted_index_link AS (
+                        SELECT 
+                            {signatures(names)}, 
+                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
+                        FROM {self.settings.other.db_schema}.{table}{rl}
+                        GROUP BY {", ".join(aliases)}
+                    )
+                SELECT distinct _index_l, _index_r
+                FROM inverted_index t1
+                JOIN inverted_index_link t2
+                    ON {" and ".join(
+                        [f"t1.{s} = t2.{s}" for s in aliases]
+                    )}
+                {where}
+                GROUP BY _index_l, _index_r
+                HAVING count(*) = 1
+            )
+            ON CONFLICT DO NOTHING
+            """
+        )
+        engine.dispose()
+
+    def get_n_pairs(self, table):
+        newtable = self.comptab_map[table]
         return self.query(f"""
+            SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
+        """)["count"].values[0]
+
+
+    @du.recordlinkage
+    def get_inverted_index_stats(self, names, table, rl=""):
+        """
+        Given forward index, construct inverted index. 
+        Then for each row in inverted index, get all "nC2" distinct 
+        combinations of size 2 from the array. Then compute
+        number of pairs, the positive coverage and negative coverage.
+
+        Parameters
+        ----------
+        names : List[str]
+            list of block schemes
+        table : str
+            table name of forward index
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+        aliases = [f"signature{i}" for i in range(len(names))]
+
+        if rl == "":
+            where = "WHERE t1._index_l < t2._index_r"
+        else:
+            where = ""
+
+        res = self.query(f"""
             WITH 
                 inverted_index AS (
                     SELECT 
@@ -164,16 +178,34 @@ class DatabaseCore:
                     SELECT 
                         {signatures(names)}, 
                         unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
-                    FROM {self.settings.other.db_schema}.{table}_link
+                    FROM {self.settings.other.db_schema}.{table}{rl}
                     GROUP BY {", ".join(aliases)}
+                ),
+                labels AS (
+                    SELECT _index_l, _index_r, label
+                    FROM {self.settings.other.db_schema}.labels
                 )
-            SELECT _index_l, _index_r, True as blocked
+            SELECT 
+                count(*) as n_pairs,
+                SUM(
+                    CASE WHEN t3.label = 1 THEN 1 ELSE 0 END
+                ) positives,
+                SUM(
+                    CASE WHEN t3.label = 0 THEN 1 ELSE 0 END
+                ) negatives
             FROM inverted_index t1
             JOIN inverted_index_link t2
                 ON {" and ".join(
                     [f"t1.{s} = t2.{s}" for s in aliases]
                 )}
+            LEFT JOIN labels t3
+                ON t3._index_l = t1._index_l
+                AND t3._index_r = t2._index_r
+            {where}
             """)
+
+        return res.loc[0].to_dict()
+
 
     @cached_property
     def blocking_schemes(self):
@@ -184,9 +216,15 @@ class DatabaseCore:
         ----------
         List[str]
         """
-        return self.query(
-            f"SELECT * FROM {self.settings.other.db_schema}.blocks_train LIMIT 1"
-        ).columns[1:].tolist()
+        return [
+            tuple([x]) 
+            for x in self.query(
+                f"""
+                SELECT * 
+                FROM {self.settings.other.db_schema}.blocks_train LIMIT 1
+                """
+            ).columns[1:].tolist()
+        ]
 
     @du.recordlinkage_both
     def n(self, rl=""):
@@ -194,7 +232,7 @@ class DatabaseCore:
             f"SELECT count(*) FROM {self.settings.other.db_schema}.df{rl}"
         )["count"].values[0]
 
-    @property
+    @cached_property
     def n_comparisons(self):
         """number of total possible comparisons"""
         n = self.n()
@@ -208,6 +246,7 @@ class DatabaseCore:
         reduced = (self.n_comparisons - self.settings.other.max_compare) 
         return reduced / self.n_comparisons
 
+
 @dataclass
 class Engine:
     """
@@ -219,8 +258,9 @@ class Engine:
     def engine(self):
         return create_engine(self.settings.other.path_database)
 
+
 @dataclass
-class DatabaseORM(Tables, DatabaseCore, Engine):
+class DatabaseORM(Tables, DatabaseCore):
     """
     Object to query database using sqlalchemy ORM. 
     Uses the Session object as interface to the database.
@@ -378,7 +418,7 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
             query = (
                 session
                 .query(self.maindf, self.Clusters.cluster)
-                .outerjoin(self.Clusters.cluster, self.Clusters._index == self.maindf._index)
+                .outerjoin(self.Clusters, self.Clusters._index == self.maindf._index)
                 .order_by(self.Clusters.cluster)
                 )
             return pd.read_sql(query.statement, query.session.bind)
@@ -398,11 +438,6 @@ class DatabaseORM(Tables, DatabaseCore, Engine):
                     )
                 dflist.append(pd.read_sql(query.statement, query.session.bind))
             return dflist
-
-    def truncate_table(self, table):
-        self.engine.execute(f"""
-            TRUNCATE TABLE {self.settings.other.db_schema}.{table};
-        """)
 
     def _update_table(self, df, to_table):
         with self.Session() as session:    

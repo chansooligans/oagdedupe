@@ -70,7 +70,21 @@ class BaseModel(metaclass=ABCMeta):
         return RayAllJaro(settings=self.settings)
 
 @dataclass
-class FitModel:
+class ERModel(BaseModel):
+    """
+    Entity Resolution Abstraction with Methods used for 
+    Both Dedupe and RecordLinkage
+    """
+
+    def predict(self) -> pd.DataFrame:
+        """get clusters of matches and return cluster IDs"""
+
+        idxmat, scores, y = self.fit_model()
+        self.cluster = ConnectedComponents(settings=self.settings)
+        logging.info("get clusters")
+        return self.cluster.get_df_cluster(
+            matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
+        )
 
     def fit_model(self) -> Tuple[np.array, np.array, np.array]:
         """learn p(match)"""
@@ -86,33 +100,13 @@ class FitModel:
             np.array(results["predict"])
         )
 
-@dataclass
-class Dedupe(FitModel, BaseModel):
-    """General dedupe block, inherits from BaseModel."""
-    settings:Settings
-
-    def __post_init__(self):
-        self.settings.sync()
-        if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
-            ray.init(num_cpus=self.settings.other.cpus)
-        funcs.create_functions(settings=self.settings)
-    
-    def predict(self) -> pd.DataFrame:
-        """get clusters of matches and return cluster IDs"""
-
-        idxmat, scores, y = self.fit_model()
-        self.cluster = ConnectedComponents(settings=self.settings)
-        logging.info("get clusters")
-        return self.cluster.get_df_cluster(
-            matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
-        )
-
-    def fit_blocks(self, n_covered=2_000_000):
+    def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
         self.blocker.init_forward_index_full()
-        self.cover.save_best(
-            table="blocks_df", newtable="full_comparisons", n_covered=n_covered
+        self.cover.save_comparisons(
+            table="blocks_df", 
+            n_covered=self.settings.other.n_covered
         )
 
         # get distances
@@ -133,9 +127,7 @@ class Dedupe(FitModel, BaseModel):
         self.init.setup(df=df, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
-        self.cover.save_best(
-            table="blocks_train", newtable="comparisons", n_covered=n_covered
-        )
+        self.cover.save_comparisons(table="blocks_train", n_covered=n_covered)
 
         logging.info("get distance matrix")
         self.distance.save_distances(
@@ -143,9 +135,8 @@ class Dedupe(FitModel, BaseModel):
             newtable=self.orm.Distances
         )
 
-        
 @dataclass
-class RecordLinkage(FitModel, BaseModel):
+class Dedupe(ERModel, BaseModel):
     """General dedupe block, inherits from BaseModel."""
     settings:Settings
 
@@ -154,56 +145,16 @@ class RecordLinkage(FitModel, BaseModel):
         if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
             ray.init(num_cpus=self.settings.other.cpus)
         funcs.create_functions(settings=self.settings)
-    
-    def predict(self) -> pd.DataFrame:
-        """get clusters of matches and return cluster IDs"""
-
-        idxmat, scores, y = self.fit_model()
-        self.cluster = ConnectedComponents(settings=self.settings)
-        logging.info("get clusters")
-        return self.cluster.get_df_cluster(
-            idxmat[y == 1].astype(int), scores[y == 1]
-        )
-
-    def fit_blocks(self, n_covered=500_000):
-
-        # fit block scheme conjunctions to full data
-        self.blocker.init_forward_index_full()
-        self.cover.save_best(
-            table="blocks_df", newtable="full_comparisons", n_covered=n_covered
-        )
-
-        # get distances
-        self.distance.save_distances(
-            table=self.orm.FullComparisons,
-            newtable=self.orm.FullDistances
-        )
-
-    def initialize(
-        self, 
-        df=None, 
-        df2=None,
-        reset=True, 
-        resample=False, 
-        n_covered=500
-        ):
-        """learn p(match)"""
-
-        self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
-        
-        self.blocker.build_forward_indices()
-        self.cover.save_best(
-            table="blocks_train", newtable="comparisons", n_covered=n_covered
-        )
-
-        logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.orm.Comparisons,
-            newtable=self.orm.Distances
-        )
 
         
-        
-        
+@dataclass
+class RecordLinkage(ERModel, BaseModel):
+    """General dedupe block, inherits from BaseModel."""
+    settings:Settings
 
+    def __post_init__(self):
+        self.settings.sync()
+        if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
+            ray.init(num_cpus=self.settings.other.cpus)
+        funcs.create_functions(settings=self.settings)
 
