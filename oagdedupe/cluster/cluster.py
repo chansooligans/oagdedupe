@@ -34,8 +34,9 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             clusters merged with raw data
         """
 
-        scores = pd.read_sql(
-            f"SELECT * FROM dedupe.scores where score > {threshold}", 
+        scores = pd.read_sql(f"""
+            SELECT * FROM {self.settings.other.db_schema}.scores 
+            WHERE score > {threshold}""", 
             con=self.orm.engine
         )
         df_clusters = getattr(self,f"get_connected_components{rl}")(scores)
@@ -49,7 +50,10 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             df=df_clusters, to_table=self.Clusters
         )
         
-        return getattr(self.orm,f"get_clusters{rl}")()
+        if rl == "":
+            return self.orm.get_clusters()
+        else:
+            return self.orm.get_clusters_link()
 
     def get_connected_components(self, scores) -> pd.DataFrame:
         """ 
@@ -86,7 +90,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         ]
         return pd.DataFrame(clusters)
 
-    def get_connected_components_link(self, matches, scores) -> pd.DataFrame:
+    def get_connected_components_link(self, scores) -> pd.DataFrame:
         g = nx.Graph()
         g.add_weighted_edges_from([
             tuple([
@@ -99,7 +103,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         clusters = [
             {
                 "cluster": clusteridx, 
-                "_index": rec_id.strip("_")[0], 
+                "_index": rec_id.split("_")[0], 
                 "_type": "_l" in rec_id
             }
             for clusteridx, cluster in enumerate(conn_comp)

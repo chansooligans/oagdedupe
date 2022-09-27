@@ -128,6 +128,10 @@ class DatabaseORM(Tables):
             return pd.read_sql(q.statement, q.session.bind)
 
     def get_clusters_link(self):
+        maindf = {
+            True:self.maindf,
+            False:self.maindf_link
+        }
         with self.Session() as session:
             dflist = []
             for _type in [True, False]:
@@ -138,9 +142,9 @@ class DatabaseORM(Tables):
                     .filter(self.Clusters._type==_type)
                     .subquery())
                 q = (session
-                    .query(self.maindf_link, sq.c.cluster)
+                    .query(maindf[_type], sq.c.cluster)
                     .outerjoin(
-                        sq, sq.c._index["_index"] == self.maindf_link._index)
+                        sq, sq.c._index["_index"] == maindf[_type]._index)
                     .order_by(sq.c.cluster))
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
