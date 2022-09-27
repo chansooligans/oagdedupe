@@ -1,5 +1,4 @@
 from oagdedupe.labelstudio.lsapi import LabelStudioAPI
-from oagdedupe.db.database import Engine
 from oagdedupe.settings import Settings
 from oagdedupe.api import Dedupe
 
@@ -125,7 +124,7 @@ class Tasks:
             self._post_tasks()
 
 @dataclass
-class Model(Tasks, Projects, Engine):
+class Model(Tasks, Projects):
     settings:Settings
 
     def __post_init__(self):

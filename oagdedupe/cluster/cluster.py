@@ -1,6 +1,6 @@
 from oagdedupe.base import BaseCluster
 from oagdedupe.settings import Settings
-from oagdedupe.db.database import DatabaseORM
+from oagdedupe.db.orm import DatabaseORM
 from oagdedupe import utils as du
 
 from dataclasses import dataclass

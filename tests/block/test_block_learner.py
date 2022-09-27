@@ -6,7 +6,7 @@ from oagdedupe.settings import (
     SettingsLabelStudio,
 )
 from oagdedupe.block.learner import Conjunctions, DynamicProgram
-from oagdedupe.db.database import DatabaseCore
+from oagdedupe.block.sql import LearnerSql
 import pytest
 from pytest import fixture
 from pytest import MonkeyPatch
@@ -124,8 +124,8 @@ class TestConjunctions(unittest.TestCase):
                 "negatives":1
             }
             
-        self.monkeypatch.setattr(DatabaseCore,"get_inverted_index_stats", mockstats)
-        self.monkeypatch.setattr(DatabaseCore,"n_comparisons", 10_000)
+        self.monkeypatch.setattr(LearnerSql,"get_inverted_index_stats", mockstats)
+        self.monkeypatch.setattr(LearnerSql,"n_comparisons", 10_000)
 
         res = self.cover.get_stats(
             names=tuple(["scheme"]), 
@@ -154,7 +154,7 @@ class TestConjunctions(unittest.TestCase):
         def mockstats(*args, **kwargs):
             return self.stats
         self.monkeypatch.setattr(DynamicProgram,"score", mockstats)
-        self.monkeypatch.setattr(DatabaseCore,"blocking_schemes", list(tuple(["scheme"])))
+        self.monkeypatch.setattr(LearnerSql,"blocking_schemes", list(tuple(["scheme"])))
         res = self.cover.get_best(tuple(["scheme"]))
         self.assertDictEqual(res[0], self.stats)
 
@@ -164,6 +164,6 @@ class TestConjunctions(unittest.TestCase):
         self.assertEqual(res[0]["rr"], 0.99)
 
     def test__check_rr(self):
-        self.monkeypatch.setattr(DatabaseCore,"min_rr", 0.9)
+        self.monkeypatch.setattr(LearnerSql,"min_rr", 0.9)
         res = self.cover._check_rr(self.stats)
         self.assertEqual(res, False)
