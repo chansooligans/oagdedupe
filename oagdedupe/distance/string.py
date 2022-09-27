@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy import create_engine, select, func, insert
 
 from oagdedupe.base import BaseDistance
-from oagdedupe.db.database import DatabaseORM
+from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 from oagdedupe import utils as du
 

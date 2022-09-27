@@ -23,7 +23,7 @@ Initialize
 Database Interface
 #####################
 
-.. automodule:: oagdedupe.db.database
+.. automodule:: oagdedupe.db.orm
     :members:
     :undoc-members:
     :special-members: __init__, __post_init__

@@ -8,12 +8,12 @@ import pandas as pd
 
 from oagdedupe.settings import Settings
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.db.database import Engine
+from oagdedupe.db.orm import DatabaseORM
 from oagdedupe import utils as du
 
 
 @dataclass
-class Blocker(BlockSchemes, Engine):
+class Blocker(BlockSchemes, DatabaseORM):
     """
     Used to build forward indices. A forward index
     is a table where rows are entities, columns are block schemes,

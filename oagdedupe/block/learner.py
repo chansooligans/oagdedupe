@@ -7,11 +7,11 @@ import logging
 from multiprocessing import Pool
 import tqdm
 
-from oagdedupe.db.database import DatabaseCore
+from oagdedupe.block.sql import LearnerSql
 from oagdedupe.settings import Settings
 from oagdedupe.block import Blocker
 
-
+    
 class InvertedIndex:
     """
     Used to build inverted index. An inverted index is dataframe
@@ -134,7 +134,7 @@ class Conjunctions(DynamicProgram):
 
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.db = DatabaseCore(settings=self.settings)
+        self.db = LearnerSql(settings=self.settings)
 
     @property
     def _conjunctions(self):
@@ -171,9 +171,7 @@ class Conjunctions(DynamicProgram):
         """
         check if new block scheme is below minium reduction ratio
         """
-        if stats["rr"] < self.db.min_rr:
-            return True
-        return False
+        return stats["rr"] < self.db.min_rr
 
     def _add_new_comparisons(self, stats, table):
         """

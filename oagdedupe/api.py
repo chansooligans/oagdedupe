@@ -3,7 +3,7 @@ from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.settings import Settings
 from oagdedupe.block import Blocker, Conjunctions
 from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.database import DatabaseORM
+from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.postgres import funcs
 
 import requests
@@ -153,4 +153,3 @@ class RecordLinkage(ERModel, BaseModel):
     def __post_init__(self):
         self.settings.sync()
         funcs.create_functions(settings=self.settings)
-
