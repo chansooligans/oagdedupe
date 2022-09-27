@@ -30,8 +30,11 @@ class BaseModel(metaclass=ABCMeta):
     """project settings"""
 
     def predict(self) -> pd.DataFrame:
-        """ uses comparison indices and predicted probabilities for 
-        pairs labelled as a match to generate clusters
+        """ fast-api trains model on latest labels then submits scores to 
+        postgres
+        
+        clusterer loads scores and uses comparison indices and 
+        predicted probabilities to generate clusters
 
         Returns
         -------
@@ -43,29 +46,8 @@ class BaseModel(metaclass=ABCMeta):
 
         """
         logging.info("get clusters")
-        return self.cluster.get_df_cluster()
-
-    def fit_model(self) -> Dict[str, np.array]:
-        """get predictions from fast-api
-
-        fast-api trains model on latest labels then returns predictions using 
-        the full_distances table
-
-        Returns
-        -------
-        Dict(np.array) 
-            return a dictionary containing: comparison indices, 
-            match probabilities, and binary labels
-        """
-
-        # get predictions
         requests.post(f"{self.settings.other.fast_api.url}/predict")
-        
-        # return {
-        #     "indices":self.orm.get_full_comparison_indices().values,
-        #     "scores":np.array(results["predict_proba"]),
-        #     "y":np.array(results["predict"])
-        # }
+        return self.cluster.get_df_cluster()
 
     def fit_blocks(self):
 

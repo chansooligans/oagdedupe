@@ -25,10 +25,8 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
 
         Parameters
         ----------
-        matches: np.array
-            array containing pairs of indices that were predicted matches
-        scores: np.array
-            vector of match scores
+        threshold: float
+            pairs below this score are not considered for clustering
 
         Returns
         ----------
