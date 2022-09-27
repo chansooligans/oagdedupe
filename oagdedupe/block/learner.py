@@ -229,6 +229,8 @@ class Conjunctions(DynamicProgram):
         # define here to avoid engine pickle error with multiprocess
         self.blocker = Blocker(settings=self.settings)
         self.db.truncate_table(self.db.comptab_map[table])
+        stepsize = n_covered * .1
+        step = 0
         for stats in self.conjunctions_list:
             if self._check_rr(stats):
                 logging.warning(f"""
@@ -237,6 +239,8 @@ class Conjunctions(DynamicProgram):
                 """)
                 return 
             n_pairs = self._add_new_comparisons(stats, table)
-            logging.info(f"""{n_pairs} comparison pairs gathered""")
+            if n_pairs // stepsize > step:
+                logging.info(f"""{n_pairs} comparison pairs gathered""")
+                step = n_pairs // stepsize
             if n_pairs > n_covered:
                 return
