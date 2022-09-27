@@ -42,14 +42,8 @@ class BaseModel(metaclass=ABCMeta):
             if recordlinkage, two dataframes
 
         """
-
-        preds = self.fit_model()
         logging.info("get clusters")
-        matches = preds["y"] == 1
-        return self.cluster.get_df_cluster(
-            matches=preds["indices"][matches].astype(int), 
-            scores=preds["scores"][matches]
-        )
+        return self.cluster.get_df_cluster()
 
     def fit_model(self) -> Dict[str, np.array]:
         """get predictions from fast-api
