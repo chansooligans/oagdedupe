@@ -202,7 +202,7 @@ class DatabaseCore:
             {where}
             """)
 
-        return res.loc[0].to_dict()
+        return res.fillna(0).loc[0].to_dict()
 
 
     @cached_property
