@@ -34,6 +34,7 @@ class Initialize(DatabaseORM):
     @du.recordlinkage_repeat
     def _init_df(self, df=None, df_link=None, rl=""):
         """load df and/or df_link"""
+        logging.info("building %s",f'df{rl}')
         if "_index" in locals()["df"].columns:
             raise ValueError("_index cannot be a column name")
         self.bulk_insert(
@@ -93,6 +94,7 @@ class Initialize(DatabaseORM):
     def _init_train(self, session, rl=""): 
         """create train by concatenating positive, negative, 
         and unlabelled samples"""
+        logging.info("building %s",f'train{rl}')
         fakedata = [
             getattr(self, f"Unlabelled{rl}"), 
             self.Pos, 
@@ -112,6 +114,7 @@ class Initialize(DatabaseORM):
         if positive, set "label" = 1
         if negative, set "label" = 0
         """
+        logging.info("building %s",f'labels')
         fakepairs = [(1, self.Pos), (0, self.Neg)]
         for l,tab in fakepairs:
             records = session.query(tab).all()
@@ -131,6 +134,7 @@ class Initialize(DatabaseORM):
         if positive, link to itself, set "label" = 1
         if negative, link neg to neg_link, set "label" = 0
         """
+        logging.info("building %s",f'labels')
         fakepairs = [(1, self.Pos, self.Pos), (0, self.Neg, self.Neg_link)]
         for l,tab,tab_link in fakepairs:
             records = session.query(tab).all()
@@ -205,7 +209,8 @@ class Initialize(DatabaseORM):
 
         with self.Session() as session:
             if reset:
-                logging.info("building database")
+                logging.info(
+                    f"building schema: {self.settings.other.db_schema}")
                 self.reset_tables()
                 self._init_df(df=df, df_link=df2)
                 self._init_pos(session)

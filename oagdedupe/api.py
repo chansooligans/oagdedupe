@@ -65,26 +65,28 @@ class BaseModel(metaclass=ABCMeta):
         """
 
         # get predictions
-        results = json.loads(
-            requests.get(f"{self.settings.other.fast_api.url}/predict").content
-        )
-
-        return {
-            "indices":self.orm.get_full_comparison_indices().values,
-            "scores":np.array(results["predict_proba"]),
-            "y":np.array(results["predict"])
-        }
+        requests.post(f"{self.settings.other.fast_api.url}/predict")
+        
+        # return {
+        #     "indices":self.orm.get_full_comparison_indices().values,
+        #     "scores":np.array(results["predict_proba"]),
+        #     "y":np.array(results["predict"])
+        # }
 
     def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
+        logging.info("building forward indices")
         self.blocker.init_forward_index_full()
+
+        logging.info("getting comparisons")
         self.cover.save_comparisons(
             table="blocks_df", 
             n_covered=self.settings.other.n_covered
         )
 
         # get distances
+        logging.info("computing distances")
         self.distance.save_distances(
             table=self.orm.FullComparisons,
             newtable=self.orm.FullDistances
@@ -102,7 +104,10 @@ class BaseModel(metaclass=ABCMeta):
 
         self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
         
+        logging.info("building forward indices")
         self.blocker.build_forward_indices()
+
+        logging.info("getting comparisons")
         self.cover.save_comparisons(table="blocks_train", n_covered=n_covered)
 
         logging.info("get distance matrix")
