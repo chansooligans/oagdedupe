@@ -24,7 +24,7 @@ class BaseDistance(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def distance(self):
+    def distance(self, pairs):
         return
 
     # @abstractmethod

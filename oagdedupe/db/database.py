@@ -3,9 +3,7 @@ from oagdedupe.db.tables import Tables
 from oagdedupe import utils as du
 
 from functools import cached_property
-import sqlalchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import aliased
+from sqlalchemy import create_engine, select, func, insert
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
@@ -336,7 +334,8 @@ class DatabaseORM(Tables, DatabaseCore):
                 )
             return pd.read_sql(query.statement, query.session.bind)
 
-    def get_compare_cols(self):
+    @property
+    def compare_cols(self):
         """
         gets comparison columns with "_l" and "_r" suffices
 
@@ -347,71 +346,24 @@ class DatabaseORM(Tables, DatabaseCore):
         Examples
         ----------
         >>> self.settings.other.attributes = ["name", "address"]
-        >>> get_compare_cols()
-        ["name_l", "address_l", "index_l", "name_r", "address_r", "index_r"]
+        >>> compare_cols()
+        [
+            "name_l", "address_l", "name_r", "address_r", 
+            "index_l", "index_r"
+        ]
         """
         columns = [
             [f"{x}_l" for x in self.settings.other.attributes], 
-            ["_index_l"],
             [f"{x}_r" for x in self.settings.other.attributes],
-            ["_index_r"]
+            ["_index_l","_index_r"]
         ]
         return sum(columns, [])
 
-    @du.recordlinkage
-    def fields_table(self, table, rl=""):
-        mapping = {
-            "comparisons":"Train",
-            "full_comparisons":"maindf",
-            "labels":"Train"
-        }
-        
-        return (
-            aliased(getattr(self,mapping[table])), 
-            aliased(getattr(self,mapping[table]+rl))
-        )
-        
     def labcol(self, table):
         if "comparisons" in table.__tablename__:
             return table._index_l.label("drop")
         return table.label
 
-    def get_comparison_attributes(self, table):
-        """
-        merge attributes on to dataframe with just comparison pair indices
-        assign "_l" and "_r" suffices
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-
-        with self.Session() as session:
-            
-            dataL, dataR = self.fields_table(table.__tablename__)
-            
-            query = (
-                session
-                .query(
-                    self.labcol(table),
-                    *(
-                        getattr(dataL,x).label(f"{x}_l")
-                        for x in self.settings.other.attributes + ["_index"]
-                    ),
-                    *(
-                        getattr(dataR,x).label(f"{x}_r")
-                        for x in self.settings.other.attributes + ["_index"]
-                    ),
-                )
-                .outerjoin(dataL, table._index_l==dataL._index)
-                .outerjoin(dataR, table._index_r==dataR._index)
-                .order_by(table._index_l, table._index_r)
-                )
-
-            return (
-                pd.read_sql(query.statement, query.session.bind)
-                .drop(["drop"], axis=1, errors='ignore')
-            )
 
     def get_clusters(self):
         with self.Session() as session:

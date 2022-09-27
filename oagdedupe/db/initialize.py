@@ -1,5 +1,5 @@
 from oagdedupe.settings import Settings
-from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.distance.string import AllJaro
 from oagdedupe.db.database import DatabaseORM
 from sqlalchemy import select, delete, func
 from oagdedupe import utils as du
@@ -29,7 +29,7 @@ class Initialize(DatabaseORM):
             - pairs from pos are labelled as a match
             - pairs from neg are labelled as a non-match
     """
-    settings:Settings
+    settings: Settings
 
     @du.recordlinkage_repeat
     def _init_df(self, df=None, df_link=None, rl=""):
@@ -58,7 +58,9 @@ class Initialize(DatabaseORM):
     def _init_neg(self, rl=""):
         # create neg
         neg = (
-            select([getattr(self,f"maindf{rl}")]).order_by(func.random()).limit(10)
+            select([getattr(self, f"maindf{rl}")])
+            .order_by(func.random())
+            .limit(10)
         )
         with self.Session() as session:
             records = session.execute(neg).all()
@@ -94,7 +96,7 @@ class Initialize(DatabaseORM):
         logging.info(f"Building table {self.settings.other.db_schema}.train{rl}")        
         # create train
         with self.Session() as session:
-            for tab in [getattr(self,f"Unlabelled{rl}"), self.Pos, getattr(self,f"Neg{rl}")]:
+            for tab in [getattr(self, f"Unlabelled{rl}"), self.Pos, getattr(self,f"Neg{rl}")]:
                 records = session.query(tab).all()
                 for r in records:
                     train = getattr(self,f"Train{rl}")()
@@ -139,7 +141,7 @@ class Initialize(DatabaseORM):
         computes distances between pairs of records from labels table 
         then appends distances to the labels table
         """
-        self.distance = RayAllJaro(settings=self.settings)
+        self.distance = AllJaro(settings=self.settings)
         self.distance.save_distances(
             table=self.Labels,
             newtable=self.Labels

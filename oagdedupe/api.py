@@ -1,4 +1,4 @@
-from oagdedupe.distance.string import RayAllJaro
+from oagdedupe.distance.string import AllJaro
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.settings import Settings
 from oagdedupe.block import Blocker, Conjunctions
@@ -67,7 +67,7 @@ class BaseModel(metaclass=ABCMeta):
     
     @cached_property
     def distance(self):
-        return RayAllJaro(settings=self.settings)
+        return AllJaro(settings=self.settings)
 
 @dataclass
 class ERModel(BaseModel):
@@ -142,8 +142,6 @@ class Dedupe(ERModel, BaseModel):
 
     def __post_init__(self):
         self.settings.sync()
-        if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
-            ray.init(num_cpus=self.settings.other.cpus)
         funcs.create_functions(settings=self.settings)
 
         
@@ -154,7 +152,5 @@ class RecordLinkage(ERModel, BaseModel):
 
     def __post_init__(self):
         self.settings.sync()
-        if (self.settings.other.cpus > 1) & (not ray.is_initialized()):
-            ray.init(num_cpus=self.settings.other.cpus)
         funcs.create_functions(settings=self.settings)
 
