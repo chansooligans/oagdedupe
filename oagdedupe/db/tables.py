@@ -11,6 +11,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.schema import CreateSchema
+import logging
 
 class TablesRecordLinkage:
     """ contains tables used only for recordl inkage
@@ -300,6 +301,9 @@ class Tables(TablesRecordLinkage):
     def create_schema(self):
         """helper function to create a schema using sqlalchemy orm
         """
+        logging.info("create schema %s if not exists",
+                    self.settings.other.db_schema
+        )
         if not self.engine.dialect.has_schema(
             self.engine, 
             self.settings.other.db_schema
@@ -309,7 +313,9 @@ class Tables(TablesRecordLinkage):
     def reset_all_tables(self):
         """deletes all tables and creates all tables
         """
+        logging.info("drop all tables")
         self.Base.metadata.drop_all(self.engine)
+        logging.info("init all tables")
         self.Base.metadata.create_all(self.engine, checkfirst=True)
 
     def reset_tables(self):

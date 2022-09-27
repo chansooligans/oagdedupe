@@ -44,33 +44,34 @@ async def predict():
         f"TRUNCATE TABLE {settings.other.db_schema}.scores"
     )
 
-    session = m.api.orm.Session()
-    stmt = select(
-        *(
-            getattr(m.api.init.FullDistances,x)
-            for x in settings.other.attributes + ["_index_l", "_index_r"]
-        )
-    ).execution_options(yield_per=50000)
-
-    for partition in tqdm(session.execute(stmt).partitions()):
+    with m.api.orm.Session() as session:
         
-        dists = np.array([
-            [getattr(row, x) for x in settings.other.attributes + ["_index_l", "_index_r"]]
-            for row in partition]
-        )
-        
-        probs = pd.DataFrame(
-            np.hstack([m.clf.predict_proba(dists[:, :-2])[:,1:],dists[:,-2:]]),
-            columns = ["score","_index_l", "_index_r"]
-        )
+        stmt = select(
+            *(
+                getattr(m.api.init.FullDistances,x)
+                for x in settings.other.attributes + ["_index_l", "_index_r"]
+            )
+        ).execution_options(yield_per=50000)
 
-        probs.to_sql(
-            "scores",
-            schema=settings.other.db_schema,
-            if_exists="append",
-            con=m.api.init.engine,
-            index=False
-        )
+        for partition in tqdm(session.execute(stmt).partitions()):
+            
+            dists = np.array([
+                [getattr(row, x) for x in settings.other.attributes + ["_index_l", "_index_r"]]
+                for row in partition]
+            )
+            
+            probs = pd.DataFrame(
+                np.hstack([m.clf.predict_proba(dists[:, :-2])[:,1:],dists[:,-2:]]),
+                columns = ["score","_index_l", "_index_r"]
+            )
+
+            probs.to_sql(
+                "scores",
+                schema=settings.other.db_schema,
+                if_exists="append",
+                con=m.api.init.engine,
+                index=False
+            )
 
 
 @app.post("/payload")

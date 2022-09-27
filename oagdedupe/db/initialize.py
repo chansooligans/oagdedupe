@@ -205,6 +205,7 @@ class Initialize(DatabaseORM):
         """
         
         # initialize Tables sqlalchemy classes
+        logging.info("initialize declarative mapping")
         self.setup_dynamic_declarative_mapping()
 
         with self.Session() as session:
