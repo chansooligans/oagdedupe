@@ -75,6 +75,7 @@ class Tables(TablesRecordLinkage):
             self.Train_link, 
 
             self.Labels,
+            self.LabelsDistances,
             self.Distances,
             self.FullDistances,
             self.Comparisons,
@@ -176,8 +177,18 @@ class Tables(TablesRecordLinkage):
 
     @cached_property    
     def Labels(self):
-        return type('labels', (self.Attributes, self.AttributeComparisons, self.Base), {
+        return type('labels', (self.Base, ), {
                 "__tablename__":"labels",
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True),
+                "label":Column(Integer)
+            }
+        )
+
+    @cached_property    
+    def LabelsDistances(self):
+        return type('labels_distances', (self.Attributes, self.AttributeComparisons, self.Base), {
+                "__tablename__":"labels_distances",
                 "_index_l":Column(Integer, primary_key=True),
                 "_index_r":Column(Integer, primary_key=True),
                 "label":Column(Integer)
@@ -209,7 +220,8 @@ class Tables(TablesRecordLinkage):
         return type('comparisons', (self.Base, ), {
                 "__tablename__":"comparisons",
                 "_index_l":Column(Integer, primary_key=True),
-                "_index_r":Column(Integer, primary_key=True)
+                "_index_r":Column(Integer, primary_key=True),
+                "label":Column(Integer)
             }
         )
 
@@ -218,7 +230,8 @@ class Tables(TablesRecordLinkage):
         return type('full_comparisons', (self.Base, ), {
                 "__tablename__":"full_comparisons",
                 "_index_l":Column(Integer, primary_key=True),
-                "_index_r":Column(Integer, primary_key=True)
+                "_index_r":Column(Integer, primary_key=True),
+                "label":Column(Integer)
             }
         )
 

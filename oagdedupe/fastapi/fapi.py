@@ -90,7 +90,7 @@ class Tasks:
 
         return distances.loc[
             sample_idx,
-            self.api.orm.get_compare_cols()
+            self.api.orm.compare_cols
         ]
             
     def _post_tasks(self):

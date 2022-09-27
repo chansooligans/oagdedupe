@@ -10,8 +10,10 @@ def create_functions(settings: Settings):
     engine.execute("""
         CREATE EXTENSION IF NOT EXISTS pg_trgm;
         CREATE EXTENSION IF NOT EXISTS plpython3u;
+        CREATE EXTENSION IF NOT EXISTS pg_similarity;
         CREATE OR REPLACE LANGUAGE pg_trgm;
         CREATE OR REPLACE LANGUAGE plpython3u;
+        CREATE OR REPLACE LANGUAGE pg_similarity;
     """)
 
     engine.execute("""
