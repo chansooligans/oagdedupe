@@ -158,7 +158,6 @@ class Conjunctions(DynamicProgram):
         ----------
         List[dict]
         """
-        logging.info("getting best conjunctions")   
         # flatten
         res = sum([sublist for sublist in self._conjunctions if sublist], [])
         # dedupe

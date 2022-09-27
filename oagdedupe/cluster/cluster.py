@@ -19,16 +19,14 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         self.orm = DatabaseORM(settings=self.settings)
 
     @du.recordlinkage
-    def get_df_cluster(self, matches, scores, rl=""):
+    def get_df_cluster(self, threshold=0.8, rl=""):
         """ 
         Convert connected components to dataframe for user friendly output
 
         Parameters
         ----------
-        matches: np.array
-            array containing pairs of indices that were predicted matches
-        scores: np.array
-            vector of match scores
+        threshold: float
+            pairs below this score are not considered for clustering
 
         Returns
         ----------
@@ -36,7 +34,12 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             clusters merged with raw data
         """
 
-        df_clusters = getattr(self,f"get_connected_components{rl}")(matches, scores)
+        scores = pd.read_sql(f"""
+            SELECT * FROM {self.settings.other.db_schema}.scores 
+            WHERE score > {threshold}""", 
+            con=self.orm.engine
+        )
+        df_clusters = getattr(self,f"get_connected_components{rl}")(scores)
 
         # reset table
         self.engine.execute(f"""
@@ -47,9 +50,12 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             df=df_clusters, to_table=self.Clusters
         )
         
-        return getattr(self.orm,f"get_clusters{rl}")()
+        if rl == "":
+            return self.orm.get_clusters()
+        else:
+            return self.orm.get_clusters_link()
 
-    def get_connected_components(self, matches, scores) -> pd.DataFrame:
+    def get_connected_components(self, scores) -> pd.DataFrame:
         """ 
         Build graph with "matched" candidate pairs, weighted by p(match).
         
@@ -70,8 +76,11 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         """
         g = nx.Graph()
         g.add_weighted_edges_from([
-            tuple([f"{match[0]}", f"{match[1]}", score]) 
-            for match, score in zip(matches, scores)
+            tuple([
+                f"{score['_index_l']}", 
+                f"{score['_index_r']}", 
+                score["score"]]) 
+            for score in scores.to_dict(orient="records")
         ])
         conn_comp = list(nx.connected_components(g))
         clusters = [
@@ -81,17 +90,20 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         ]
         return pd.DataFrame(clusters)
 
-    def get_connected_components_link(self, matches, scores) -> pd.DataFrame:
+    def get_connected_components_link(self, scores) -> pd.DataFrame:
         g = nx.Graph()
         g.add_weighted_edges_from([
-            tuple([f"{match[0]}_l", f"{match[1]}_r", score]) 
-            for match, score in zip(matches, scores)
+            tuple([
+                f"{score['_index_l']}_l", 
+                f"{score['_index_r']}_r", 
+                score["score"]]) 
+            for score in scores.to_dict(orient="records")
         ])
         conn_comp = list(nx.connected_components(g))
         clusters = [
             {
                 "cluster": clusteridx, 
-                "_index": rec_id.strip("_")[0], 
+                "_index": rec_id.split("_")[0], 
                 "_type": "_l" in rec_id
             }
             for clusteridx, cluster in enumerate(conn_comp)

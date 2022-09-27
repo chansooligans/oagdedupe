@@ -30,8 +30,11 @@ class BaseModel(metaclass=ABCMeta):
     """project settings"""
 
     def predict(self) -> pd.DataFrame:
-        """ uses comparison indices and predicted probabilities for 
-        pairs labelled as a match to generate clusters
+        """ fast-api trains model on latest labels then submits scores to 
+        postgres
+        
+        clusterer loads scores and uses comparison indices and 
+        predicted probabilities to generate clusters
 
         Returns
         -------
@@ -42,49 +45,24 @@ class BaseModel(metaclass=ABCMeta):
             if recordlinkage, two dataframes
 
         """
-
-        preds = self.fit_model()
         logging.info("get clusters")
-        matches = preds["y"] == 1
-        return self.cluster.get_df_cluster(
-            matches=preds["indices"][matches].astype(int), 
-            scores=preds["scores"][matches]
-        )
-
-    def fit_model(self) -> Dict[str, np.array]:
-        """get predictions from fast-api
-
-        fast-api trains model on latest labels then returns predictions using 
-        the full_distances table
-
-        Returns
-        -------
-        Dict(np.array) 
-            return a dictionary containing: comparison indices, 
-            match probabilities, and binary labels
-        """
-
-        # get predictions
-        results = json.loads(
-            requests.get(f"{self.settings.other.fast_api.url}/predict").content
-        )
-
-        return {
-            "indices":self.orm.get_full_comparison_indices().values,
-            "scores":np.array(results["predict_proba"]),
-            "y":np.array(results["predict"])
-        }
+        requests.post(f"{self.settings.other.fast_api.url}/predict")
+        return self.cluster.get_df_cluster()
 
     def fit_blocks(self):
 
         # fit block scheme conjunctions to full data
+        logging.info("building forward indices")
         self.blocker.init_forward_index_full()
+
+        logging.info("getting comparisons")
         self.cover.save_comparisons(
             table="blocks_df", 
             n_covered=self.settings.other.n_covered
         )
 
         # get distances
+        logging.info("computing distances")
         self.distance.save_distances(
             table=self.orm.FullComparisons,
             newtable=self.orm.FullDistances
@@ -102,7 +80,10 @@ class BaseModel(metaclass=ABCMeta):
 
         self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
         
+        logging.info("building forward indices")
         self.blocker.build_forward_indices()
+
+        logging.info("getting comparisons")
         self.cover.save_comparisons(table="blocks_train", n_covered=n_covered)
 
         logging.info("get distance matrix")

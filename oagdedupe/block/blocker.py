@@ -86,7 +86,6 @@ class Blocker(BlockSchemes, DatabaseORM):
         """
         Executes SQL queries to build forward indices for train datasets
         """
-        logging.info("Building forward indices")
         self.engine.execute(self.query_blocks(
             table=f"train{rl}",
             columns=self.block_scheme_sql

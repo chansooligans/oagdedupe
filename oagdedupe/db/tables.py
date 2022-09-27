@@ -6,11 +6,12 @@ from oagdedupe.settings import Settings
 
 from dataclasses import dataclass
 from functools import cached_property
-from sqlalchemy import Column, String, Integer, Boolean
+from sqlalchemy import Column, String, Integer, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.schema import CreateSchema
+import logging
 
 class TablesRecordLinkage:
     """ contains tables used only for recordl inkage
@@ -88,7 +89,8 @@ class Tables(TablesRecordLinkage):
             self.FullDistances,
             self.Comparisons,
             self.FullComparisons,
-            self.Clusters
+            self.Clusters,
+            self.Scores
         )
 
     @cached_property
@@ -129,6 +131,15 @@ class Tables(TablesRecordLinkage):
         """mixin table used to share attribute columns"""
         return type('Attributes', (object,), {
                 k:Column(String)
+                for k in self.settings.other.attributes
+            }
+        )
+
+    @property
+    def BaseAttributesDistances(self):
+        """mixin table used to share attribute distances"""
+        return type('Attributes', (object,), {
+                k:Column(Float)
                 for k in self.settings.other.attributes
             }
         )
@@ -212,7 +223,7 @@ class Tables(TablesRecordLinkage):
     @cached_property    
     def LabelsDistances(self):
         """table for labels_distances"""
-        return type('labels_distances', (self.BaseAttributes, self.BaseAttributeComparisons, self.Base), {
+        return type('labels_distances', (self.BaseAttributesDistances, self.BaseAttributeComparisons, self.Base), {
                 "__tablename__":"labels_distances",
                 "_index_l":Column(Integer, primary_key=True),
                 "_index_r":Column(Integer, primary_key=True),
@@ -223,7 +234,7 @@ class Tables(TablesRecordLinkage):
     @cached_property    
     def Distances(self):
         """table for distances"""
-        return type('distances', (self.BaseAttributes, self.BaseAttributeComparisons, self.Base), {
+        return type('distances', (self.BaseAttributesDistances, self.BaseAttributeComparisons, self.Base), {
                 "__tablename__":"distances",
                 "_index_l":Column(Integer, primary_key=True),
                 "_index_r":Column(Integer, primary_key=True),
@@ -234,7 +245,7 @@ class Tables(TablesRecordLinkage):
     @cached_property    
     def FullDistances(self):
         """table for full_distances"""
-        return type('full_distances', (self.BaseAttributes, self.BaseAttributeComparisons, self.Base), {
+        return type('full_distances', (self.BaseAttributesDistances, self.BaseAttributeComparisons, self.Base), {
                 "__tablename__":"full_distances",
                 "_index_l":Column(Integer, primary_key=True),
                 "_index_r":Column(Integer, primary_key=True),
@@ -276,9 +287,23 @@ class Tables(TablesRecordLinkage):
             }
         )
 
+    @cached_property    
+    def Scores(self):
+        """table for linkage scores"""
+        return type('scores', (self.Base, ), {
+                "__tablename__":"scores",
+                "score":Column(Float),
+                "_index_l":Column(Integer, primary_key=True),
+                "_index_r":Column(Integer, primary_key=True)
+            }
+        )
+
     def create_schema(self):
         """helper function to create a schema using sqlalchemy orm
         """
+        logging.info("create schema %s if not exists",
+                    self.settings.other.db_schema
+        )
         if not self.engine.dialect.has_schema(
             self.engine, 
             self.settings.other.db_schema
@@ -288,7 +313,9 @@ class Tables(TablesRecordLinkage):
     def reset_all_tables(self):
         """deletes all tables and creates all tables
         """
+        logging.info("drop all tables")
         self.Base.metadata.drop_all(self.engine)
+        logging.info("init all tables")
         self.Base.metadata.create_all(self.engine, checkfirst=True)
 
     def reset_tables(self):
