@@ -118,13 +118,14 @@ class ERModel(BaseModel):
     def initialize(
         self, 
         df=None, 
+        df2=None,
         reset=True, 
         resample=False, 
         n_covered=500
         ):
         """learn p(match)"""
 
-        self.init.setup(df=df, reset=reset, resample=resample)
+        self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
         
         self.blocker.build_forward_indices()
         self.cover.save_comparisons(table="blocks_train", n_covered=n_covered)
