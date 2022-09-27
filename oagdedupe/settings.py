@@ -40,7 +40,7 @@ class SettingsOther(BaseModel):
     """maximum length of blocking scheme conjunctions"""
     k: int = 3
 
-    """maximum number of comparisons; this is the maximum rows to be loaded into memory"""
+    """maximum number of comparisons;"""
     max_compare: int = 1_000_000
 
     """maximum number of comparisons"""

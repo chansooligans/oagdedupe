@@ -9,7 +9,7 @@ from oagdedupe.postgres import funcs
 import requests
 import json
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from dataclasses import dataclass
 from functools import cached_property
 import pandas as pd
@@ -29,76 +29,51 @@ class BaseModel(metaclass=ABCMeta):
 
     """project settings"""
 
-    @abstractmethod
-    def predict(self):
-        return
-
-    @abstractmethod
-    def fit_blocks(self):
-        return
-
-    @abstractmethod
-    def fit_model(self):
-        return
-
-    @abstractmethod
-    def initialize(self):
-        return
-
-    @cached_property
-    def engine(self):
-        return create_engine(self.settings.other.path_database)
-
-    @cached_property
-    def init(self):
-        return Initialize(settings=self.settings)
-
-    @cached_property
-    def orm(self):
-        return DatabaseORM(settings=self.settings)
-
-    @cached_property
-    def blocker(self):
-        return Blocker(settings=self.settings)
-
-    @cached_property
-    def cover(self):
-        return Conjunctions(settings=self.settings)
-    
-    @cached_property
-    def distance(self):
-        return AllJaro(settings=self.settings)
-
-@dataclass
-class ERModel(BaseModel):
-    """
-    Entity Resolution Abstraction with Methods used for 
-    Both Dedupe and RecordLinkage
-    """
-
     def predict(self) -> pd.DataFrame:
-        """get clusters of matches and return cluster IDs"""
+        """ uses comparison indices and predicted probabilities for 
+        pairs labelled as a match to generate clusters
 
-        idxmat, scores, y = self.fit_model()
-        self.cluster = ConnectedComponents(settings=self.settings)
+        Returns
+        -------
+        df: pd.DataFrame
+            if dedupe, returns single df
+            
+        df,df2: tuple
+            if recordlinkage, two dataframes
+
+        """
+
+        preds = self.fit_model()
         logging.info("get clusters")
+        matches = preds["y"] == 1
         return self.cluster.get_df_cluster(
-            matches=idxmat[y == 1].astype(int), scores=scores[y == 1]
+            matches=preds["indices"][matches].astype(int), 
+            scores=preds["scores"][matches]
         )
 
-    def fit_model(self) -> Tuple[np.array, np.array, np.array]:
-        """learn p(match)"""
+    def fit_model(self) -> Dict[str, np.array]:
+        """get predictions from fast-api
+
+        fast-api trains model on latest labels then returns predictions using 
+        the full_distances table
+
+        Returns
+        -------
+        Dict(np.array) 
+            return a dictionary containing: comparison indices, 
+            match probabilities, and binary labels
+        """
 
         # get predictions
         results = json.loads(
             requests.get(f"{self.settings.other.fast_api.url}/predict").content
         )
 
-        return (
-            self.orm.get_full_comparison_indices().values,
-            np.array(results["predict_proba"]),
-            np.array(results["predict"])
-        )
+        return {
+            "indices":self.orm.get_full_comparison_indices().values,
+            "scores":np.array(results["predict_proba"]),
+            "y":np.array(results["predict"])
+        }
 
     def fit_blocks(self):
 
@@ -136,8 +111,37 @@ class ERModel(BaseModel):
             newtable=self.orm.Distances
         )
 
+    @cached_property
+    def engine(self):
+        return create_engine(self.settings.other.path_database)
+
+    @cached_property
+    def init(self):
+        return Initialize(settings=self.settings)
+
+    @cached_property
+    def orm(self):
+        return DatabaseORM(settings=self.settings)
+
+    @cached_property
+    def blocker(self):
+        return Blocker(settings=self.settings)
+
+    @cached_property
+    def cover(self):
+        return Conjunctions(settings=self.settings)
+    
+    @cached_property
+    def distance(self):
+        return AllJaro(settings=self.settings)
+
+    @cached_property
+    def cluster(self):
+        return ConnectedComponents(settings=self.settings)
+
+
 @dataclass
-class Dedupe(ERModel, BaseModel):
+class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
     settings:Settings
 
@@ -147,7 +151,7 @@ class Dedupe(ERModel, BaseModel):
 
         
 @dataclass
-class RecordLinkage(ERModel, BaseModel):
+class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
     settings:Settings
 
