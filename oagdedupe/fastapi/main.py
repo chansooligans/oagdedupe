@@ -31,6 +31,8 @@ async def startup():
 @app.get("/predict")
 async def predict():
 
+    m._train()
+
     logging.info(f"save model to {settings.other.path_model}")
     joblib.dump(m.clf.estimator, settings.other.path_model)
 

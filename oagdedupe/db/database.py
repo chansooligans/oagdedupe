@@ -181,7 +181,7 @@ class DatabaseCore:
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
-                    FROM {self.settings.other.db_schema}.labels_distances
+                    FROM {self.settings.other.db_schema}.labels
                 )
             SELECT 
                 count(*) as n_pairs,
