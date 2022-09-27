@@ -54,7 +54,7 @@ class DatabaseCore:
         """
         return self.query(
             f"""
-            SELECT * FROM {self.settings.other.db_schema}.labels
+            SELECT * FROM {self.settings.other.db_schema}.labels_distances
             """
         )
 
@@ -181,7 +181,7 @@ class DatabaseCore:
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
-                    FROM {self.settings.other.db_schema}.labels
+                    FROM {self.settings.other.db_schema}.labels_distances
                 )
             SELECT 
                 count(*) as n_pairs,
@@ -290,11 +290,11 @@ class DatabaseORM(Tables, DatabaseCore):
                 session
                 .query(self.Distances)
                 .join(
-                    self.Labels, 
-                    (self.Distances._index_l==self.Labels._index_l) & 
-                    (self.Distances._index_r==self.Labels._index_r), 
+                    self.LabelsDistances, 
+                    (self.Distances._index_l==self.LabelsDistances._index_l) & 
+                    (self.Distances._index_r==self.LabelsDistances._index_r), 
                     isouter=True)
-                .filter(self.Labels.label == None)
+                .filter(self.LabelsDistances.label == None)
                 )
             return pd.read_sql(query.statement, query.session.bind)
 

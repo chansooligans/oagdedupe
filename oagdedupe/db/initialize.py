@@ -144,7 +144,7 @@ class Initialize(DatabaseORM):
         self.distance = AllJaro(settings=self.settings)
         self.distance.save_distances(
             table=self.Labels,
-            newtable=self.Labels
+            newtable=self.LabelsDistances
         )
 
     @du.recordlinkage_repeat

@@ -15,7 +15,7 @@ from oagdedupe import utils as du
 
 
 @dataclass
-class AllJaro(BaseDistance, DatabaseORM):
+class AllJaro(DatabaseORM):
     """
     Interface to compute distance between comparison pairs along 
     common attributes.
@@ -53,14 +53,15 @@ class AllJaro(BaseDistance, DatabaseORM):
                     for x in self.settings.other.attributes
                 ),
                 table._index_l,
-                table._index_r
+                table._index_r,
+                table.label
             )
             .outerjoin(dataL, table._index_l==dataL._index)
             .outerjoin(dataR, table._index_r==dataR._index)
             .order_by(table._index_l, table._index_r)
         ).subquery()
 
-    def distance(self, subquery):
+    def get_distances(self, subquery):
         return select(
             *(
                 func.jarowinkler(
@@ -89,7 +90,7 @@ class AllJaro(BaseDistance, DatabaseORM):
             stmt = (
                 insert(newtable)
                 .from_select(
-                    self.settings.other.attributes + self.compare_cols, 
+                    self.settings.other.attributes + self.compare_cols + ["label"], 
                     distance_query
                 )
             )
