@@ -2,7 +2,7 @@
 
 tests_all:
 	export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8000/db"
-	poetry run pytest -v
+	poetry run pytest -v -rP
 	
 lint:
 	flake8 --ignore W291 oagdedupe --max-line-length=180
