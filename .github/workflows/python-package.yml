@@ -32,11 +32,16 @@ jobs:
           --health-retries 5
         ports:
           # Maps tcp port 5432 on service container to the host
-          - 5432:5432
+          - 8000:5432
+        volumes:
+          - `pwd`/.dedupe:/var/lib/pgsql/data
 
     steps:
     - name: Check out repository code
       uses: actions/checkout@v3
+    - name: Create folder
+        run: |
+          mkdir .dedupe
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
