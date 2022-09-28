@@ -7,7 +7,7 @@ try:
     engine = create_engine("postgresql+psycopg2://username:password@0.0.0.0:8000/db")
     engine.connect()
 except:
-    engine = create_engine("postgres://username:password@postgres:5432/db")
+    engine = create_engine("postgresql+psycopg2://username:password@postgres:5432/db")
     engine.connect()
 
 Session = scoped_session(sessionmaker(bind=engine))
