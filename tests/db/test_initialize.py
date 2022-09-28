@@ -9,7 +9,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from faker import Faker
 import pandas as pd
 
-from oagdedupe.postgres import funcs
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.tables import Tables
 from oagdedupe import settings
@@ -135,8 +134,10 @@ class TestResample(unittest.TestCase, FixtureMixin):
         self.monkeypatch = MonkeyPatch()
         self.monkeypatch.setattr(Tables,"engine", engine)
         self.init = Initialize(settings=self.settings)
-        funcs.create_functions(settings=self.settings)
-        self.init.setup(df=self.df, df2=self.df2, reset=True, resample=False)
+        self.init._init_df(df=self.df, df_link=self.df2)
+        self.init._init_pos(self.session)
+        self.init._init_neg(self.session)
+        self.init._init_unlabelled(self.session)
         return
 
     def test__resample(self):
