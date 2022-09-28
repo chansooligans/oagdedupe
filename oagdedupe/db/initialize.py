@@ -127,7 +127,6 @@ class Initialize(DatabaseORM):
                     label.label = l
                     session.add(label)
         session.commit()
-        self._label_distances()
 
     def _init_labels_link(self, session):
         """create labels for record linkage using positive and negative samples
@@ -146,7 +145,6 @@ class Initialize(DatabaseORM):
                 label.label = l
                 session.add(label)
         session.commit()
-        self._label_distances()
 
     def _label_distances(self):
         """
@@ -219,6 +217,7 @@ class Initialize(DatabaseORM):
                 self._init_unlabelled(session)
                 self._init_train(session)
                 getattr(self, f"_init_labels{rl}")(session)
+                self._label_distances()
 
             if resample:
                 logging.info("resampling train")
