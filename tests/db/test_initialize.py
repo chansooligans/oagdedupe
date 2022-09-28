@@ -43,16 +43,16 @@ def session():
 @pytest.fixture(scope="module")
 def settings() -> Settings:
     return Settings(
-        name="test",
-        folder=".dedupe",
+        name="default",
+        folder=".dedupe_test",
         other=SettingsOther(
             n=5000,
             k=3,
             cpus=15,
             attributes=["name", "addr"],
-            path_database="test.db",
+            path_database="",
             db_schema="dedupe",
-            path_model=".dedupe/test_model",
+            path_model=".dedupe_test/test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
@@ -74,13 +74,11 @@ class TestInitialize(unittest.TestCase):
         self.monkeypatch = MonkeyPatch()
         self.monkeypatch.setattr(Tables,"engine", engine)
         self.init = Initialize(settings=self.settings)
-        return
-
-    def test_setup_dynamic_declarative_mapping(self):
         self.init.setup_dynamic_declarative_mapping()
-
-    def test_reset_tables(self):
         self.init.reset_tables()
+        return
 
     def test__init(self):
         self.init._init_df(df=self.df)
+        df = pd.read_sql("SELECT * from dedupe.df", con=engine)
+        print(df)
