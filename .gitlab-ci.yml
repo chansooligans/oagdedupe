@@ -5,6 +5,7 @@ default:
 
 stages:
   - linting
+  - postgres
   - test
 
 flake8:
@@ -15,10 +16,19 @@ flake8:
   - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics    
   # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
   - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-  artifacts:
-    when: always
-    reports:
-      codequality : flake8.json
+
+postgres:
+  stage: postgres
+  script:
+  - mkdir .dedupe
+  - docker run --rm -dp 8000:5432 \
+    --name oagdedupe-postgres \
+    --env POSTGRES_USER=username \
+    --env POSTGRES_PASSWORD=password \
+    --env POSTGRES_DB=db \
+    --env PGDATA=/var/lib/pgsql/data/pgdata \
+    -v `pwd`/.dedupe:/var/lib/pgsql/data \
+    chansoosong/oagdedupe-postgres 
 
 test:
   stage: test
