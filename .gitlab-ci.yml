@@ -27,6 +27,7 @@ test:
     PGDATA: /var/lib/pgsql/data/pgdata
   needs: []
   script:
+  - export DATABASE_URL=postgresql+psycopg2://username:password@0.0.0.0:5432/db
   - python -m pip install .
   - pytest --junitxml=report.xml
   artifacts:
