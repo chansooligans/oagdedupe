@@ -121,4 +121,24 @@ class TestTrainLabels(unittest.TestCase, FixtureMixin):
         self.init._init_labels(self.session)
         df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
         assert len(df) > 10
+
+    def test__init_labels_link(self):
+        self.init._init_labels_link(self.session)
+        df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
+        assert len(df) > 10
  
+
+class TestResample(unittest.TestCase, FixtureMixin):
+
+    def setUp(self):
+        self.monkeypatch = MonkeyPatch()
+        self.monkeypatch.setattr(Tables,"engine", engine)
+        self.init = Initialize(settings=self.settings)
+        self.init.setup(df=self.df, df2=self.df2, reset=True, resample=False)
+        return
+
+    def test__resample(self):
+        df = pd.read_sql("SELECT * from dedupe.train", con=engine)
+        self.init._resample(self.session)
+        df2 = pd.read_sql("SELECT * from dedupe.train", con=engine)
+        assert not df.equals(df2)
