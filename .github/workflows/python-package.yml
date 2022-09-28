@@ -62,4 +62,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8000/db"
         pytest
