@@ -7,7 +7,7 @@ from diagrams.generic.storage import Storage
 
 
 with Diagram("Dedupe", show=False):
-    rawdata = Storage("Raw Data")
+    rawdata = Storage("Raw Data (local)")
     preprocess = Python("PreProcess")
     
     rawdata >> preprocess 
@@ -15,7 +15,6 @@ with Diagram("Dedupe", show=False):
     with Cluster("Active Learning Loop"):
         sql = SQL("Postgres db")
         model = Custom("Model", "img/modAl.png") 
-        preprocess >> model 
         preprocess >> sql 
 
         fastapi = Custom("FastApi","img/fastapi.png")
@@ -25,6 +24,6 @@ with Diagram("Dedupe", show=False):
         fastapi >> Edge(color="darkgreen") <<  labelstudio
     
     networkX = Custom("NetworkX", "img/networkX.png")
-    fastapi >> networkX >> Storage("Predictions")
+    fastapi >> networkX >> Storage("Predictions (local)")
     
 # %%
