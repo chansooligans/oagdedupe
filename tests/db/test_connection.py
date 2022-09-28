@@ -1,4 +1,5 @@
 import pytest
+import pandas as pd
 import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -10,6 +11,12 @@ engine.connect()
 
 Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
+
+@pytest.fixture(scope="module")
+def df():
+    return pd.DataFrame({
+        "name":[]
+    })
 
 @pytest.fixture(scope="module")
 def db_session():

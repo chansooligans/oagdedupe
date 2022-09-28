@@ -1,7 +1,8 @@
-.PHONY: tests_all, lint, serve, postgres, label-studio, book, serve
+.PHONY: tests_all, test-postgres, lint, serve, postgres, label-studio, book, serve
 
 tests_all:
-	poetry run pytest -v
+	export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8088/db"
+	poetry run pytest -v -rP
 	
 lint:
 	flake8 --ignore W291 oagdedupe --max-line-length=180
@@ -14,6 +15,16 @@ postgres:
       --env POSTGRES_DB=db \
       --env PGDATA=/var/lib/pgsql/data/pgdata \
       -v `pwd`/.dedupe:/var/lib/pgsql/data \
+      chansoosong/oagdedupe-postgres 
+
+test-postgres:
+	docker run --rm -dp 8088:5432 \
+      --name test-oagdedupe-postgres \
+      --env POSTGRES_USER=username \
+      --env POSTGRES_PASSWORD=password \
+      --env POSTGRES_DB=db \
+      --env PGDATA=/var/lib/pgsql/data/pgdata \
+      -v `pwd`/.dedupe_test:/var/lib/pgsql/data \
       chansoosong/oagdedupe-postgres 
 
 label-studio:
