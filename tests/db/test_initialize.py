@@ -1,4 +1,6 @@
+import unittest
 import pytest
+from pytest import MonkeyPatch
 import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -14,8 +16,7 @@ from oagdedupe.settings import (
     SettingsLabelStudio,
 )
 
-engine = create_engine(
-    "postgresql+psycopg2://username:password@0.0.0.0:8000/db")
+engine = create_engine("postgresql+psycopg2://username:password@0.0.0.0:8000/db")
 Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
@@ -48,7 +49,7 @@ def settings(tmp_path) -> Settings:
             attributes=["name", "addr"],
             path_database="test.db",
             db_schema="dedupe",
-            path_model=tmp_path / "test_model",
+            path_model="postgresql+psycopg2://username:password@0.0.0.0:8000/db",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
@@ -62,3 +63,19 @@ def test_connection(db_session):
     res = db_session.query(text("1"))
     assert res.all() == [(1,)]
 
+
+class TestInitialize(unittest.TestCase):
+
+    @pytest.fixture(autouse=True)
+    def prepare_fixtures(self, settings, df):
+        # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
+        self.settings = settings
+        self.df = df
+
+    def setUp(self):
+        self.monkeypatch = MonkeyPatch()
+        self.init = Initialize(settings=self.settings)
+        return
+
+    def test__init_df(self):
+        self.init._init_df(self.df)
