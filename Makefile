@@ -1,6 +1,7 @@
 .PHONY: tests_all, lint, serve, postgres, label-studio, book, serve
 
 tests_all:
+	export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8000/db"
 	poetry run pytest -v
 	
 lint:

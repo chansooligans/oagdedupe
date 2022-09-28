@@ -1,5 +1,6 @@
 import unittest
 import pytest
+import os
 from pytest import MonkeyPatch
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -17,7 +18,8 @@ from oagdedupe.settings import (
     SettingsLabelStudio,
 )
 
-engine = create_engine("postgresql+psycopg2://username:password@0.0.0.0:8000/db")
+db_url = os.environ.get("DATABASE_URL")
+engine = create_engine(db_url)
 Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
@@ -31,7 +33,7 @@ def df():
     })
 
 @pytest.fixture(scope="module")
-def db_session():
+def session():
     Base.metadata.create_all(engine)
     session = Session()
     yield session
@@ -60,11 +62,6 @@ def settings() -> Settings:
         ),
     )
 
-def test_connection(db_session):
-    res = db_session.query(text("1"))
-    assert res.all() == [(1,)]
-
-
 class TestInitialize(unittest.TestCase):
 
     @pytest.fixture(autouse=True)
@@ -84,3 +81,6 @@ class TestInitialize(unittest.TestCase):
 
     def test_reset_tables(self):
         self.init.reset_tables()
+
+    def test__init(self):
+        self.init._init_df(df=self.df)
