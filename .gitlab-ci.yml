@@ -20,6 +20,11 @@ test:
   stage: test
   services:
   - postgres:latest
+  variables:
+    POSTGRES_DB: db
+    POSTGRES_USER: username
+    POSTGRES_PASSWORD: password
+    PGDATA: /var/lib/pgsql/data/pgdata
   needs: []
   script:
   - mkdir .dedupe
