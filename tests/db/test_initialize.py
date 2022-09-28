@@ -9,6 +9,7 @@ from faker import Faker
 import pandas as pd
 
 from oagdedupe.db.initialize import Initialize
+from oagdedupe.db.tables import Tables
 from oagdedupe.settings import (
     Settings,
     SettingsOther,
@@ -38,18 +39,18 @@ def db_session():
     Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="module")
-def settings() -> Settings:
+def settings(tmp_path) -> Settings:
     return Settings(
         name="test",
-        folder="./.dedupe",
+        folder=tmp_path,
         other=SettingsOther(
             n=5000,
             k=3,
             cpus=15,
             attributes=["name", "addr"],
-            path_database="./.dedupe/test.db",
+            path_database="test.db",
             db_schema="dedupe",
-            path_model="postgresql+psycopg2://username:password@0.0.0.0:8000/db",
+            path_model=tmp_path / "test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
@@ -71,6 +72,7 @@ class TestInitialize(unittest.TestCase):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.df = df
+        self.monkeypatch.setattr(Tables,"engine", engine)
 
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
