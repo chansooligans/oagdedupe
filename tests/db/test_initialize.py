@@ -128,20 +128,20 @@ class TestTrainLabels(unittest.TestCase, FixtureMixin):
         assert len(df) > 10
  
 
-class TestResample(unittest.TestCase, FixtureMixin):
+# class TestResample(unittest.TestCase, FixtureMixin):
 
-    def setUp(self):
-        self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables,"engine", engine)
-        self.init = Initialize(settings=self.settings)
-        self.init._init_df(df=self.df, df_link=self.df2)
-        self.init._init_pos(self.session)
-        self.init._init_neg(self.session)
-        self.init._init_unlabelled(self.session)
-        return
+#     def setUp(self):
+#         self.monkeypatch = MonkeyPatch()
+#         self.monkeypatch.setattr(Tables,"engine", engine)
+#         self.init = Initialize(settings=self.settings)
+#         self.init._init_df(df=self.df, df_link=self.df2)
+#         self.init._init_pos(self.session)
+#         self.init._init_neg(self.session)
+#         self.init._init_unlabelled(self.session)
+#         return
 
-    def test__resample(self):
-        df = pd.read_sql("SELECT * from dedupe.train", con=engine)
-        self.init._resample(self.session)
-        df2 = pd.read_sql("SELECT * from dedupe.train", con=engine)
-        assert not df.equals(df2)
+#     def test__resample(self):
+#         df = pd.read_sql("SELECT * from dedupe.train", con=engine)
+#         self.init._resample(self.session)
+#         df2 = pd.read_sql("SELECT * from dedupe.train", con=engine)
+#         assert not df.equals(df2)
