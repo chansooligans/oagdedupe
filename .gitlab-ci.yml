@@ -5,7 +5,6 @@ default:
 
 stages:
   - linting
-  - postgres
   - test
 
 flake8:
@@ -17,8 +16,9 @@ flake8:
   # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
   - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-postgres:
-  stage: postgres
+test:
+  stage: test
+  needs: []
   script:
   - mkdir .dedupe
   - docker run --rm -dp 8000:5432 \
@@ -29,13 +29,8 @@ postgres:
     --env PGDATA=/var/lib/pgsql/data/pgdata \
     -v `pwd`/.dedupe:/var/lib/pgsql/data \
     chansoosong/oagdedupe-postgres 
-
-test:
-  stage: test
-  needs: []
-  script:
-    - python -m pip install .
-    - pytest --junitxml=report.xml
+  - python -m pip install .
+  - pytest --junitxml=report.xml
   artifacts:
     when: always
     reports:
