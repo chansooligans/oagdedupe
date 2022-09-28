@@ -1,6 +1,5 @@
 default:
   image: python:3.8
-  image: docker:20.10.16
   tags:
     - research
 
@@ -19,19 +18,13 @@ flake8:
 
 test:
   stage: test
+  services:
+  - postgres:latest
   needs: []
   script:
   - mkdir .dedupe
-  - docker run --rm -dp 8000:5432 \
-    --name oagdedupe-postgres \
-    --env POSTGRES_USER=username \
-    --env POSTGRES_PASSWORD=password \
-    --env POSTGRES_DB=db \
-    --env PGDATA=/var/lib/pgsql/data/pgdata \
-    -v `pwd`/.dedupe:/var/lib/pgsql/data \
-    chansoosong/oagdedupe-postgres 
   - python -m pip install .
-  - pytest --junitxml=report.xml
+  # - pytest --junitxml=report.xml
   artifacts:
     when: always
     reports:
