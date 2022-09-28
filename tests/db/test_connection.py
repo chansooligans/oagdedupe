@@ -3,12 +3,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 
-try:
-    engine = create_engine("postgresql+psycopg2://username:password@0.0.0.0:8000/db")
-    engine.connect()
-except:
-    engine = create_engine("postgresql+psycopg2://username:password@postgres:5432/db")
-    engine.connect()
+engine = create_engine("postgresql+psycopg2://username:password@postgres:5432/db")
+engine.connect()
 
 Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
