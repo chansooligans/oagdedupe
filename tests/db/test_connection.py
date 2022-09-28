@@ -4,7 +4,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine(os.environ["DATABASE_URL"])
+db_url = os.environ.get("DATABASE_URL")
+engine = create_engine(db_url)
 engine.connect()
 
 Session = scoped_session(sessionmaker(bind=engine))
