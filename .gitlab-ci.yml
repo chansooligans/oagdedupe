@@ -19,7 +19,7 @@ flake8:
 test:
   stage: test
   services:
-  - postgres:latest
+  - chansoosong/oagdedupe-postgres
   variables:
     POSTGRES_DB: db
     POSTGRES_USER: username
@@ -27,9 +27,8 @@ test:
     PGDATA: /var/lib/pgsql/data/pgdata
   needs: []
   script:
-  - mkdir .dedupe
   - python -m pip install .
-  # - pytest --junitxml=report.xml
+  - pytest --junitxml=report.xml
   artifacts:
     when: always
     reports:
