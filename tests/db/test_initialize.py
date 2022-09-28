@@ -72,10 +72,10 @@ class TestInitialize(unittest.TestCase):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.df = df
-        self.monkeypatch.setattr(Tables,"engine", engine)
 
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
+        self.monkeypatch.setattr(Tables,"engine", engine)
         self.init = Initialize(settings=self.settings)
         return
 
