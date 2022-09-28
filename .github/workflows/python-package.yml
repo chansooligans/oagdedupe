@@ -17,7 +17,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres
+        image: chansoosong/oagdedupe-postgres
         # Provide the password for postgres
         env:
           POSTGRES_USER: username
@@ -34,7 +34,7 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 8000:5432
         volumes:
-          - ./.dedupe:/var/lib/pgsql/data
+          - /.dedupe:/var/lib/pgsql/data
 
     steps:
     - name: Check out repository code
