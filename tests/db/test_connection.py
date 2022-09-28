@@ -1,11 +1,14 @@
 import pytest
 import pandas as pd
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine(
-    "postgresql+psycopg2://username:password@0.0.0.0:8000/db")
+db_url = os.environ.get("DATABASE_URL")
+engine = create_engine(db_url)
+engine.connect()
+
 Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 
