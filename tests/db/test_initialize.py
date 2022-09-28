@@ -38,16 +38,16 @@ def db_session():
     Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="module")
-def settings(tmp_path) -> Settings:
+def settings() -> Settings:
     return Settings(
         name="test",
-        folder=tmp_path,
+        folder="./.dedupe",
         other=SettingsOther(
             n=5000,
             k=3,
             cpus=15,
             attributes=["name", "addr"],
-            path_database="test.db",
+            path_database="./.dedupe/test.db",
             db_schema="dedupe",
             path_model="postgresql+psycopg2://username:password@0.0.0.0:8000/db",
             label_studio=SettingsLabelStudio(
