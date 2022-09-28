@@ -39,10 +39,10 @@ def db_session():
     Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="module")
-def settings(tmp_path) -> Settings:
+def settings() -> Settings:
     return Settings(
         name="test",
-        folder=tmp_path,
+        folder=".dedupe",
         other=SettingsOther(
             n=5000,
             k=3,
@@ -50,7 +50,7 @@ def settings(tmp_path) -> Settings:
             attributes=["name", "addr"],
             path_database="test.db",
             db_schema="dedupe",
-            path_model=tmp_path / "test_model",
+            path_model=".dedupe/test_model",
             label_studio=SettingsLabelStudio(
                 port=8089,
                 api_key="test_api_key",
@@ -79,5 +79,8 @@ class TestInitialize(unittest.TestCase):
         self.init = Initialize(settings=self.settings)
         return
 
-    def test__init_df(self):
-        self.init._init_df(self.df)
+    def test_setup_dynamic_declarative_mapping(self):
+        self.init.setup_dynamic_declarative_mapping()
+
+    def test_reset_tables(self):
+        self.init.reset_tables()
