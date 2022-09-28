@@ -19,7 +19,8 @@ flake8:
 test:
   stage: test
   services:
-  - chansoosong/oagdedupe-postgres
+  - name: chansoosong/oagdedupe-postgres
+    alias: postgres
   variables:
     POSTGRES_DB: db
     POSTGRES_USER: username
