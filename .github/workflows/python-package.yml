@@ -40,8 +40,8 @@ jobs:
     - name: Check out repository code
       uses: actions/checkout@v3
     - name: Create folder
-        run: |
-          mkdir .dedupe
+      run: |
+        mkdir .dedupe
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
