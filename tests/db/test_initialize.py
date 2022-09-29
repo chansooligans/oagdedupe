@@ -1,9 +1,11 @@
+""" integration testing postgres database initialization functions
+"""
 import unittest
 import pytest
 import os
 from pytest import MonkeyPatch
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from faker import Faker
@@ -11,12 +13,9 @@ import pandas as pd
 
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.tables import Tables
-from oagdedupe import settings
 from oagdedupe.settings import (
     Settings,
-    SettingsOther,
-    SettingsService,
-    SettingsLabelStudio,
+    SettingsOther
 )
 
 db_url = os.environ.get("DATABASE_URL")
@@ -127,21 +126,3 @@ class TestTrainLabels(unittest.TestCase, FixtureMixin):
         df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
         assert len(df) > 10
  
-
-# class TestResample(unittest.TestCase, FixtureMixin):
-
-#     def setUp(self):
-#         self.monkeypatch = MonkeyPatch()
-#         self.monkeypatch.setattr(Tables,"engine", engine)
-#         self.init = Initialize(settings=self.settings)
-#         self.init._init_df(df=self.df, df_link=self.df2)
-#         self.init._init_pos(self.session)
-#         self.init._init_neg(self.session)
-#         self.init._init_unlabelled(self.session)
-#         return
-
-#     def test__resample(self):
-#         df = pd.read_sql("SELECT * from dedupe.train", con=engine)
-#         self.init._resample(self.session)
-#         df2 = pd.read_sql("SELECT * from dedupe.train", con=engine)
-#         assert not df.equals(df2)
