@@ -21,7 +21,7 @@ class BaseDistance(metaclass=ABCMeta):
     """Abstract base class for all distance configurations to inherit"""
 
     @abstractmethod
-    def get_distances(self, pairs):
+    def compute_distances(self, pairs):
         return
 
     # @abstractmethod

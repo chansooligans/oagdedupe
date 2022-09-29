@@ -1,12 +1,14 @@
-from oagdedupe.settings import Settings
-from oagdedupe.distance.string import AllJaro
-from oagdedupe.db.orm import DatabaseORM
-from sqlalchemy import select, delete, func
-from oagdedupe import utils as du
-
 import itertools
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+
+from sqlalchemy import delete, func, select
+
+from oagdedupe import utils as du
+from oagdedupe.db.orm import DatabaseORM
+from oagdedupe.distance.string import AllJaro
+from oagdedupe.settings import Settings
+
 
 @dataclass
 class Initialize(DatabaseORM):
@@ -16,11 +18,11 @@ class Initialize(DatabaseORM):
     Can be used to create:
         - df
         - pos/neg
-            - created to help build train and labels; 
+            - created to help build train and labels;
             - pos contains a random sample repeated 4 times
             - neg contains 10 random samples
         - unlabelled
-            - random sample of df of size settings.other.n, 
+            - random sample of df of size settings.other.n,
             - samples are drawn each active learning loop
         - train
             - combines pos, neg, and unlabelled
@@ -29,12 +31,13 @@ class Initialize(DatabaseORM):
             - pairs from pos are labelled as a match
             - pairs from neg are labelled as a non-match
     """
+
     settings: Settings
 
     @du.recordlinkage_repeat
     def _init_df(self, df=None, df_link=None, rl=""):
         """load df and/or df_link"""
-        logging.info("building %s",f'df{rl}')
+        logging.info("building %s", f"df{rl}")
         if "_index" in locals()["df"].columns:
             raise ValueError("_index cannot be a column name")
         self.bulk_insert(
@@ -44,21 +47,24 @@ class Initialize(DatabaseORM):
 
     def _sample(self, session, table, n):
         """samples from df or df_link"""
-        return (
-            session
-            .query(table)
-            .order_by(func.random())
-            .limit(n)
-            .all()
-        )
+        data = session.query(table).order_by(func.random()).limit(n).all()
+        return self._to_dicts(data)
+
+    def _to_dicts(self, data):
+        return [
+            {
+                key: val
+                for key, val in d.__dict__.items()
+                if key != "_sa_instance_state"
+            }
+            for d in data
+        ]
 
     def _init_pos(self, session):
         """get positive samples: 4 copies of single sample"""
         records = self._sample(session, self.maindf, 1)
-        for i in range(-3,1):
-            table = self.Pos()
-            for attr in self.settings.other.attributes + ["_index"]:
-                setattr(table, attr, getattr(records[0], attr))
+        for i in range(-3, 1):
+            table = self.Pos(**records[0])
             if i < 0:
                 setattr(table, "_index", i)
             setattr(table, "labelled", True)
@@ -70,42 +76,37 @@ class Initialize(DatabaseORM):
         """get negative samples: 10 random samples"""
         records = self._sample(session, getattr(self, f"maindf{rl}"), 10)
         for r in records:
-            table = getattr(self,f"Neg{rl}")()
-            for attr in self.settings.other.attributes + ["_index"]:
-                setattr(table, attr, getattr(r, attr))
+            table = getattr(self, f"Neg{rl}")(**r)
             setattr(table, "labelled", True)
             session.add(table)
         session.commit()
 
     @du.recordlinkage_repeat
     def _init_unlabelled(self, session, rl=""):
-        """ create unlabelled samples: 'n' random samples"""
+        """create unlabelled samples: 'n' random samples"""
         records = self._sample(
-            session, getattr(self, f"maindf{rl}"), self.settings.other.n)
+            session, getattr(self, f"maindf{rl}"), self.settings.other.n
+        )
         for r in records:
-            table = getattr(self,f"Unlabelled{rl}")()
-            for attr in self.settings.other.attributes + ["_index"]:
-                setattr(table, attr, getattr(r, attr))
+            table = getattr(self, f"Unlabelled{rl}")(**r)
             setattr(table, "labelled", False)
             session.add(table)
         session.commit()
 
     @du.recordlinkage_repeat
-    def _init_train(self, session, rl=""): 
-        """create train by concatenating positive, negative, 
+    def _init_train(self, session, rl=""):
+        """create train by concatenating positive, negative,
         and unlabelled samples"""
-        logging.info("building %s",f'train{rl}')
+        logging.info("building %s", f"train{rl}")
         fakedata = [
-            getattr(self, f"Unlabelled{rl}"), 
-            self.Pos, 
-            getattr(self,f"Neg{rl}")
+            getattr(self, f"Unlabelled{rl}"),
+            self.Pos,
+            getattr(self, f"Neg{rl}"),
         ]
         for tab in fakedata:
-            records = session.query(tab).all()
+            records = self._to_dicts(session.query(tab).all())
             for r in records:
-                table = getattr(self,f"Train{rl}")()
-                for attr in self.settings.other.attributes + ["_index", "labelled"]:
-                    setattr(table, attr, getattr(r, attr))
+                table = getattr(self, f"Train{rl}")(**r)
                 session.merge(table)
         session.commit()
 
@@ -114,17 +115,17 @@ class Initialize(DatabaseORM):
         if positive, set "label" = 1
         if negative, set "label" = 0
         """
-        logging.info("building %s",f'labels')
+        logging.info("building %s", "labels")
         fakepairs = [(1, self.Pos), (0, self.Neg)]
-        for l,tab in fakepairs:
+        for lab, tab in fakepairs:
             records = session.query(tab).all()
             pairs = list(itertools.combinations(records, 2))
-            for left,right in pairs:
+            for left, right in pairs:
                 label = self.Labels()
                 if left._index < right._index:
                     label._index_l = left._index
                     label._index_r = right._index
-                    label.label = l
+                    label.label = lab
                     session.add(label)
         session.commit()
 
@@ -133,16 +134,16 @@ class Initialize(DatabaseORM):
         if positive, link to itself, set "label" = 1
         if negative, link neg to neg_link, set "label" = 0
         """
-        logging.info("building %s",f'labels')
+        logging.info("building %s", f"labels")
         fakepairs = [(1, self.Pos, self.Pos), (0, self.Neg, self.Neg_link)]
-        for l,tab,tab_link in fakepairs:
+        for lab, tab, tab_link in fakepairs:
             records = session.query(tab).all()
             records_link = session.query(tab_link).all()
-            for left,right in zip(records, records_link):
+            for left, right in zip(records, records_link):
                 label = self.Labels()
                 label._index_l = left._index
                 label._index_r = right._index
-                label.label = l
+                label.label = lab
                 session.add(label)
         session.commit()
 
@@ -152,16 +153,14 @@ class Initialize(DatabaseORM):
         """
         self.distance = AllJaro(settings=self.settings)
         self.distance.save_distances(
-            table=self.Labels,
-            newtable=self.LabelsDistances
+            table=self.Labels, newtable=self.LabelsDistances
         )
 
     @du.recordlinkage_repeat
     def _delete_unlabelled(self, session, rl=""):
         """delete unlabelled from train"""
-        stmt = (
-            delete(getattr(self,f"Train{rl}")).
-            where(getattr(self,f"Train{rl}").labelled==False)
+        stmt = delete(getattr(self, f"Train{rl}")).where(
+            getattr(self, f"Train{rl}").labelled is False
         )
         session.execute(stmt)
         session.commit()
@@ -169,14 +168,16 @@ class Initialize(DatabaseORM):
     @du.recordlinkage_repeat
     def _resample_unlabelled(self, session, rl=""):
         """delete unlabelled from train"""
-        self.engine.execute(f"""
+        self.engine.execute(
+            f"""
                 TRUNCATE TABLE {self.settings.other.db_schema}.unlabelled{rl};
-            """)
-        records = session.query(getattr(self,f"Unlabelled{rl}")).all()
+            """
+        )
+        records = self._to_dicts(
+            session.query(getattr(self, f"Unlabelled{rl}")).all()
+        )
         for r in records:
-            train = getattr(self,f"Train{rl}")()
-            for attr in self.settings.other.attributes + ["_index", "labelled"]:
-                setattr(train, attr, getattr(r, attr))
+            train = getattr(self, f"Train{rl}")(**r)
             session.merge(train)
         session.commit()
 
@@ -185,7 +186,7 @@ class Initialize(DatabaseORM):
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
         self._resample_unlabelled(session)
-    
+
     @du.recordlinkage
     def setup(self, df=None, df2=None, reset=True, resample=False, rl=""):
         """
@@ -198,18 +199,15 @@ class Initialize(DatabaseORM):
         reset: bool
             set True to delete and create all tables
         resample: bool
-            used for active learning loops where model needs to pull a new 
+            used for active learning loops where model needs to pull a new
             sample, without deleting df, train, or labels
         """
-        
-        # initialize Tables sqlalchemy classes
-        logging.info("initialize declarative mapping")
-        self.setup_dynamic_declarative_mapping()
 
         with self.Session() as session:
             if reset:
                 logging.info(
-                    f"building schema: {self.settings.other.db_schema}")
+                    f"building schema: {self.settings.other.db_schema}"
+                )
                 self.reset_tables()
                 self._init_df(df=df, df_link=df2)
                 self._init_pos(session)
@@ -217,9 +215,7 @@ class Initialize(DatabaseORM):
                 self._init_unlabelled(session)
                 self._init_train(session)
                 getattr(self, f"_init_labels{rl}")(session)
-                self._label_distances()
 
             if resample:
                 logging.info("resampling train")
                 self._resample(session)
-                self._label_distances()
