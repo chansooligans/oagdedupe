@@ -1,22 +1,20 @@
-from oagdedupe.distance.string import AllJaro
-from oagdedupe.cluster.cluster import ConnectedComponents
-from oagdedupe.settings import Settings
-from oagdedupe.block import Blocker, Conjunctions
-from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.orm import DatabaseORM
-from oagdedupe.postgres import funcs
-
-import requests
-import json
-from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple, Dict
+import logging
+from abc import ABCMeta
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
-import numpy as np
-import ray
+import requests
 from sqlalchemy import create_engine
-import logging
+
+from oagdedupe.block import Blocker, Conjunctions
+from oagdedupe.cluster.cluster import ConnectedComponents
+from oagdedupe.db.initialize import Initialize
+from oagdedupe.db.orm import DatabaseORM
+from oagdedupe.distance.string import AllJaro
+from oagdedupe.postgres import funcs
+from oagdedupe.settings import Settings
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -30,17 +28,17 @@ class BaseModel(metaclass=ABCMeta):
     """project settings"""
 
     def predict(self) -> pd.DataFrame:
-        """ fast-api trains model on latest labels then submits scores to 
+        """fast-api trains model on latest labels then submits scores to
         postgres
-        
-        clusterer loads scores and uses comparison indices and 
+
+        clusterer loads scores and uses comparison indices and
         predicted probabilities to generate clusters
 
         Returns
         -------
         df: pd.DataFrame
             if dedupe, returns single df
-            
+
         df,df2: tuple
             if recordlinkage, two dataframes
 
@@ -57,29 +55,22 @@ class BaseModel(metaclass=ABCMeta):
 
         logging.info("getting comparisons")
         self.cover.save_comparisons(
-            table="blocks_df", 
-            n_covered=self.settings.other.n_covered
+            table="blocks_df", n_covered=self.settings.other.n_covered
         )
 
         # get distances
         logging.info("computing distances")
         self.distance.save_distances(
-            table=self.orm.FullComparisons,
-            newtable=self.orm.FullDistances
+            table=self.orm.FullComparisons, newtable=self.orm.FullDistances
         )
 
     def initialize(
-        self, 
-        df=None, 
-        df2=None,
-        reset=True, 
-        resample=False, 
-        n_covered=500
-        ):
+        self, df=None, df2=None, reset=True, resample=False, n_covered=500
+    ):
         """learn p(match)"""
 
         self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
-        
+
         logging.info("building forward indices")
         self.blocker.build_forward_indices()
 
@@ -88,8 +79,7 @@ class BaseModel(metaclass=ABCMeta):
 
         logging.info("get distance matrix")
         self.distance.save_distances(
-            table=self.orm.Comparisons,
-            newtable=self.orm.Distances
+            table=self.orm.Comparisons, newtable=self.orm.Distances
         )
 
     @cached_property
@@ -111,7 +101,7 @@ class BaseModel(metaclass=ABCMeta):
     @cached_property
     def cover(self):
         return Conjunctions(settings=self.settings)
-    
+
     @cached_property
     def distance(self):
         return AllJaro(settings=self.settings)
@@ -124,17 +114,19 @@ class BaseModel(metaclass=ABCMeta):
 @dataclass
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
-    settings:Settings
+
+    settings: Settings
 
     def __post_init__(self):
         self.settings.sync()
         funcs.create_functions(settings=self.settings)
 
-        
+
 @dataclass
 class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
-    settings:Settings
+
+    settings: Settings
 
     def __post_init__(self):
         self.settings.sync()
