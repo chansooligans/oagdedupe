@@ -3,9 +3,10 @@
 # import configparser
 # import os
 import logging
-from typing import Any, List, Optional
-from pydantic import BaseSettings, BaseModel
 from pathlib import Path
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, BaseSettings
 
 
 class SettingsService(BaseModel):
@@ -53,7 +54,9 @@ class SettingsOther(BaseModel):
     cpus: int = 1
 
     """path to database"""
-    path_database: str = "postgresql+psycopg2://username:password@172.22.39.26:8000/db"
+    path_database: str = (
+        "postgresql+psycopg2://username:password@172.22.39.26:8000/db"
+    )
 
     """database schema"""
     db_schema: str = "dedupe"
