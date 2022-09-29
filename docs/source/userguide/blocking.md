@@ -1,6 +1,6 @@
 # Blocking
 
-Naive entity resolution is a O(n^2) problem. For each record, there are n-possible records that it may be linked with. Common ways to reduce complexity is to use blocking. As an example, you might only consider pairs that share the same first 3 characters. We call the amount that blocking reduces complexity the "reduction ratio". If a blocking scheme generates 1,000,000 comparisons on a deduplication of 100,000 records, the reduction ratio is 99.98% (There are ~10,000**2 / 2 possible comparisons). At scale, a single block scheme will likely not yield a sufficiently large reduction ratio and you may want a conjunction of blocking schemes.
+Common ways to reduce complexity is to use blocking. As an example, you might only consider pairs that share the same first 3 characters. We call the amount that blocking reduces complexity the "reduction ratio". If a blocking scheme generates 1,000,000 comparisons on a deduplication of 100,000 records, the reduction ratio is 99.98% (There are ~10,000**2 / 2 possible comparisons). At scale, a single block scheme will likely not yield a sufficiently large reduction ratio and you may want a conjunction of blocking schemes.
 
 The goal is of each active learning loop is to identify the "best" union of blocking conjunctions. 
 

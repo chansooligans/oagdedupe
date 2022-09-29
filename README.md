@@ -1,5 +1,9 @@
 # oagdedupe  
 
+```
+This project is under active development.
+```
+
 oagdedupe is a Python library for scalable entity resolution, using active 
 learning to learn blocking configurations, generate comparison pairs, 
 then clasify matches. 
