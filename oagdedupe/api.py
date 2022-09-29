@@ -71,6 +71,9 @@ class BaseModel(metaclass=ABCMeta):
 
         self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
 
+        logging.info("computing distances for labels")
+        self.init._label_distances()
+
         logging.info("building forward indices")
         self.blocker.build_forward_indices()
 

@@ -12,6 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oagdedupe.db.initialize import Initialize
+from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings, SettingsOther
 
@@ -70,7 +71,34 @@ def settings() -> Settings:
     )
 
 
-class FixtureMixin:
+def seed_labels_distances(orm):
+    data = [
+        {"_index_l": 1, "_index_r": 1, "label": None},
+        {"_index_l": 2, "_index_r": 2, "label": 1},
+    ]
+    with orm.Session() as session:
+        for d in data:
+            row = orm.LabelsDistances(**d)
+            session.add(row)
+            session.commit()
+
+
+def seed_distances(orm):
+    data = [
+        {"_index_l": 2, "_index_r": 2, "label": 1},
+        {"_index_l": 1, "_index_r": 1, "label": 1},
+    ]
+    with orm.Session() as session:
+        for d in data:
+            row = orm.Distances(**d)
+            row2 = orm.FullDistances(**d)
+            session.add(row)
+            session.commit()
+            session.add(row2)
+            session.commit()
+
+
+class TestORM(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def prepare_fixtures(self, settings, df, session):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
@@ -79,69 +107,57 @@ class FixtureMixin:
         self.df2 = df.copy()
         self.session = session
 
-
-class TestDF(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
         self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
-        self.init.reset_tables()
+        self.init.setup(
+            df=self.df, df2=self.df2, reset=True, resample=False, rl=""
+        )
+        self.orm = DatabaseORM(settings=self.settings)
+        seed_labels_distances(orm=self.orm)
+        seed_distances(orm=self.orm)
         return
 
-    def test__init_df(self):
-        self.init._init_df(df=self.df, df_link=self.df2)
-        df = pd.read_sql("SELECT * from dedupe.df", con=engine)
-        self.assertEqual(len(df), 100)
-
-
-class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
-    def setUp(self):
-        self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
-        self.init = Initialize(settings=self.settings)
-        self.init.reset_tables()
-        self.init._init_df(df=self.df, df_link=self.df2)
-        return
-
-    def test__init_pos(self):
-        self.init._init_pos(self.session)
-        df = pd.read_sql("SELECT * from dedupe.pos", con=engine)
-        self.assertEqual(len(df), 4)
-
-    def test__init_neg(self):
-        self.init._init_neg(self.session)
-        df = pd.read_sql("SELECT * from dedupe.neg", con=engine)
-        self.assertEqual(len(df), 10)
-
-    def test__init_unlabelled(self):
-        self.init._init_unlabelled(self.session)
-        df = pd.read_sql("SELECT * from dedupe.unlabelled", con=engine)
-        self.assertEqual(len(df), 100)
-
-
-class TestTrainLabels(unittest.TestCase, FixtureMixin):
-    def setUp(self):
-        self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
-        self.init = Initialize(settings=self.settings)
-        self.init.reset_tables()
-        self.init._init_df(df=self.df, df_link=self.df2)
-        self.init._init_pos(self.session)
-        self.init._init_neg(self.session)
-        self.init._init_unlabelled(self.session)
-        return
-
-    def test__init_train(self):
-        self.init._init_train(self.session)
-        df = pd.read_sql("SELECT * from dedupe.train", con=engine)
+    def test_get_train(self):
+        df = self.orm.get_train()
         assert len(df) >= 103
 
-    def test__init_labels(self):
-        self.init._init_labels(self.session)
-        df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
-        assert len(df) > 10
+    def test_get_labels(self):
+        df = self.orm.get_labels()
+        self.assertEqual(len(df), 2)
 
-    def test__init_labels_link(self):
-        self.init._init_labels_link(self.session)
-        df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
-        assert len(df) > 10
+    def test_get_distances(self):
+        df = self.orm.get_distances()
+        self.assertEqual(len(df), 1)
+
+    def test_get_full_distances(self):
+        df = self.orm.get_full_distances()
+        self.assertEqual(len(df), 2)
+
+    def test_get_full_comparison_indices(self):
+        df = self.orm.get_full_comparison_indices()
+        self.assertEqual(df.loc[0, "_index_l"], 1)
+
+    def test_compare_cols(self):
+        self.assertEqual(
+            self.orm.compare_cols,
+            ["name_l", "addr_l", "name_r", "addr_r", "_index_l", "_index_r"],
+        )
+
+    def test__update_table(self):
+        newrow = pd.DataFrame(
+            {"name": ["test"], "addr": ["test"], "_index": [-99]}
+        )
+        self.orm._update_table(newrow, self.init.maindf())
+        df = pd.read_sql("SELECT * FROM dedupe.df", con=engine)
+        self.assertEqual(df.loc[100, "name"], "test")
+
+    def test__bulk_insert(self):
+        newrow = pd.DataFrame(
+            {"name": ["test"], "addr": ["test"], "_index": [-99]}
+        )
+        engine.execute("TRUNCATE TABLE dedupe.df_link")
+        self.orm.bulk_insert(newrow, self.init.maindf_link)
+        df = pd.read_sql("SELECT * FROM dedupe.df_link", con=engine)
+        self.assertEqual(len(df), 1)
