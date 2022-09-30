@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from faker import Faker
 from pytest import MonkeyPatch
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -23,40 +23,12 @@ Base = declarative_base()
 
 
 @pytest.fixture(scope="module")
-def df():
-    fake = Faker()
-    fake.seed_instance(0)
-    return pd.DataFrame(
-        {
-            "name": [fake.name() for x in range(100)],
-            "addr": [fake.address() for x in range(100)],
-        }
-    )
-
-
-@pytest.fixture(scope="module")
 def session():
     Base.metadata.create_all(engine)
     session = Session()
     yield session
     session.close()
     Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(scope="module")
-def settings() -> Settings:
-    return Settings(
-        name="default",  # the name of the project, a unique identifier
-        folder="./.dedupe_test",  # path to folder where settings and data will be saved
-        other=SettingsOther(
-            dedupe=False,
-            n=5000,
-            cpus=20,  # parallelize distance computations
-            attributes=["name", "addr"],  # list of entity attribute names
-            path_database=os.environ.get("DATABASE_URL"),
-            db_schema="dedupe",
-        ),
-    )
 
 
 def seed_maindf(orm):
@@ -83,11 +55,9 @@ def seed_clusters(orm):
 
 class TestORM(unittest.TestCase):
     @pytest.fixture(autouse=True)
-    def prepare_fixtures(self, settings, df, session):
+    def prepare_fixtures(self, settings, session):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
-        self.df = df
-        self.df2 = df.copy()
         self.session = session
 
     def setUp(self):
@@ -103,6 +73,11 @@ class TestORM(unittest.TestCase):
     def test_get_clusters(self):
         df = self.orm.get_clusters()
         self.assertEqual(df["cluster"].values[0], 3)
+
+    def test__cluster_subquery(self):
+        sq = self.orm._cluster_subquery(session=self.session, _type=False)
+        df = pd.read_sql(select(sq), con=engine)
+        self.assertEqual(df["_index"].values[0], 2)
 
     def test_get_clusters_link(self):
         dflist = self.orm.get_clusters_link()

@@ -26,34 +26,6 @@ def db_session():
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture(scope="module")
-def settings() -> Settings:
-    return Settings(
-        name="default",  # the name of the project, a unique identifier
-        folder="./.dedupe_test",  # path to folder where settings and data will be saved
-        other=SettingsOther(
-            dedupe=False,
-            n=5000,
-            k=3,
-            max_compare=20_000,
-            n_covered=5_000,
-            cpus=20,  # parallelize distance computations
-            attributes=["name", "addr"],  # list of entity attribute names
-            path_database=os.environ.get(
-                "DATABASE_URL"
-            ),  # where to save the database holding intermediate data
-            db_schema="dedupe",
-            path_model="./.dedupe_test/test_model",  # where to save the model
-            label_studio={
-                "port": 8089,  # label studio port
-                "api_key": "33344e8a477f8adc3eb6aa1e41444bde76285d96",  # label studio port
-                "description": "chansoo test project",  # label studio description of project
-            },
-            fast_api={"port": 8090},  # fast api port
-        ),
-    )
-
-
 def test_connection(db_session):
     res = db_session.query(text("1"))
     assert res.all() == [(1,)]

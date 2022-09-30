@@ -16,11 +16,6 @@ from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings, SettingsOther
 
-db_url = os.environ.get("DATABASE_URL")
-engine = create_engine(db_url)
-Session = scoped_session(sessionmaker(bind=engine))
-Base = declarative_base()
-
 
 @pytest.fixture(scope="module")
 def df():
@@ -31,31 +26,6 @@ def df():
             "name": [fake.name() for x in range(100)],
             "addr": [fake.address() for x in range(100)],
         }
-    )
-
-
-@pytest.fixture(scope="module")
-def session():
-    Base.metadata.create_all(engine)
-    session = Session()
-    yield session
-    session.close()
-    Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(scope="module")
-def settings() -> Settings:
-    return Settings(
-        name="default",  # the name of the project, a unique identifier
-        folder="./.dedupe_test",  # path to folder where settings and data will be saved
-        other=SettingsOther(
-            dedupe=False,
-            n=5000,
-            cpus=20,  # parallelize distance computations
-            attributes=["name", "addr"],  # list of entity attribute names
-            path_database=os.environ.get("DATABASE_URL"),
-            db_schema="dedupe",
-        ),
     )
 
 
@@ -87,16 +57,13 @@ def seed_distances(orm):
 
 class TestORM(unittest.TestCase):
     @pytest.fixture(autouse=True)
-    def prepare_fixtures(self, settings, df, session):
+    def prepare_fixtures(self, settings, df):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.df = df
         self.df2 = df.copy()
-        self.session = session
 
     def setUp(self):
-        self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
         self.init.setup(
             df=self.df, df2=self.df2, reset=True, resample=False, rl=""
@@ -137,14 +104,14 @@ class TestORM(unittest.TestCase):
             {"name": ["test"], "addr": ["test"], "_index": [-99]}
         )
         self.orm._update_table(newrow, self.init.maindf())
-        df = pd.read_sql("SELECT * FROM dedupe.df", con=engine)
+        df = pd.read_sql("SELECT * FROM dedupe.df", con=self.orm.engine)
         self.assertEqual(df.loc[100, "name"], "test")
 
     def test__bulk_insert(self):
         newrow = pd.DataFrame(
             {"name": ["test"], "addr": ["test"], "_index": [-99]}
         )
-        engine.execute("TRUNCATE TABLE dedupe.df_link")
+        self.orm.engine.execute("TRUNCATE TABLE dedupe.df_link")
         self.orm.bulk_insert(newrow, self.init.maindf_link)
-        df = pd.read_sql("SELECT * FROM dedupe.df_link", con=engine)
+        df = pd.read_sql("SELECT * FROM dedupe.df_link", con=self.orm.engine)
         self.assertEqual(len(df), 1)

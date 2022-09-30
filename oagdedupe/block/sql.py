@@ -4,14 +4,15 @@ to construct inverted index and comparison pairs.
 This module is only used by oagdedupe.block.learner
 """
 
-from oagdedupe.settings import Settings
-from oagdedupe import utils as du
-
-from functools import cached_property
-from sqlalchemy import create_engine
 from dataclasses import dataclass
-import pandas as pd
+from functools import cached_property
+
 import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine
+
+from oagdedupe import utils as du
+from oagdedupe.settings import Settings
 
 
 def check_unnest(name):
@@ -19,11 +20,15 @@ def check_unnest(name):
         return f"unnest({name})"
     return name
 
+
 def signatures(names):
-    return ", ".join([
-        f"{check_unnest(name)} as signature{i}" 
-        for i,name in  enumerate(names)
-    ])
+    return ", ".join(
+        [
+            f"{check_unnest(name)} as signature{i}"
+            for i, name in enumerate(names)
+        ]
+    )
+
 
 @dataclass
 class LearnerSql:
@@ -31,11 +36,12 @@ class LearnerSql:
     Object contains methods to query database using sqlalchemy CORE;
     It's easier to use sqlalchemy core than ORM for parallel operations.
     """
+
     settings: Settings
 
     def query(self, sql):
         """
-        for parallel implementation, need to create separate engine 
+        for parallel implementation, need to create separate engine
         for each process
         """
         engine = create_engine(self.settings.other.path_database)
@@ -45,27 +51,55 @@ class LearnerSql:
 
     def truncate_table(self, table):
         engine = create_engine(self.settings.other.path_database)
-        engine.execute(f"""
+        engine.execute(
+            f"""
             TRUNCATE TABLE {self.settings.other.db_schema}.{table};
-        """)
+        """
+        )
         engine.dispose()
 
     @property
     def comptab_map(self):
-        return {
-            "blocks_train":"comparisons",
-            "blocks_df":"full_comparisons"
-        }
+        return {"blocks_train": "comparisons", "blocks_df": "full_comparisons"}
+
+    def _aliases(self, names):
+        return [f"signature{i}" for i in range(len(names))]
+
+    def _inv_idx_query(self, names, table, col="_index_l"):
+        return f"""
+        SELECT 
+            {signatures(names)}, 
+            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
+        FROM {self.settings.other.db_schema}.{table}
+        GROUP BY {", ".join(self._aliases(names))}
+        """
+
+    @du.recordlinkage
+    def _pairs_query(self, names, rl=""):
+        if rl == "":
+            where = "WHERE t1._index_l < t2._index_r"
+        else:
+            where = ""
+        return f"""
+            SELECT _index_l, _index_r
+            FROM inverted_index t1
+            JOIN inverted_index_link t2
+                ON {" and ".join(
+                    [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
+                )}
+            {where}
+            GROUP BY _index_l, _index_r
+            """
 
     @du.recordlinkage
     def save_comparison_pairs(self, names, table, rl=""):
         """
         see dedupe.block.learner.InvertedIndex;
 
-        Given forward index, construct inverted index. 
-        Then for each row in inverted index, get all "nC2" distinct 
-        combinations of size 2 from the array. 
-        
+        Given forward index, construct inverted index.
+        Then for each row in inverted index, get all "nC2" distinct
+        combinations of size 2 from the array.
+
         Concatenates and returns all distinct pairs.
 
         Parameters
@@ -79,43 +113,20 @@ class LearnerSql:
         ----------
         pd.DataFrame
         """
-        aliases = [f"signature{i}" for i in range(len(names))]
-
-        if rl == "":
-            where = "WHERE t1._index_l < t2._index_r"
-        else:
-            where = ""
-
-        newtable = self.comptab_map[table] 
-
+        newtable = self.comptab_map[table]
         engine = create_engine(self.settings.other.path_database)
-        engine.execute(f"""
+        engine.execute(
+            f"""
             INSERT INTO {self.settings.other.db_schema}.{newtable}
             (
                 WITH 
                     inverted_index AS (
-                        SELECT 
-                            {signatures(names)}, 
-                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
-                        FROM {self.settings.other.db_schema}.{table}
-                        GROUP BY {", ".join(aliases)}
+                        {self._inv_idx_query(names, table)}
                     ),
                     inverted_index_link AS (
-                        SELECT 
-                            {signatures(names)}, 
-                            unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
-                        FROM {self.settings.other.db_schema}.{table}{rl}
-                        GROUP BY {", ".join(aliases)}
+                        {self._inv_idx_query(names, table+rl, col="_index_r")}
                     )
-                SELECT distinct _index_l, _index_r
-                FROM inverted_index t1
-                JOIN inverted_index_link t2
-                    ON {" and ".join(
-                        [f"t1.{s} = t2.{s}" for s in aliases]
-                    )}
-                {where}
-                GROUP BY _index_l, _index_r
-                HAVING count(*) = 1
+                {self._pairs_query(names)}
             )
             ON CONFLICT DO NOTHING
             """
@@ -124,16 +135,17 @@ class LearnerSql:
 
     def get_n_pairs(self, table):
         newtable = self.comptab_map[table]
-        return self.query(f"""
+        return self.query(
+            f"""
             SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
-        """)["count"].values[0]
-
+        """
+        )["count"].values[0]
 
     @du.recordlinkage
     def get_inverted_index_stats(self, names, table, rl=""):
         """
-        Given forward index, construct inverted index. 
-        Then for each row in inverted index, get all "nC2" distinct 
+        Given forward index, construct inverted index.
+        Then for each row in inverted index, get all "nC2" distinct
         combinations of size 2 from the array. Then compute
         number of pairs, the positive coverage and negative coverage.
 
@@ -148,28 +160,17 @@ class LearnerSql:
         ----------
         pd.DataFrame
         """
-        aliases = [f"signature{i}" for i in range(len(names))]
-
-        if rl == "":
-            where = "WHERE t1._index_l < t2._index_r"
-        else:
-            where = ""
-
-        res = self.query(f"""
+        res = self.query(
+            f"""
             WITH 
                 inverted_index AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_l
-                    FROM {self.settings.other.db_schema}.{table}
-                    GROUP BY {", ".join(aliases)}
+                    {self._inv_idx_query(names, table)}
                 ),
                 inverted_index_link AS (
-                    SELECT 
-                        {signatures(names)}, 
-                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_r
-                    FROM {self.settings.other.db_schema}.{table}{rl}
-                    GROUP BY {", ".join(aliases)}
+                    {self._inv_idx_query(names, table+rl, col="_index_r")}
+                ),
+                pairs AS (
+                    {self._pairs_query(names)}
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
@@ -177,25 +178,16 @@ class LearnerSql:
                 )
             SELECT 
                 count(*) as n_pairs,
-                SUM(
-                    CASE WHEN t3.label = 1 THEN 1 ELSE 0 END
-                ) positives,
-                SUM(
-                    CASE WHEN t3.label = 0 THEN 1 ELSE 0 END
-                ) negatives
-            FROM inverted_index t1
-            JOIN inverted_index_link t2
-                ON {" and ".join(
-                    [f"t1.{s} = t2.{s}" for s in aliases]
-                )}
-            LEFT JOIN labels t3
-                ON t3._index_l = t1._index_l
-                AND t3._index_r = t2._index_r
-            {where}
-            """)
+                SUM(CASE WHEN t2.label = 1 THEN 1 ELSE 0 END) positives,
+                SUM(CASE WHEN t2.label = 0 THEN 1 ELSE 0 END) negatives
+            FROM pairs t1
+            LEFT JOIN labels t2
+                ON t2._index_l = t1._index_l
+                AND t2._index_r = t1._index_r
+            """
+        )
 
         return res.fillna(0).loc[0].to_dict()
-
 
     @cached_property
     def blocking_schemes(self):
@@ -207,13 +199,15 @@ class LearnerSql:
         List[str]
         """
         return [
-            tuple([x]) 
+            tuple([x])
             for x in self.query(
                 f"""
                 SELECT * 
                 FROM {self.settings.other.db_schema}.blocks_train LIMIT 1
                 """
-            ).columns[1:].tolist()
+            )
+            .columns[1:]
+            .tolist()
         ]
 
     @du.recordlinkage_both
@@ -228,11 +222,10 @@ class LearnerSql:
         n = self.n_df()
         if self.settings.other.dedupe == False:
             return np.product(n)
-        return (n * (n-1))/2
-    
+        return (n * (n - 1)) / 2
+
     @property
     def min_rr(self):
         """minimum reduction ratio"""
-        reduced = (self.n_comparisons - self.settings.other.max_compare) 
+        reduced = self.n_comparisons - self.settings.other.max_compare
         return reduced / self.n_comparisons
-

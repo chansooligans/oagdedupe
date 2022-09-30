@@ -1,7 +1,7 @@
+export DATABASE_URL=postgresql+psycopg2://username:password@0.0.0.0:8088/db
 .PHONY: tests_all, test-file, test-postgres, lint, serve, postgres, label-studio, book, serve
 
 tests_all:
-	export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8088/db"
 	poetry run pytest -v -rP
 
 test-file:

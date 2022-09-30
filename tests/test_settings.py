@@ -1,13 +1,10 @@
-from oagdedupe.settings import (
-    Settings,
-    SettingsOther,
-    SettingsService,
-    SettingsLabelStudio,
-)
-from pytest import fixture
-from pytest import MonkeyPatch
 import os
 from pathlib import Path
+
+from pytest import MonkeyPatch, fixture
+
+from oagdedupe.settings import (Settings, SettingsLabelStudio, SettingsOther,
+                                SettingsService)
 
 
 @fixture
@@ -34,7 +31,10 @@ def settings(tmp_path) -> Settings:
 
 
 def test_path(settings: Settings) -> None:
-    assert settings.path == settings.folder / f"deduper_settings_{settings.name}.json"
+    assert (
+        settings.path
+        == settings.folder / f"deduper_settings_{settings.name}.json"
+    )
 
 
 def test_save(settings: Settings) -> None:
@@ -67,8 +67,17 @@ def test_set(settings: Settings) -> None:
     settings.set("cpus", 10)
     assert settings.other.cpus == 10
 
+
 def test_get_settings_from_env(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setattr(os, "environ", {"DEDUPER_NAME": "name from env", "DEDUPER_FOLDER": "folder/from/env"})
-    settings = Settings()
-    assert settings.name == "name from env"
-    assert settings.folder == Path("folder/from/env")
+    with monkeypatch.context() as m:
+        m.setattr(
+            os,
+            "environ",
+            {
+                "DEDUPER_NAME": "name from env",
+                "DEDUPER_FOLDER": "folder/from/env",
+            },
+        )
+        settings = Settings()
+        assert settings.name == "name from env"
+        assert settings.folder == Path("folder/from/env")
