@@ -25,7 +25,7 @@ Record Linkage Example
             k=3,
             cpus=20,  # parallelize distance computations
             attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
-            path_database="postgresql+psycopg2://username:password@0.0.0.0:8000/db",  # where to save the sqlite database holding intermediate data
+            path_database="postgresql+psycopg2://username:password@0.0.0.0:8000/db",  # where to save the database holding intermediate data
             db_schema="dedupe_rl",
             path_model="./.dedupe/test_model_rl",  # where to save the model
             label_studio={

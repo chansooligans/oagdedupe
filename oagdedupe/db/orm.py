@@ -138,20 +138,23 @@ class DatabaseORM(Tables):
             )
             return pd.read_sql(q.statement, q.session.bind)
 
+    def _cluster_subquery(self, session, _type):
+        return (
+            session.query(
+                self.Clusters.cluster,
+                self.Clusters._index,
+                self.Clusters._type,
+            )
+            .filter(self.Clusters._type == _type)
+            .subquery()
+        )
+
     def get_clusters_link(self):
         maindf = {True: self.maindf, False: self.maindf_link}
         with self.Session() as session:
             dflist = []
             for _type in [True, False]:
-                sq = (
-                    session.query(
-                        self.Clusters.cluster,
-                        self.Clusters._index,
-                        self.Clusters._type,
-                    )
-                    .filter(self.Clusters._type == _type)
-                    .subquery()
-                )
+                sq = self._cluster_subquery(session=session, _type=_type)
                 q = (
                     session.query(maindf[_type], sq.c.cluster)
                     .outerjoin(

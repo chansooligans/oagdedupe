@@ -19,9 +19,13 @@ class BlockSchemesHelper:
             for scheme, nlist in self.block_schemes:
                 for n in nlist:
                     if n:
-                        mapping[f"{scheme}_{n}_{attribute}"] = f"{scheme}({attribute},{n})"
+                        mapping[
+                            f"{scheme}_{n}_{attribute}"
+                        ] = f"{scheme}({attribute},{n})"
                     else:
-                        mapping[f"{scheme}_{attribute}"] = f"{scheme}({attribute})"
+                        mapping[
+                            f"{scheme}_{attribute}"
+                        ] = f"{scheme}({attribute})"
         return mapping
 
     @property
@@ -43,6 +47,7 @@ class BlockSchemes(BlockSchemesHelper):
     """
     Contains all block schemes.
     """
+
     settings: Settings
 
     @property
@@ -54,9 +59,9 @@ class BlockSchemes(BlockSchemesHelper):
         return [
             ("first_nchars", [2, 4, 6]),
             ("last_nchars", [2, 4, 6]),
-            ("find_ngrams", [2, 4, 6]),
+            ("find_ngrams", [4, 6, 8]),
             ("acronym", [None]),
-            ("exactmatch", [None])
+            ("exactmatch", [None]),
         ]
 
     @property
@@ -65,9 +70,7 @@ class BlockSchemes(BlockSchemesHelper):
         Convenience property to list all block schemes
         """
         return [
-            f"{scheme}_{n}_{attribute}"
-            if n
-            else f"{scheme}_{attribute}"
+            f"{scheme}_{n}_{attribute}" if n else f"{scheme}_{attribute}"
             for attribute in self.settings.other.attributes
             for scheme, nlist in self.block_schemes
             for n in nlist

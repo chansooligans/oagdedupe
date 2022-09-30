@@ -18,7 +18,7 @@ settings = Settings(
     other=SettingsOther(
         cpus=15,  # parallelize distance computations
         attributes=attributes,  # list of entity attribute names
-        path_database="./.dedupe/test.db",  # where to save the sqlite database holding intermediate data
+        path_database="./.dedupe/test.db",  # where to save the database holding intermediate data
         path_model="./.dedupe/test_model",  # where to save the model
         label_studio={
             "port": 8089,  # label studio port
