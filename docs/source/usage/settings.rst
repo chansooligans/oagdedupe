@@ -18,7 +18,7 @@ Make a `dedupe.settings.Settings` object. For example:
          k=3, # max_len of block conjunctions
          cpus=20,  # parallelize distance computations
          attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
-         path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
+         path_database="postgresql+psycopg2://username:password@0.0.0.0:8000/db",  # where to save the sqlite database holding intermediate data
          db_schema="dedupe",
          path_model="./.dedupe/test_model",  # where to save the model
          label_studio={

@@ -12,7 +12,7 @@ from pydantic import BaseModel, BaseSettings
 class SettingsService(BaseModel):
     """settings for a service"""
 
-    host: str = "http://172.22.39.26"
+    host: str = "http://0.0.0.0"
 
     port: int = 8089
 
@@ -55,7 +55,7 @@ class SettingsOther(BaseModel):
 
     """path to database"""
     path_database: str = (
-        "postgresql+psycopg2://username:password@172.22.39.26:8000/db"
+        "postgresql+psycopg2://username:password@0.0.0.0:8000/db"
     )
 
     """database schema"""

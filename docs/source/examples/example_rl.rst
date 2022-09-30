@@ -13,7 +13,7 @@ Record Linkage Example
     import pandas as pd
     pd.options.display.precision = 12
     from sqlalchemy import create_engine
-    engine = create_engine("postgresql+psycopg2://username:password@172.22.39.26:8000/db")
+    engine = create_engine("postgresql+psycopg2://username:password@0.0.0.0:8000/db")
 
     # %%
     settings = Settings(
@@ -25,7 +25,7 @@ Record Linkage Example
             k=3,
             cpus=20,  # parallelize distance computations
             attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
-            path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
+            path_database="postgresql+psycopg2://username:password@0.0.0.0:8000/db",  # where to save the sqlite database holding intermediate data
             db_schema="dedupe_rl",
             path_model="./.dedupe/test_model_rl",  # where to save the model
             label_studio={

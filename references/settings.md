@@ -49,13 +49,13 @@ a settings file is saved to deduper_settings_{name}.json
     "path_database": ".dedupe/test.db",
     "path_model": ".dedupe/test_model",
     "label_studio": {
-      "host": "http://172.22.39.26",
+      "host": "http://0.0.0.0",
       "port": 8089,
       "api_key": "bc66ff77abeefc91a5fecd031fc0c238f9ad4814",
       "description": "gs test project"
     },
     "fast_api": {
-      "host": "http://172.22.39.26",
+      "host": "http://0.0.0.0",
       "port": 8003
     }
   }
