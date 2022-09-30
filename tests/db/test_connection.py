@@ -41,7 +41,7 @@ def settings() -> Settings:
             attributes=["name", "addr"],  # list of entity attribute names
             path_database=os.environ.get(
                 "DATABASE_URL"
-            ),  # where to save the sqlite database holding intermediate data
+            ),  # where to save the database holding intermediate data
             db_schema="dedupe",
             path_model="./.dedupe_test/test_model",  # where to save the model
             label_studio={
