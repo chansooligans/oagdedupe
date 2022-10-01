@@ -11,19 +11,8 @@ import tqdm
 from typing_extensions import TypedDict
 
 from oagdedupe.block import Blocker
-from oagdedupe.block.sql import LearnerSql
+from oagdedupe.block.sql import LearnerSql, StatsDict
 from oagdedupe.settings import Settings
-
-StatsType = TypedDict(
-    "StatsType",
-    {
-        "n_pairs": int,
-        "positives": int,
-        "negatives": int,
-        "scheme": Tuple[str],
-        "rr": float,
-    },
-)
 
 
 class InvertedIndex:
@@ -34,7 +23,7 @@ class InvertedIndex:
 
     db: LearnerSql
 
-    def get_stats(self, names: Tuple[str], table: str, rl="") -> StatsType:
+    def get_stats(self, names: Tuple[str], table: str, rl="") -> StatsDict:
         """
         Given forward index, compute stats for comparison pairs
         generated using blocking scheme's inverted index.
@@ -55,10 +44,7 @@ class InvertedIndex:
                 - percent of negative pairs blocked
                 - number of pairs generated
         """
-        res = self.db.get_inverted_index_stats(names=names, table=table)
-        res["scheme"] = names
-        res["rr"] = 1 - (res["n_pairs"] / (self.db.n_comparisons))
-        return res
+        return self.db.get_inverted_index_stats(names=names, table=table)
 
 
 class DynamicProgram(InvertedIndex):

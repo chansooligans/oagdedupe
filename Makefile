@@ -31,7 +31,7 @@ test-postgres:
       --env POSTGRES_PASSWORD=password \
       --env POSTGRES_DB=db \
       --env PGDATA=/var/lib/pgsql/data/pgdata \
-      -v `pwd`/.dedupe_test:/var/lib/pgsql/data \
+      -v "`pwd`/.dedupe_test:/var/lib/pgsql/data" \
       chansoosong/oagdedupe-postgres 
 
 label-studio:

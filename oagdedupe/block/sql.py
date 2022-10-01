@@ -9,6 +9,7 @@ from functools import cached_property
 
 import numpy as np
 import pandas as pd
+from typing import Tuple
 from sqlalchemy import create_engine
 
 from oagdedupe import utils as du
@@ -28,6 +29,14 @@ def signatures(names):
             for i, name in enumerate(names)
         ]
     )
+
+@dataclass
+class StatsDict:
+    n_pairs: int
+    positives: int
+    negatives: int
+    scheme: Tuple[str]
+    rr: float
 
 
 @dataclass
@@ -185,9 +194,12 @@ class LearnerSql:
                 ON t2._index_l = t1._index_l
                 AND t2._index_r = t1._index_r
             """
-        )
+        ).fillna(0).loc[0].to_dict()
 
-        return res.fillna(0).loc[0].to_dict()
+        res["scheme"] = names
+        res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
+
+        return StatsDict(**res)
 
     @cached_property
     def blocking_schemes(self):
