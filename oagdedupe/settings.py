@@ -48,7 +48,7 @@ class SettingsOther(BaseModel):
     n_covered: int = 500_000
 
     """entity attribute names"""
-    attributes: Optional[List[str]] = ["name", "addr"]
+    attributes: List[str] = ["name", "addr"]
 
     """number of cpus to use"""
     cpus: int = 1
