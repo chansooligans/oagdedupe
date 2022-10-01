@@ -5,15 +5,25 @@ block scheme conjunctions and uses these to generate comparison pairs.
 import logging
 from functools import cached_property, lru_cache
 from multiprocessing import Pool
-from typing import Union
+from typing import Dict, List, Tuple, Union
 
 import tqdm
+from typing_extensions import TypedDict
 
 from oagdedupe.block import Blocker
 from oagdedupe.block.sql import LearnerSql
 from oagdedupe.settings import Settings
 
-StatsType = dict[str, Union[int, float, tuple]]
+StatsType = TypedDict(
+    "StatsType",
+    {
+        "n_pairs": int,
+        "positives": int,
+        "negatives": int,
+        "scheme": Tuple[str],
+        "rr": float,
+    },
+)
 
 
 class InvertedIndex:
@@ -22,9 +32,9 @@ class InvertedIndex:
     where keys are signatures and values are arrays of entity IDs
     """
 
-    def get_stats(
-        self, names: tuple, table: str, rl=""
-    ) -> dict[str, StatsType]:
+    db: LearnerSql
+
+    def get_stats(self, names: Tuple[str], table: str, rl="") -> StatsType:
         """
         Given forward index, compute stats for comparison pairs
         generated using blocking scheme's inverted index.
@@ -57,8 +67,11 @@ class DynamicProgram(InvertedIndex):
     to construct best conjunction
     """
 
+    db: LearnerSql
+    settings: Settings
+
     @lru_cache
-    def score(self, arr: tuple) -> StatsType:
+    def score(self, arr: Tuple[str]) -> StatsType:
         """
         Wraps get_stats() function with @lru_cache decorator for caching.
 
@@ -80,14 +93,14 @@ class DynamicProgram(InvertedIndex):
             & (sum(["_ngrams" in _ for _ in x["scheme"]]) <= 1)
         )
 
-    def _max_key(self, x: StatsType) -> tuple[int]:
+    def _max_key(self, x: StatsType) -> Tuple[float, int, int]:
         """
         block scheme stats ordering
         """
         return (x["rr"], x["positives"], -x["negatives"])
 
     def _filter_and_sort(
-        self, dp: list[StatsType], n: int, scores: list[StatsType]
+        self, dp: List[StatsType], n: int, scores: List[StatsType]
     ):
         """
         apply filters and sort block schemes
@@ -96,7 +109,7 @@ class DynamicProgram(InvertedIndex):
         dp[n] = max(filtered, key=self._max_key)
         return dp
 
-    def get_best(self, scheme: tuple) -> list[StatsType]:
+    def get_best(self, scheme: Tuple[str]) -> List[StatsType]:
         """
         Dynamic programming implementation to get best conjunction.
 
@@ -105,7 +118,9 @@ class DynamicProgram(InvertedIndex):
         scheme: tuple
             tuple of block schemes
         """
-        dp = [None for _ in range(self.settings.other.k)]
+        dp = [
+            None for _ in range(self.settings.other.k)
+        ]  # type: List[StatsType]
         dp[0] = self.score(scheme)
 
         if (dp[0]["positives"] == 0) or (dp[0]["rr"] < 0.99):
@@ -134,7 +149,7 @@ class Conjunctions(DynamicProgram):
         self.db = LearnerSql(settings=self.settings)
 
     @property
-    def _conjunctions(self) -> list[list[StatsType]]:
+    def _conjunctions(self) -> List[List[StatsType]]:
         """
         Computes conjunctions for each block scheme in parallel
         """
@@ -148,7 +163,7 @@ class Conjunctions(DynamicProgram):
         return res
 
     @cached_property
-    def conjunctions_list(self) -> list[StatsType]:
+    def conjunctions_list(self) -> List[StatsType]:
         """
         attribute containing list of conjunctions;
         sorted by reduction ratio, positive coverage, negative coverage
