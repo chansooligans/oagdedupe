@@ -1,4 +1,4 @@
-"""Contains object to query and manipulate data from postgres 
+"""Contains object to query and manipulate data from postgres
 to construct inverted index and comparison pairs.
 
 This module is only used by oagdedupe.block.learner
@@ -6,10 +6,10 @@ This module is only used by oagdedupe.block.learner
 
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from typing import Tuple
 from sqlalchemy import create_engine
 
 from oagdedupe import utils as du
@@ -30,6 +30,7 @@ def signatures(names):
         ]
     )
 
+
 @dataclass
 class StatsDict:
     n_pairs: int
@@ -37,6 +38,9 @@ class StatsDict:
     negatives: int
     scheme: Tuple[str]
     rr: float
+
+    def __hash__(self):
+        return hash(self.scheme)
 
 
 @dataclass
@@ -76,8 +80,8 @@ class LearnerSql:
 
     def _inv_idx_query(self, names, table, col="_index_l"):
         return f"""
-        SELECT 
-            {signatures(names)}, 
+        SELECT
+            {signatures(names)},
             unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
         FROM {self.settings.other.db_schema}.{table}
         GROUP BY {", ".join(self._aliases(names))}
@@ -128,7 +132,7 @@ class LearnerSql:
             f"""
             INSERT INTO {self.settings.other.db_schema}.{newtable}
             (
-                WITH 
+                WITH
                     inverted_index AS (
                         {self._inv_idx_query(names, table)}
                     ),
@@ -169,9 +173,10 @@ class LearnerSql:
         ----------
         pd.DataFrame
         """
-        res = self.query(
-            f"""
-            WITH 
+        res = (
+            self.query(
+                f"""
+            WITH
                 inverted_index AS (
                     {self._inv_idx_query(names, table)}
                 ),
@@ -185,7 +190,7 @@ class LearnerSql:
                     SELECT _index_l, _index_r, label
                     FROM {self.settings.other.db_schema}.labels
                 )
-            SELECT 
+            SELECT
                 count(*) as n_pairs,
                 SUM(CASE WHEN t2.label = 1 THEN 1 ELSE 0 END) positives,
                 SUM(CASE WHEN t2.label = 0 THEN 1 ELSE 0 END) negatives
@@ -194,7 +199,11 @@ class LearnerSql:
                 ON t2._index_l = t1._index_l
                 AND t2._index_r = t1._index_r
             """
-        ).fillna(0).loc[0].to_dict()
+            )
+            .fillna(0)
+            .loc[0]
+            .to_dict()
+        )
 
         res["scheme"] = names
         res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
@@ -214,7 +223,7 @@ class LearnerSql:
             tuple([x])
             for x in self.query(
                 f"""
-                SELECT * 
+                SELECT *
                 FROM {self.settings.other.db_schema}.blocks_train LIMIT 1
                 """
             )

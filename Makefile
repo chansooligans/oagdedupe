@@ -9,7 +9,7 @@ test-file:
 	poetry run pytest -v -rP $(file)
 
 mypy:
-	mypy --config-file=.mypy.ini $(file)
+	mypy --show-error-codes --config-file=.mypy.ini $(file)
 	
 lint:
 	flake8 --ignore W291 oagdedupe --max-line-length=180
