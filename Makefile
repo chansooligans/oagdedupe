@@ -1,5 +1,5 @@
 export DATABASE_URL=postgresql+psycopg2://username:password@0.0.0.0:8088/db
-.PHONY: tests_all, test-file, test-postgres, lint, serve, postgres, label-studio, book, serve
+.PHONY: tests_all, test-file, mypy, lint, serve, postgres, test-postgres, label-studio, book, serve
 
 tests_all:
 	poetry run pytest -v -rP
@@ -7,6 +7,9 @@ tests_all:
 test-file:
 	export DATABASE_URL="postgresql+psycopg2://username:password@0.0.0.0:8088/db"
 	poetry run pytest -v -rP $(file)
+
+mypy:
+	mypy --config-file=.mypy.ini $(file)
 	
 lint:
 	flake8 --ignore W291 oagdedupe --max-line-length=180

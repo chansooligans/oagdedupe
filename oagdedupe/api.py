@@ -2,10 +2,11 @@ import logging
 from abc import ABCMeta
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import requests
+import sqlalchemy
 from sqlalchemy import create_engine
 
 from oagdedupe.block import Blocker, Conjunctions
@@ -25,9 +26,9 @@ class BaseModel(metaclass=ABCMeta):
     All descendent classes must implement predict, train, and candidates methods.
     """
 
-    """project settings"""
+    settings: Settings
 
-    def predict(self) -> pd.DataFrame:
+    def predict(self) -> Union[pd.DataFrame, Tuple[pd.DataFrame]]:
         """fast-api trains model on latest labels then submits scores to
         postgres
 
@@ -47,7 +48,7 @@ class BaseModel(metaclass=ABCMeta):
         requests.post(f"{self.settings.other.fast_api.url}/predict")
         return self.cluster.get_df_cluster()
 
-    def fit_blocks(self):
+    def fit_blocks(self) -> None:
 
         # fit block scheme conjunctions to full data
         logging.info("building forward indices")
@@ -65,8 +66,13 @@ class BaseModel(metaclass=ABCMeta):
         )
 
     def initialize(
-        self, df=None, df2=None, reset=True, resample=False, n_covered=500
-    ):
+        self,
+        df: pd.DataFrame,
+        df2: Optional[pd.DataFrame] = None,
+        reset: bool = True,
+        resample: bool = False,
+        n_covered: int = 500,
+    ) -> None:
         """learn p(match)"""
 
         self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
@@ -86,31 +92,31 @@ class BaseModel(metaclass=ABCMeta):
         )
 
     @cached_property
-    def engine(self):
+    def engine(self) -> sqlalchemy.engine:
         return create_engine(self.settings.other.path_database)
 
     @cached_property
-    def init(self):
+    def init(self) -> Initialize:
         return Initialize(settings=self.settings)
 
     @cached_property
-    def orm(self):
+    def orm(self) -> DatabaseORM:
         return DatabaseORM(settings=self.settings)
 
     @cached_property
-    def blocker(self):
+    def blocker(self) -> Blocker:
         return Blocker(settings=self.settings)
 
     @cached_property
-    def cover(self):
+    def cover(self) -> Conjunctions:
         return Conjunctions(settings=self.settings)
 
     @cached_property
-    def distance(self):
+    def distance(self) -> AllJaro:
         return AllJaro(settings=self.settings)
 
     @cached_property
-    def cluster(self):
+    def cluster(self) -> ConnectedComponents:
         return ConnectedComponents(settings=self.settings)
 
 

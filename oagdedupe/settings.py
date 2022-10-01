@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     folder: Path = Path("./.dedupe")
 
     """other project settings"""
-    other: Optional[SettingsOther] = SettingsOther()
+    other: SettingsOther = SettingsOther()
 
     class Config:
         env_prefix = "deduper_"
