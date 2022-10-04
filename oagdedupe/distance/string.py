@@ -3,15 +3,13 @@
 
 from dataclasses import dataclass
 
-import ray
-from jellyfish import jaro_winkler_similarity
 from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
-from oagdedupe.base import BaseDistance
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
+from oagdedupe.typing import SESSION, SUBQUERY, TABLE
 
 
 @dataclass
@@ -27,7 +25,7 @@ class AllJaro(DatabaseORM):
         self.orm = DatabaseORM(settings=self.settings)
 
     @du.recordlinkage
-    def fields_table(self, table, rl=""):
+    def fields_table(self, table: str, rl: str = "") -> tuple:
         mapping = {
             "comparisons": "Train",
             "full_comparisons": "maindf",
@@ -39,7 +37,7 @@ class AllJaro(DatabaseORM):
             aliased(getattr(self, mapping[table] + rl)),
         )
 
-    def get_attributes(self, session, table):
+    def get_attributes(self, session: SESSION, table: TABLE) -> SUBQUERY:
         dataL, dataR = self.fields_table(table.__tablename__)
         return (
             session.query(
@@ -60,7 +58,7 @@ class AllJaro(DatabaseORM):
             .order_by(table._index_l, table._index_r)
         ).subquery()
 
-    def compute_distances(self, subquery):
+    def compute_distances(self, subquery: SUBQUERY) -> select:
         return select(
             *(
                 func.jarowinkler(
@@ -72,7 +70,7 @@ class AllJaro(DatabaseORM):
             subquery,
         )
 
-    def save_comparison_attributes(self, table, newtable):
+    def save_comparison_attributes(self, table: TABLE, newtable: TABLE) -> None:
         """
         merge attributes on to dataframe with just comparison pair indices
         assign "_l" and "_r" suffices
@@ -94,14 +92,14 @@ class AllJaro(DatabaseORM):
             session.execute(str(stmt) + " ON CONFLICT DO NOTHING")
             session.commit()
 
-    def save_distances(self, table, newtable):
+    def save_distances(self, table: TABLE, newtable: TABLE) -> None:
         """
         get comparison attributes from table then compute distances
         for each pair
 
         Parameters
         ----------
-        table: sqlalchemy.orm.decl_api.DeclarativeMeta
+        table: TABLE
         """
 
         # reset table

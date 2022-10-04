@@ -1,4 +1,4 @@
-"""Contains object to query and manipulate data from postgres 
+"""Contains object to query and manipulate data from postgres
 to construct inverted index and comparison pairs.
 
 This module is only used by oagdedupe.block.learner
@@ -6,6 +6,7 @@ This module is only used by oagdedupe.block.learner
 
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,6 +32,18 @@ def signatures(names):
 
 
 @dataclass
+class StatsDict:
+    n_pairs: int
+    positives: int
+    negatives: int
+    scheme: Tuple[str]
+    rr: float
+
+    def __hash__(self):
+        return hash(self.scheme)
+
+
+@dataclass
 class LearnerSql:
     """
     Object contains methods to query database using sqlalchemy CORE;
@@ -39,7 +52,7 @@ class LearnerSql:
 
     settings: Settings
 
-    def query(self, sql):
+    def query(self, sql: str) -> pd.DataFrame:
         """
         for parallel implementation, need to create separate engine
         for each process
@@ -49,7 +62,7 @@ class LearnerSql:
         engine.dispose()
         return res
 
-    def truncate_table(self, table):
+    def truncate_table(self, table: str) -> None:
         engine = create_engine(self.settings.other.path_database)
         engine.execute(
             f"""
@@ -59,23 +72,25 @@ class LearnerSql:
         engine.dispose()
 
     @property
-    def comptab_map(self):
+    def comptab_map(self) -> Dict[str, str]:
         return {"blocks_train": "comparisons", "blocks_df": "full_comparisons"}
 
-    def _aliases(self, names):
+    def _aliases(self, names: Tuple[str]) -> List[str]:
         return [f"signature{i}" for i in range(len(names))]
 
-    def _inv_idx_query(self, names, table, col="_index_l"):
+    def _inv_idx_query(
+        self, names: Tuple[str], table: str, col: str = "_index_l"
+    ) -> str:
         return f"""
-        SELECT 
-            {signatures(names)}, 
+        SELECT
+            {signatures(names)},
             unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
         FROM {self.settings.other.db_schema}.{table}
         GROUP BY {", ".join(self._aliases(names))}
         """
 
     @du.recordlinkage
-    def _pairs_query(self, names, rl=""):
+    def _pairs_query(self, names: Tuple[str], rl: str = "") -> str:
         if rl == "":
             where = "WHERE t1._index_l < t2._index_r"
         else:
@@ -92,7 +107,9 @@ class LearnerSql:
             """
 
     @du.recordlinkage
-    def save_comparison_pairs(self, names, table, rl=""):
+    def save_comparison_pairs(
+        self, names: Tuple[str], table: str, rl: str = ""
+    ) -> None:
         """
         see dedupe.block.learner.InvertedIndex;
 
@@ -119,7 +136,7 @@ class LearnerSql:
             f"""
             INSERT INTO {self.settings.other.db_schema}.{newtable}
             (
-                WITH 
+                WITH
                     inverted_index AS (
                         {self._inv_idx_query(names, table)}
                     ),
@@ -133,7 +150,7 @@ class LearnerSql:
         )
         engine.dispose()
 
-    def get_n_pairs(self, table):
+    def get_n_pairs(self, table: str) -> pd.DataFrame:
         newtable = self.comptab_map[table]
         return self.query(
             f"""
@@ -142,7 +159,9 @@ class LearnerSql:
         )["count"].values[0]
 
     @du.recordlinkage
-    def get_inverted_index_stats(self, names, table, rl=""):
+    def get_inverted_index_stats(
+        self, names: Tuple[str], table: str, rl: str = ""
+    ) -> StatsDict:
         """
         Given forward index, construct inverted index.
         Then for each row in inverted index, get all "nC2" distinct
@@ -160,9 +179,10 @@ class LearnerSql:
         ----------
         pd.DataFrame
         """
-        res = self.query(
-            f"""
-            WITH 
+        res = (
+            self.query(
+                f"""
+            WITH
                 inverted_index AS (
                     {self._inv_idx_query(names, table)}
                 ),
@@ -176,7 +196,7 @@ class LearnerSql:
                     SELECT _index_l, _index_r, label
                     FROM {self.settings.other.db_schema}.labels
                 )
-            SELECT 
+            SELECT
                 count(*) as n_pairs,
                 SUM(CASE WHEN t2.label = 1 THEN 1 ELSE 0 END) positives,
                 SUM(CASE WHEN t2.label = 0 THEN 1 ELSE 0 END) negatives
@@ -185,12 +205,19 @@ class LearnerSql:
                 ON t2._index_l = t1._index_l
                 AND t2._index_r = t1._index_r
             """
+            )
+            .fillna(0)
+            .loc[0]
+            .to_dict()
         )
 
-        return res.fillna(0).loc[0].to_dict()
+        res["scheme"] = names
+        res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
+
+        return StatsDict(**res)
 
     @cached_property
-    def blocking_schemes(self):
+    def blocking_schemes(self) -> List[Tuple[str]]:
         """
         Get all blocking schemes
 
@@ -202,7 +229,7 @@ class LearnerSql:
             tuple([x])
             for x in self.query(
                 f"""
-                SELECT * 
+                SELECT *
                 FROM {self.settings.other.db_schema}.blocks_train LIMIT 1
                 """
             )
@@ -211,13 +238,13 @@ class LearnerSql:
         ]
 
     @du.recordlinkage_both
-    def n_df(self, rl=""):
+    def n_df(self, rl: str = "") -> pd.DataFrame:
         return self.query(
             f"SELECT count(*) FROM {self.settings.other.db_schema}.df{rl}"
         )["count"].values[0]
 
     @cached_property
-    def n_comparisons(self):
+    def n_comparisons(self) -> float:
         """number of total possible comparisons"""
         n = self.n_df()
         if self.settings.other.dedupe == False:
@@ -225,7 +252,7 @@ class LearnerSql:
         return (n * (n - 1)) / 2
 
     @property
-    def min_rr(self):
+    def min_rr(self) -> float:
         """minimum reduction ratio"""
         reduced = self.n_comparisons - self.settings.other.max_compare
         return reduced / self.n_comparisons

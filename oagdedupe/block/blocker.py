@@ -4,6 +4,7 @@ creating forward index.
 
 import logging
 from dataclasses import dataclass
+from typing import List, Tuple
 
 import pandas as pd
 
@@ -27,7 +28,7 @@ class Blocker(BlockSchemes, DatabaseORM):
 
     settings: Settings
 
-    def query_blocks(self, table, columns):
+    def query_blocks(self, table: str, columns: List[str]) -> str:
         """
         Builds SQL query used to build forward indices.
 
@@ -52,7 +53,9 @@ class Blocker(BlockSchemes, DatabaseORM):
         """
 
     @du.recordlinkage_repeat
-    def add_scheme(self, table, col, exists, rl=""):
+    def add_scheme(
+        self, table: str, col: str, exists: List[str], rl: str = ""
+    ) -> None:
         """
         check if column is in exists
         if not, add to blocks_{tablle}
@@ -88,7 +91,7 @@ class Blocker(BlockSchemes, DatabaseORM):
         return
 
     @du.recordlinkage_repeat
-    def build_forward_indices(self, rl=""):
+    def build_forward_indices(self, rl: str = "") -> None:
         """
         Executes SQL queries to build forward indices for train datasets
         """
@@ -97,7 +100,7 @@ class Blocker(BlockSchemes, DatabaseORM):
         )
 
     @du.recordlinkage_repeat
-    def init_forward_index_full(self, rl=""):
+    def init_forward_index_full(self, rl: str = "") -> None:
         """initialize full index table"""
         self.engine.execute(
             f"""
@@ -111,7 +114,7 @@ class Blocker(BlockSchemes, DatabaseORM):
         """
         )
 
-    def build_forward_indices_full(self, columns):
+    def build_forward_indices_full(self, columns: Tuple[str]) -> None:
         """
         Executes SQL queries to build forward indices on full data.
 

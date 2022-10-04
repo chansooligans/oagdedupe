@@ -7,17 +7,25 @@ import pandas as pd
 import pytest
 from faker import Faker
 from pytest import MonkeyPatch
+from typing import Tuple
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.block.sql import LearnerSql
+from oagdedupe.block.sql import LearnerSql, StatsDict
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.settings import Settings, SettingsOther
 
 db_url = os.environ.get("DATABASE_URL")
 engine = create_engine(db_url)
 
+
+@pytest.fixture(scope="module")
+def statsdict():
+    return StatsDict(
+        scheme=["find_ngrams_4_postcode"], n_pairs=7, 
+        positives=2, negatives=1, rr=8/15
+        )
 
 def seed_blocks_train():
     engine.execute(
@@ -59,11 +67,13 @@ def seed_labels():
 
 class TestSQL(unittest.TestCase):
     @pytest.fixture(autouse=True)
-    def prepare_fixtures(self, settings):
+    def prepare_fixtures(self, settings, statsdict):
         # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
+        self.statsdict = statsdict
 
     def setUp(self):
+        self.monkeypatch = MonkeyPatch()
         self.init = Initialize(settings=self.settings)
         self.init.reset_tables()
         self.sql = LearnerSql(settings=self.settings)
@@ -88,11 +98,13 @@ class TestSQL(unittest.TestCase):
         self.assertEqual(len(df), 6)
 
     def test_get_inverted_index_stats(self):
-        res = self.sql.get_inverted_index_stats(
-            names=["find_ngrams_4_postcode"], table="blocks_train"
-        )
-        self.assertDictEqual(
-            res, {"n_pairs": 7, "positives": 2, "negatives": 1}
+        with self.monkeypatch.context() as m:
+            m.setattr(LearnerSql, "n_comparisons", 15)
+            res = self.sql.get_inverted_index_stats(
+                names=["find_ngrams_4_postcode"], table="blocks_train"
+            )
+        self.assertEqual(
+            res, self.statsdict 
         )
 
     def test_save_comparison_pairs(self):

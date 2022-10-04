@@ -1,16 +1,20 @@
 """This module contains blocking schemes
 """
+from typing import Dict, List, Optional, Tuple
+
 from oagdedupe.settings import Settings
 
 
-class BlockSchemesHelper:
+class BlockSchemes:
     """
     Attributes used to help build SQL queries, which are used to
     build forward indices.
     """
 
+    settings: Settings
+
     @property
-    def block_scheme_mapping(self):
+    def block_scheme_mapping(self) -> Dict[str, str]:
         """
         helper to build column names in query
         """
@@ -29,7 +33,7 @@ class BlockSchemesHelper:
         return mapping
 
     @property
-    def block_scheme_sql(self):
+    def block_scheme_sql(self) -> List[str]:
         """
         helper to build column names in query
         """
@@ -42,16 +46,8 @@ class BlockSchemesHelper:
             for n in nlist
         ]
 
-
-class BlockSchemes(BlockSchemesHelper):
-    """
-    Contains all block schemes.
-    """
-
-    settings: Settings
-
     @property
-    def block_schemes(self):
+    def block_schemes(self) -> List[Tuple[str, List[Optional[int]]]]:
         """
         List of tuples containing block scheme name and parameters.
         The block scheme name should correspond to a postgres function
@@ -65,7 +61,7 @@ class BlockSchemes(BlockSchemesHelper):
         ]
 
     @property
-    def block_scheme_names(self):
+    def block_scheme_names(self) -> List[str]:
         """
         Convenience property to list all block schemes
         """

@@ -5,39 +5,39 @@ import pytest
 from pytest import MonkeyPatch, fixture
 
 from oagdedupe.block.learner import Conjunctions, DynamicProgram
-from oagdedupe.block.sql import LearnerSql
+from oagdedupe.block.sql import LearnerSql, StatsDict
 from oagdedupe.settings import (Settings, SettingsLabelStudio, SettingsOther,
                                 SettingsService)
 
 
 @pytest.fixture
 def stats():
-    return {
-        "n_pairs": 10,
-        "scheme": tuple(["scheme"]),
-        "rr": 0.999,
-        "positives": 100,
-        "negatives": 1,
-    }
+    return StatsDict(
+        n_pairs=10,
+        scheme=tuple(["scheme"]),
+        rr=0.999,
+        positives=100,
+        negatives=1,
+    )
 
 
 @pytest.fixture
 def statslist():
     return [
-        {
-            "n_pairs": 100,
-            "scheme": tuple(["scheme"]),
-            "rr": 0.9,
-            "positives": 100,
-            "negatives": 1,
-        },
-        {
-            "n_pairs": 100,
-            "scheme": tuple(["scheme"]),
-            "rr": 0.99,
-            "positives": 1,
-            "negatives": 100,
-        },
+        StatsDict(
+            n_pairs=100,
+            scheme=tuple(["scheme"]),
+            rr=0.9,
+            positives=100,
+            negatives=1,
+        ),
+        StatsDict(
+            n_pairs=100,
+            scheme=tuple(["scheme"]),
+            rr=0.99,
+            positives=1,
+            negatives=100,
+        ),
     ]
 
 
@@ -45,36 +45,36 @@ def statslist():
 def conjunctions():
     return [
         [
-            {
-                "n_pairs": 100,
-                "scheme": tuple(["scheme"]),
-                "rr": 0.9,
-                "positives": 100,
-                "negatives": 1,
-            },
-            {
-                "n_pairs": 100,
-                "scheme": tuple(["scheme"]),
-                "rr": 0.99,
-                "positives": 1,
-                "negatives": 100,
-            },
+            StatsDict(
+                n_pairs=100,
+                scheme=tuple(["scheme"]),
+                rr=0.9,
+                positives=100,
+                negatives=1,
+            ),
+            StatsDict(
+                n_pairs=100,
+                scheme=tuple(["scheme"]),
+                rr=0.99,
+                positives=1,
+                negatives=100,
+            ),
         ],
         [
-            {
-                "n_pairs": 100,
-                "scheme": tuple(["scheme"]),
-                "rr": 0.9,
-                "positives": 100,
-                "negatives": 1,
-            },
-            {
-                "n_pairs": 100,
-                "scheme": tuple(["scheme"]),
-                "rr": 0.99,
-                "positives": 1,
-                "negatives": 100,
-            },
+            StatsDict(
+                n_pairs=100,
+                scheme=tuple(["scheme"]),
+                rr=0.9,
+                positives=100,
+                negatives=1,
+            ),
+            StatsDict(
+                n_pairs=100,
+                scheme=tuple(["scheme"]),
+                rr=0.99,
+                positives=1,
+                negatives=100,
+            ),
         ],
         None,
     ]
@@ -96,7 +96,13 @@ class TestConjunctions(unittest.TestCase):
 
     def test_get_stats(self):
         def mockstats(*args, **kwargs):
-            return {"n_pairs": 10, "positives": 100, "negatives": 1}
+            return StatsDict(
+                n_pairs=10,
+                scheme=tuple(["scheme"]),
+                rr=0.999,
+                positives=100,
+                negatives=1,
+            )
 
         with self.monkeypatch.context() as m:
             m.setattr(LearnerSql, "get_inverted_index_stats", mockstats)
@@ -104,20 +110,20 @@ class TestConjunctions(unittest.TestCase):
 
             res = self.cover.get_stats(names=tuple(["scheme"]), table="table")
 
-        self.assertDictEqual(res, self.stats)
+        self.assertEqual(res, self.stats)
 
     def test__keep_if(self):
         self.assertEqual(self.cover._keep_if(self.stats), True)
 
     def test__max_key(self):
         maxstat = max(self.statslist, key=self.cover._max_key)
-        self.assertEqual(maxstat["rr"], 0.99)
+        self.assertEqual(maxstat.rr, 0.99)
 
     def test__filter_and_sort(self):
         dp = self.cover._filter_and_sort(
             dp=self.statslist, n=1, scores=self.statslist
         )
-        self.assertEqual(dp[-1]["rr"], 0.99)
+        self.assertEqual(dp[-1].rr, 0.99)
 
     def test_get_best(self):
         def mockstats(*args, **kwargs):
@@ -127,13 +133,13 @@ class TestConjunctions(unittest.TestCase):
             m.setattr(DynamicProgram, "score", mockstats)
             m.setattr(LearnerSql, "blocking_schemes", list(tuple(["scheme"])))
             res = self.cover.get_best(tuple(["scheme"]))
-        self.assertDictEqual(res[0], self.stats)
+        self.assertEqual(res[0], self.stats)
 
     def test_conjunctions_list(self):
         with self.monkeypatch.context() as m:
             m.setattr(Conjunctions, "_conjunctions", self.conjunctions)
             res = self.cover.conjunctions_list
-        self.assertEqual(res[0]["rr"], 0.99)
+        self.assertEqual(res[0].rr, 0.99)
         self.monkeypatch.delattr(Conjunctions, "_conjunctions")
 
     def test__check_rr(self):

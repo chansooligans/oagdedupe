@@ -48,7 +48,7 @@ class SettingsOther(BaseModel):
     n_covered: int = 500_000
 
     """entity attribute names"""
-    attributes: Optional[List[str]] = ["name", "addr"]
+    attributes: List[str] = ["name", "addr"]
 
     """number of cpus to use"""
     cpus: int = 1
@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     folder: Path = Path("./.dedupe")
 
     """other project settings"""
-    other: Optional[SettingsOther] = SettingsOther()
+    other: SettingsOther = SettingsOther()
 
     class Config:
         env_prefix = "deduper_"

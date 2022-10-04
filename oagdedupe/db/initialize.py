@@ -1,13 +1,16 @@
 import itertools
 import logging
 from dataclasses import dataclass
+from typing import List
 
+import sqlalchemy
 from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
+from oagdedupe.typing import SESSION, TABLE
 
 
 @dataclass
@@ -35,7 +38,7 @@ class Initialize(DatabaseORM):
     settings: Settings
 
     @du.recordlinkage_repeat
-    def _init_df(self, df=None, df_link=None, rl=""):
+    def _init_df(self, df=None, df_link=None, rl: str = "") -> None:
         """load df and/or df_link"""
         logging.info("building %s", f"df{rl}")
         if "_index" in locals()["df"].columns:
@@ -45,7 +48,7 @@ class Initialize(DatabaseORM):
             to_table=getattr(self, f"maindf{rl}"),
         )
 
-    def _sample(self, session, table, n):
+    def _sample(self, session: SESSION, table: TABLE, n: int) -> List[dict]:
         """samples from df or df_link"""
         data = session.query(table).order_by(func.random()).limit(n).all()
         return self._to_dicts(data)
@@ -60,7 +63,7 @@ class Initialize(DatabaseORM):
             for d in data
         ]
 
-    def _init_pos(self, session):
+    def _init_pos(self, session: SESSION) -> None:
         """get positive samples: 4 copies of single sample"""
         records = self._sample(session, self.maindf, 1)
         for i in range(-3, 1):
@@ -72,7 +75,7 @@ class Initialize(DatabaseORM):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _init_neg(self, session, rl=""):
+    def _init_neg(self, session: SESSION, rl: str = "") -> None:
         """get negative samples: 10 random samples"""
         records = self._sample(session, getattr(self, f"maindf{rl}"), 10)
         for r in records:
@@ -82,7 +85,7 @@ class Initialize(DatabaseORM):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _init_unlabelled(self, session, rl=""):
+    def _init_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """create unlabelled samples: 'n' random samples"""
         records = self._sample(
             session, getattr(self, f"maindf{rl}"), self.settings.other.n
@@ -94,7 +97,7 @@ class Initialize(DatabaseORM):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _init_train(self, session, rl=""):
+    def _init_train(self, session: SESSION, rl: str = "") -> None:
         """create train by concatenating positive, negative,
         and unlabelled samples"""
         logging.info("building %s", f"train{rl}")
@@ -110,7 +113,7 @@ class Initialize(DatabaseORM):
                 session.merge(table)
         session.commit()
 
-    def _init_labels(self, session):
+    def _init_labels(self, session: SESSION) -> None:
         """create labels using positive and negative samples
         if positive, set "label" = 1
         if negative, set "label" = 0
@@ -129,7 +132,7 @@ class Initialize(DatabaseORM):
                     session.add(label)
         session.commit()
 
-    def _init_labels_link(self, session):
+    def _init_labels_link(self, session: SESSION) -> None:
         """create labels for record linkage using positive and negative samples
         if positive, link to itself, set "label" = 1
         if negative, link neg to neg_link, set "label" = 0
@@ -147,7 +150,7 @@ class Initialize(DatabaseORM):
                 session.add(label)
         session.commit()
 
-    def _label_distances(self):
+    def _label_distances(self) -> None:
         """
         computes distances between pairs of records from labels table;
         """
@@ -157,7 +160,7 @@ class Initialize(DatabaseORM):
         )
 
     @du.recordlinkage_repeat
-    def _delete_unlabelled(self, session, rl=""):
+    def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
         stmt = delete(getattr(self, f"Train{rl}")).where(
             getattr(self, f"Train{rl}").labelled is False
@@ -166,7 +169,7 @@ class Initialize(DatabaseORM):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _resample_unlabelled(self, session, rl=""):
+    def _resample_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
         self.engine.execute(
             f"""
@@ -182,13 +185,15 @@ class Initialize(DatabaseORM):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _resample(self, session, rl=""):
+    def _resample(self, session: SESSION) -> None:
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
         self._resample_unlabelled(session)
 
     @du.recordlinkage
-    def setup(self, df=None, df2=None, reset=True, resample=False, rl=""):
+    def setup(
+        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
+    ) -> None:
         """
         runs table creation functions
 
