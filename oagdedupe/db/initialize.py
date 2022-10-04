@@ -10,14 +10,7 @@ from oagdedupe import utils as du
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
-
-
-class SESSION(sqlalchemy.orm.session.Session):
-    pass
-
-
-class TABLE(sqlalchemy.orm.decl_api.DeclarativeMeta):
-    pass
+from oagdedupe.typing import SESSION, TABLE
 
 
 @dataclass

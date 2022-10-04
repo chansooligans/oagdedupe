@@ -3,11 +3,14 @@ general queries and database modification
 """
 
 from dataclasses import dataclass
+from typing import List
 
 import pandas as pd
+import sqlalchemy
 
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings
+from oagdedupe.typing import SESSION, SUBQUERY, TABLE
 
 
 @dataclass
@@ -19,7 +22,7 @@ class DatabaseORM(Tables):
 
     settings: Settings
 
-    def get_train(self):
+    def get_train(self) -> pd.DataFrame:
         """
         query the train table
 
@@ -31,7 +34,7 @@ class DatabaseORM(Tables):
             query = session.query(self.Train)
             return pd.read_sql(query.statement, query.session.bind)
 
-    def get_labels(self):
+    def get_labels(self) -> pd.DataFrame:
         """
         query the labels table
 
@@ -43,7 +46,7 @@ class DatabaseORM(Tables):
             query = session.query(self.LabelsDistances)
             return pd.read_sql(query.statement, query.session.bind)
 
-    def get_distances(self):
+    def get_distances(self) -> pd.DataFrame:
         """
         query unlabelled distances for sample data
 
@@ -66,7 +69,7 @@ class DatabaseORM(Tables):
             )
             return pd.read_sql(q.statement, q.session.bind)
 
-    def get_full_distances(self):
+    def get_full_distances(self) -> pd.DataFrame:
         """
         query distances for full data
 
@@ -83,7 +86,7 @@ class DatabaseORM(Tables):
             )
             return pd.read_sql(q.statement, q.session.bind)
 
-    def get_full_comparison_indices(self):
+    def get_full_comparison_indices(self) -> pd.DataFrame:
         """
         query indices of comparison pairs for full data
 
@@ -98,7 +101,7 @@ class DatabaseORM(Tables):
             return pd.read_sql(q.statement, q.session.bind)
 
     @property
-    def compare_cols(self):
+    def compare_cols(self) -> List[str]:
         """
         gets comparison columns with "_l" and "_r" suffices
 
@@ -122,12 +125,14 @@ class DatabaseORM(Tables):
         ]
         return sum(columns, [])
 
-    def labcol(self, table):
-        if "comparisons" in table.__tablename__:
-            return table._index_l.label("drop")
-        return table.label
+    def get_clusters(self) -> pd.DataFrame:
+        """
+        adds cluster IDs to df
 
-    def get_clusters(self):
+        Returns
+        ----------
+        pd.DataFrame
+        """
         with self.Session() as session:
             q = (
                 session.query(self.maindf, self.Clusters.cluster)
@@ -138,7 +143,15 @@ class DatabaseORM(Tables):
             )
             return pd.read_sql(q.statement, q.session.bind)
 
-    def _cluster_subquery(self, session, _type):
+    def _cluster_subquery(self, session: SESSION, _type: bool) -> SUBQUERY:
+        """
+        subquery in get_clsuters_link(); filters clusters to either df or df_link
+        entities
+
+        Returns
+        ----------
+        SUBQUERY
+        """
         return (
             session.query(
                 self.Clusters.cluster,
@@ -149,7 +162,14 @@ class DatabaseORM(Tables):
             .subquery()
         )
 
-    def get_clusters_link(self):
+    def get_clusters_link(self) -> List[pd.DataFrame]:
+        """
+        adds cluster IDs to df and df_link
+
+        Returns
+        ----------
+        List[pd.DataFrame]
+        """
         maindf = {True: self.maindf, False: self.maindf_link}
         with self.Session() as session:
             dflist = []
@@ -165,7 +185,11 @@ class DatabaseORM(Tables):
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
 
-    def _update_table(self, df, to_table):
+    def _update_table(self, df: pd.DataFrame, to_table: TABLE) -> None:
+        """
+        helper function to insert data from df to table;
+        on key conflict, "merge" updates the row
+        """
         with self.Session() as session:
             for r in df.to_dict(orient="records"):
                 for k in r.keys():
@@ -173,7 +197,11 @@ class DatabaseORM(Tables):
                 session.merge(to_table)
             session.commit()
 
-    def bulk_insert(self, df, to_table):
+    def bulk_insert(self, df: pd.DataFrame, to_table: TABLE) -> None:
+        """
+        helper function to insert data from df to table;
+        fails if there are key conflicts
+        """
         with self.Session() as session:
             session.bulk_insert_mappings(to_table, df.to_dict(orient="records"))
             session.commit()
