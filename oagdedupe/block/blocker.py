@@ -4,7 +4,7 @@ creating forward index.
 
 import logging
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 
@@ -114,7 +114,7 @@ class Blocker(BlockSchemes, DatabaseORM):
         """
         )
 
-    def build_forward_indices_full(self, columns: List[str]) -> None:
+    def build_forward_indices_full(self, columns: Tuple[str]) -> None:
         """
         Executes SQL queries to build forward indices on full data.
 

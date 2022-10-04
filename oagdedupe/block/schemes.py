@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 from oagdedupe.settings import Settings
 
 
-class BlockSchemesHelper:
+class BlockSchemes:
     """
     Attributes used to help build SQL queries, which are used to
     build forward indices.
@@ -45,14 +45,6 @@ class BlockSchemesHelper:
             for scheme, nlist in self.block_schemes
             for n in nlist
         ]
-
-
-class BlockSchemes(BlockSchemesHelper):
-    """
-    Contains all block schemes.
-    """
-
-    settings: Settings
 
     @property
     def block_schemes(self) -> List[Tuple[str, List[Optional[int]]]]:
