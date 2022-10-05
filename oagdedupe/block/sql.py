@@ -111,8 +111,6 @@ class LearnerSql:
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
         """
-        see dedupe.block.learner.InvertedIndex;
-
         Given forward index, construct inverted index.
         Then for each row in inverted index, get all "nC2" distinct
         combinations of size 2 from the array.
@@ -247,7 +245,7 @@ class LearnerSql:
     def n_comparisons(self) -> float:
         """number of total possible comparisons"""
         n = self.n_df()
-        if self.settings.other.dedupe == False:
+        if not self.settings.other.dedupe:
             return np.product(n)
         return (n * (n - 1)) / 2
 

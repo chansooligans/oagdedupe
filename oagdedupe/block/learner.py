@@ -5,28 +5,34 @@ block scheme conjunctions and uses these to generate comparison pairs.
 import logging
 from functools import cached_property, lru_cache
 from multiprocessing import Pool
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Protocol, Tuple
 
 import tqdm
-from typing_extensions import TypedDict
 
-from oagdedupe.block import Blocker
+from oagdedupe._typing import ENGINE
+from oagdedupe.block.blocker import Blocker
 from oagdedupe.block.sql import LearnerSql, StatsDict
 from oagdedupe.settings import Settings
 
 
-class InvertedIndex:
-    """
-    Used to build inverted index. An inverted index is dataframe
-    where keys are signatures and values are arrays of entity IDs
-    """
-
+class SettingsEnabler(Protocol):
+    settings: Settings
     db: LearnerSql
+
+
+class DynamicProgram(SettingsEnabler):
+    """
+    Given a block scheme, use dynamic programming algorithm getBest()
+    to construct best conjunction
+    """
 
     def get_stats(self, names: Tuple[str], table: str, rl="") -> StatsDict:
         """
         Given forward index, compute stats for comparison pairs
         generated using blocking scheme's inverted index.
+
+        An inverted index is dataframe
+        where keys are signatures and values are arrays of entity IDs
 
         Parameters
         ----------
@@ -45,16 +51,6 @@ class InvertedIndex:
                 - number of pairs generated
         """
         return self.db.get_inverted_index_stats(names=names, table=table)
-
-
-class DynamicProgram(InvertedIndex):
-    """
-    Given a block scheme, use dynamic programming algorithm getBest()
-    to construct best conjunction
-    """
-
-    db: LearnerSql
-    settings: Settings
 
     @lru_cache
     def score(self, arr: Tuple[str]) -> StatsDict:
@@ -174,7 +170,9 @@ class Conjunctions(DynamicProgram):
         """
         return stats.rr < self.db.min_rr
 
-    def _add_new_comparisons(self, stats: StatsDict, table: str) -> int:
+    def _add_new_comparisons(
+        self, stats: StatsDict, table: str, engine: ENGINE
+    ) -> int:
         """
         Computes pairs for conjunction and appends to comparisons or
         full_comparisons table.
@@ -199,12 +197,14 @@ class Conjunctions(DynamicProgram):
             total number of pairs gathered so far
         """
         if table == "blocks_df":
-            self.blocker.build_forward_indices_full(stats.scheme)
+            self.blocker.build_forward_indices_full(stats.scheme, engine)
         self.db.save_comparison_pairs(names=stats.scheme, table=table)
         n = self.db.get_n_pairs(table=table)
         return n
 
-    def save_comparisons(self, table: str, n_covered: int) -> None:
+    def save_comparisons(
+        self, table: str, n_covered: int, engine: ENGINE
+    ) -> None:
         """
         Iterates through best conjunction from best to worst.
 
@@ -237,7 +237,7 @@ class Conjunctions(DynamicProgram):
                 """
                 )
                 return
-            n_pairs = self._add_new_comparisons(stats, table)
+            n_pairs = self._add_new_comparisons(stats, table, engine)
             if n_pairs // stepsize > step:
                 logging.info(f"""{n_pairs} comparison pairs gathered""")
                 step = n_pairs // stepsize

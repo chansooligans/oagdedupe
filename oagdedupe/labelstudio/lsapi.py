@@ -1,22 +1,25 @@
 import json
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Protocol
 
 import pandas as pd
 import requests
 
+from oagdedupe._typing import Annotation, Project, Task, TaskList
 from oagdedupe.settings import Settings
-from oagdedupe.typing import Annotation, Project, Task, TaskList
 
 
-@dataclass
-class APIProjects:
+class SettingsEnabler(Protocol):
+    settings: Settings
+    url: str
+    headers: Dict[str, str]
+    get_tasks: Callable
+
+
+class APIProjects(SettingsEnabler):
     """
     Interface to get/post Projects from LabelStudio
     """
-
-    url: str
-    headers: Dict[str, str]
 
     def list_projects(self) -> List[Project]:
         """
@@ -66,14 +69,10 @@ class APIProjects:
         return Project.parse_obj(json.loads(resp.content))
 
 
-@dataclass
-class APITasks:
+class APITasks(SettingsEnabler):
     """
     Interface to get/post Tasks from LabelStudio
     """
-
-    url: str
-    headers: Dict[str, str]
 
     def get_tasks(self, project_id: int) -> TaskList:
         """
@@ -114,14 +113,10 @@ class APITasks:
             json.loads(resp.content)
 
 
-@dataclass
-class APIAnnotations:
+class APIAnnotations(SettingsEnabler):
     """
     Interface to get/post Annotations from LabelStudio
     """
-
-    url: str
-    headers: Dict[str, str]
 
     def _get_annotationlist_for_task(self, task_id: int) -> List[Annotation]:
         """
@@ -178,15 +173,10 @@ class APIAnnotations:
         return pd.DataFrame(labels).T
 
 
-@dataclass
-class APIWebhooks:
+class APIWebhooks(SettingsEnabler):
     """
     Interface to get/post Webhooks from LabelStudio
     """
-
-    settings: Settings
-    url: str
-    headers: Dict[str, str]
 
     def get_webhooks(self):
         resp = requests.get(f"{self.url}/api/webhooks", headers=self.headers)
@@ -209,7 +199,7 @@ class APIWebhooks:
             "is_active": True,
             "actions": ["ANNOTATION_CREATED", "ANNOTATION_UPDATED"],
         }
-        resp = requests.post(
+        requests.post(
             f"{self.url}/api/webhooks", headers=self.headers, data=query
         )
 

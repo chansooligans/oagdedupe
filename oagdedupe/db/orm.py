@@ -10,9 +10,9 @@ import pandas as pd
 from sqlalchemy import select
 from tqdm import tqdm
 
+from oagdedupe._typing import SESSION, SUBQUERY, TABLE
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings
-from oagdedupe.typing import SESSION, SUBQUERY, TABLE
 
 
 @dataclass
@@ -195,24 +195,3 @@ class DatabaseORM(Tables):
                 )
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
-
-    def _update_table(self, df: pd.DataFrame, to_table: TABLE) -> None:
-        """
-        helper function to insert data from df to table;
-        on key conflict, "merge" updates the row
-        """
-        with self.Session() as session:
-            for r in df.to_dict(orient="records"):
-                for k in r.keys():
-                    setattr(to_table, k, r[k])
-                session.merge(to_table)
-            session.commit()
-
-    def bulk_insert(self, df: pd.DataFrame, to_table: TABLE) -> None:
-        """
-        helper function to insert data from df to table;
-        fails if there are key conflicts
-        """
-        with self.Session() as session:
-            session.bulk_insert_mappings(to_table, df.to_dict(orient="records"))
-            session.commit()

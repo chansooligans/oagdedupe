@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from functools import cached_property
 
+import pandas as pd
 from sqlalchemy import (Boolean, Column, Float, Integer, MetaData, String,
                         create_engine)
 from sqlalchemy.ext.declarative import declarative_base
@@ -12,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import CreateSchema
 
 from oagdedupe import utils as du
+from oagdedupe._typing import TABLE
 from oagdedupe.settings import Settings
 
 
@@ -381,6 +383,27 @@ class Tables(TablesRecordLinkage):
             self.engine, self.settings.other.db_schema
         ):
             self.engine.execute(CreateSchema(self.settings.other.db_schema))
+
+    def _update_table(self, df: pd.DataFrame, to_table: TABLE) -> None:
+        """
+        helper function to insert data from df to table;
+        on key conflict, "merge" updates the row
+        """
+        with self.Session() as session:
+            for r in df.to_dict(orient="records"):
+                for k in r.keys():
+                    setattr(to_table, k, r[k])
+                session.merge(to_table)
+            session.commit()
+
+    def bulk_insert(self, df: pd.DataFrame, to_table: TABLE) -> None:
+        """
+        helper function to insert data from df to table;
+        fails if there are key conflicts
+        """
+        with self.Session() as session:
+            session.bulk_insert_mappings(to_table, df.to_dict(orient="records"))
+            session.commit()
 
     def reset_all_tables(self):
         """deletes all tables and creates all tables"""

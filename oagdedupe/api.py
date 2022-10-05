@@ -9,7 +9,8 @@ import requests
 import sqlalchemy
 from sqlalchemy import create_engine
 
-from oagdedupe.block import Blocker, Conjunctions
+from oagdedupe.block.blocker import Blocker
+from oagdedupe.block.learner import Conjunctions
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.orm import DatabaseORM
@@ -52,11 +53,13 @@ class BaseModel(metaclass=ABCMeta):
 
         # fit block scheme conjunctions to full data
         logging.info("building forward indices")
-        self.blocker.init_forward_index_full()
+        self.blocker.init_forward_index_full(engine=self.engine)
 
         logging.info("getting comparisons")
         self.cover.save_comparisons(
-            table="blocks_df", n_covered=self.settings.other.n_covered
+            table="blocks_df",
+            n_covered=self.settings.other.n_covered,
+            engine=self.engine,
         )
 
         # get distances
@@ -81,10 +84,12 @@ class BaseModel(metaclass=ABCMeta):
         self.init._label_distances()
 
         logging.info("building forward indices")
-        self.blocker.build_forward_indices()
+        self.blocker.build_forward_indices(engine=self.engine)
 
         logging.info("getting comparisons")
-        self.cover.save_comparisons(table="blocks_train", n_covered=n_covered)
+        self.cover.save_comparisons(
+            table="blocks_train", n_covered=n_covered, engine=self.engine
+        )
 
         logging.info("get distance matrix")
         self.distance.save_distances(

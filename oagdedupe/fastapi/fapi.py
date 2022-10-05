@@ -1,11 +1,11 @@
-""" this module contains the API for fastAPI, used to facilitate communication 
-between postgres, label-studio, the active-learning model, and the 
+""" this module contains the API for fastAPI, used to facilitate communication
+between postgres, label-studio, the active-learning model, and the
 block-learner
 """
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Protocol
 
 import joblib
 import pandas as pd
@@ -15,10 +15,10 @@ from modAL.uncertainty import uncertainty_sampling
 from sklearn.ensemble import RandomForestClassifier
 from sqlalchemy import update
 
+from oagdedupe._typing import Annotation, Project, Task, TaskList
 from oagdedupe.api import Dedupe
 from oagdedupe.labelstudio.lsapi import LabelStudioAPI
 from oagdedupe.settings import Settings
-from oagdedupe.typing import Annotation, Project, Task, TaskList
 
 
 def url_checker(url):
@@ -29,16 +29,22 @@ def url_checker(url):
         else:
             return False
     except Exception as e:
+        logging.error(e)
         return False
 
 
-class Projects:
+class SettingsEnabler(Protocol):
+    settings: Settings
+    api: Dedupe
+    lsapi: LabelStudioAPI
+    clf: ActiveLearner
+    project: Project
+
+
+class Projects(SettingsEnabler):
     """
     Fetch Project if it exists; else create new one
     """
-
-    lsapi: LabelStudioAPI
-    settings: Settings
 
     def _check_project_exists(self) -> Optional[Project]:
         """
@@ -84,15 +90,10 @@ class Projects:
             self.lsapi.post_webhook(project_id=self.project.id)
 
 
-class TasksPost(Projects):
+class TasksPost(SettingsEnabler):
     """
     Pushes new labels to label studio
     """
-
-    api: Dedupe
-    clf: ActiveLearner
-    settings: Settings
-    lsapi: LabelStudioAPI
 
     def _get_learning_samples(self, n_instances: int = 5) -> pd.DataFrame:
         """
@@ -119,7 +120,7 @@ class TasksPost(Projects):
         self.lsapi.post_tasks(df=learning_samples, project_id=self.project.id)
 
 
-class TasksGet(TasksPost):
+class TasksGet(SettingsEnabler):
     """
     Gets new labels from label studio
     """
@@ -153,7 +154,7 @@ class TasksGet(TasksPost):
 
 
 @dataclass
-class Model(TasksGet):
+class Model(TasksGet, TasksPost, Projects):
     """
     Interface to facilitate communication between postgres, label-studio,
     the active-learning model, and the block-learner

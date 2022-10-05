@@ -1,19 +1,13 @@
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-import sqlalchemy
 from pydantic import BaseModel
+from sqlalchemy import engine, orm, sql
 
-
-class SESSION(sqlalchemy.orm.session.Session):
-    pass
-
-
-class TABLE(sqlalchemy.orm.decl_api.DeclarativeMeta):
-    pass
-
-
-class SUBQUERY(sqlalchemy.sql.selectable.Subquery):
-    pass
+SESSION = orm.session.Session
+TABLE = orm.decl_api.DeclarativeMeta
+SUBQUERY = sql.selectable.Subquery
+ENGINE = engine.base.Engine
 
 
 # LSAPI

@@ -3,18 +3,17 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-import sqlalchemy
 from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
-from oagdedupe.db.orm import DatabaseORM
+from oagdedupe._typing import SESSION, TABLE
+from oagdedupe.db.tables import Tables
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
-from oagdedupe.typing import SESSION, TABLE
 
 
 @dataclass
-class Initialize(DatabaseORM):
+class Initialize(Tables):
     """
     Object used to initialize SQL tables using sqlalchemy
 
@@ -137,7 +136,7 @@ class Initialize(DatabaseORM):
         if positive, link to itself, set "label" = 1
         if negative, link neg to neg_link, set "label" = 0
         """
-        logging.info("building %s", f"labels")
+        logging.info("building %s", "labels")
         fakepairs = [(1, self.Pos, self.Pos), (0, self.Neg, self.Neg_link)]
         for lab, tab, tab_link in fakepairs:
             records = session.query(tab).all()

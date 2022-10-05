@@ -7,9 +7,9 @@ from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
+from oagdedupe._typing import SESSION, SUBQUERY, TABLE
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
-from oagdedupe.typing import SESSION, SUBQUERY, TABLE
 
 
 @dataclass
