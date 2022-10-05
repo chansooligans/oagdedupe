@@ -1,17 +1,20 @@
-from oagdedupe.fastapi import fapi
-from oagdedupe.fastapi import app
-from oagdedupe.labelstudio import lsapi
-from oagdedupe.settings import get_settings_from_env
-from typing import Union
-from sqlalchemy import select
+"""this script is used to boot up fastapi
+"""
 
+import logging
+import time
+from typing import Union
+
+import joblib
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import time
-import joblib
 import uvicorn
-import logging
+from sqlalchemy import select
+from tqdm import tqdm
+
+from oagdedupe.fastapi import app, fapi
+from oagdedupe.labelstudio import lsapi
+from oagdedupe.settings import get_settings_from_env
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -28,12 +31,21 @@ m.initialize_learner()
 
 @app.on_event("startup")
 async def startup():
+    """
+    on startup:
+    (1) create project if not exists
+    (2) generate new samples if needed
+    """
     m.initialize_project()
     m.generate_new_samples()
 
 
 @app.post("/predict")
-async def predict():
+async def predict() -> None:
+    """
+    update model then make predictions on full data;
+    load predictions to "scores" table
+    """
 
     m._train()
 
@@ -45,24 +57,27 @@ async def predict():
     )
 
     with m.api.orm.Session() as session:
-        
-        stmt = select(
-            *(
-                getattr(m.api.init.FullDistances,x)
-                for x in settings.other.attributes + ["_index_l", "_index_r"]
-            )
-        ).execution_options(yield_per=50000)
+
+        stmt = m.api.orm.full_distance_partitions()
 
         for partition in tqdm(session.execute(stmt).partitions()):
-            
-            dists = np.array([
-                [getattr(row, x) for x in settings.other.attributes + ["_index_l", "_index_r"]]
-                for row in partition]
+
+            dists = np.array(
+                [
+                    [
+                        getattr(row, x)
+                        for x in settings.other.attributes
+                        + ["_index_l", "_index_r"]
+                    ]
+                    for row in partition
+                ]
             )
-            
+
             probs = pd.DataFrame(
-                np.hstack([m.clf.predict_proba(dists[:, :-2])[:,1:],dists[:,-2:]]),
-                columns = ["score","_index_l", "_index_r"]
+                np.hstack(
+                    [m.clf.predict_proba(dists[:, :-2])[:, 1:], dists[:, -2:]]
+                ),
+                columns=["score", "_index_l", "_index_r"],
             )
 
             probs.to_sql(
@@ -70,16 +85,18 @@ async def predict():
                 schema=settings.other.db_schema,
                 if_exists="append",
                 con=m.api.init.engine,
-                index=False
+                index=False,
             )
 
 
 @app.post("/payload")
-async def payload():
+async def payload() -> None:
     m.generate_new_samples()
 
 
 if __name__ == "__main__":
     uvicorn.run(
-        app, host=settings.other.fast_api.host.split("/")[-1], port=settings.other.fast_api.port
+        app,
+        host=settings.other.fast_api.host.split("/")[-1],
+        port=settings.other.fast_api.port,
     )
