@@ -5,8 +5,10 @@ general queries and database modification
 from dataclasses import dataclass
 from typing import List
 
+import numpy as np
 import pandas as pd
-import sqlalchemy
+from sqlalchemy import select
+from tqdm import tqdm
 
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings
@@ -85,6 +87,15 @@ class DatabaseORM(Tables):
                 )
             )
             return pd.read_sql(q.statement, q.session.bind)
+
+    def full_distance_partitions(self) -> select:
+        return select(
+            *(
+                getattr(self.FullDistances, x)
+                for x in self.settings.other.attributes
+                + ["_index_l", "_index_r"]
+            )
+        ).execution_options(yield_per=50000)
 
     def get_full_comparison_indices(self) -> pd.DataFrame:
         """

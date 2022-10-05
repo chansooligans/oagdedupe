@@ -67,7 +67,7 @@ class BaseModel(metaclass=ABCMeta):
 
     def initialize(
         self,
-        df: pd.DataFrame,
+        df: Optional[pd.DataFrame] = None,
         df2: Optional[pd.DataFrame] = None,
         reset: bool = True,
         resample: bool = False,
