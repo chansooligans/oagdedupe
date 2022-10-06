@@ -45,4 +45,4 @@ A quick overview of the pipeline:
 3. Run trained block learner and classifier on full data
 4. Cluster linkages 
 
-Also see diagram on [active_learn_loop](active_learn_loop)
+Also see diagram on [active_learn_loop](active_learn_loop) 
