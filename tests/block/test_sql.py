@@ -2,17 +2,18 @@
 """
 import os
 import unittest
+from typing import Tuple
 
 import pandas as pd
 import pytest
 from faker import Faker
 from pytest import MonkeyPatch
-from typing import Tuple
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.block.sql import LearnerSql, StatsDict
+from oagdedupe._typing import StatsDict
+from oagdedupe.block.sql import LearnerSql
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.settings import Settings, SettingsOther
 
@@ -23,9 +24,13 @@ engine = create_engine(db_url)
 @pytest.fixture(scope="module")
 def statsdict():
     return StatsDict(
-        scheme=["find_ngrams_4_postcode"], n_pairs=7, 
-        positives=2, negatives=1, rr=8/15
-        )
+        scheme=["find_ngrams_4_postcode"],
+        n_pairs=7,
+        positives=2,
+        negatives=1,
+        rr=8 / 15,
+    )
+
 
 def seed_blocks_train():
     engine.execute(
@@ -103,9 +108,7 @@ class TestSQL(unittest.TestCase):
             res = self.sql.get_inverted_index_stats(
                 names=["find_ngrams_4_postcode"], table="blocks_train"
             )
-        self.assertEqual(
-            res, self.statsdict 
-        )
+        self.assertEqual(res, self.statsdict)
 
     def test_save_comparison_pairs(self):
         self.sql.save_comparison_pairs(

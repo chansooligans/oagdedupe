@@ -1,11 +1,14 @@
 from abc import ABCMeta, abstractmethod
+from typing import List, Optional, Tuple
+
+from oagdedupe._typing import StatsDict
 
 
-class BaseBlocker(metaclass=ABCMeta):
-    """Abstract base class for all blockers to inherit"""
+class BaseOptimizer(metaclass=ABCMeta):
+    """Abstract base class for all conjunction optimizing algorithms to inherit"""
 
     @abstractmethod
-    def get_block_maps(self, df, attributes):
+    def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:
         return
 
 

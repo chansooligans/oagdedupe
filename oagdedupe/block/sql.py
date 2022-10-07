@@ -13,6 +13,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 from oagdedupe import utils as du
+from oagdedupe._typing import StatsDict
 from oagdedupe.settings import Settings
 
 
@@ -29,18 +30,6 @@ def signatures(names):
             for i, name in enumerate(names)
         ]
     )
-
-
-@dataclass
-class StatsDict:
-    n_pairs: int
-    positives: int
-    negatives: int
-    scheme: Tuple[str]
-    rr: float
-
-    def __hash__(self):
-        return hash(self.scheme)
 
 
 @dataclass

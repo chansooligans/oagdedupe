@@ -9,7 +9,7 @@ import requests
 import sqlalchemy
 from sqlalchemy import create_engine
 
-from oagdedupe.block.blocker import Blocker
+from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.db.initialize import Initialize
@@ -109,8 +109,8 @@ class BaseModel(metaclass=ABCMeta):
         return DatabaseORM(settings=self.settings)
 
     @cached_property
-    def blocker(self) -> Blocker:
-        return Blocker(settings=self.settings)
+    def blocker(self) -> Forward:
+        return Forward(settings=self.settings)
 
     @cached_property
     def cover(self) -> Conjunctions:

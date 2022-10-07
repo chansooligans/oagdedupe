@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 from sqlalchemy import engine, orm, sql
@@ -67,3 +67,15 @@ class Project(BaseModel):
     created_by: dict
     num_tasks_with_annotations: Optional[int]
     task_number: Optional[int]
+
+
+@dataclass
+class StatsDict:
+    n_pairs: int
+    positives: int
+    negatives: int
+    scheme: Tuple[str]
+    rr: float
+
+    def __hash__(self):
+        return hash(self.scheme)
