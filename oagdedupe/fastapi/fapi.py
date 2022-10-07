@@ -163,7 +163,7 @@ class Model(TasksGet, TasksPost, Projects):
     settings: Settings
 
     def __post_init__(self):
-        self.api = Dedupe(settings=self.settings)
+        self.api = Fapi(settings=self.settings)
         self.lsapi = LabelStudioAPI(settings=self.settings)
 
     def initialize_learner(self) -> None:
