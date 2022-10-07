@@ -1,5 +1,5 @@
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple, Union
@@ -31,13 +31,20 @@ class BaseModel(ABC):
     All descendent classes must implement predict, train, and candidates methods.
     """
 
-    def __init__(self, settings: Settings, initialize: Initialize):
+    def __init__(
+        self,
+        settings: Settings,
+        orm: BaseORM = DatabaseORM,
+        blocking: BaseBlocking = Blocking,
+        distance: BaseDistance = AllJaro,
+        cluster: BaseCluster = ConnectedComponents,
+    ):
         self.settings = settings
-        self.init = initialize(settings=self.settings)
+        self.init = Initialize(settings=self.settings)
 
-        self.orm: BaseORM = DatabaseORM(settings=self.settings)
+        self.orm = orm(settings=self.settings)
 
-        self.blocking: BaseBlocking = Blocking(
+        self.blocking = blocking(
             settings=self.settings,
             forward=Forward(settings=self.settings),
             conj=Conjunctions(
@@ -47,9 +54,13 @@ class BaseModel(ABC):
             pairs=Pairs(settings=self.settings),
         )
 
-        self.distance: BaseDistance = AllJaro(settings=self.settings)
+        self.distance = distance(settings=self.settings)
 
-        self.cluster: BaseCluster = ConnectedComponents(settings=self.settings)
+        self.cluster = cluster(settings=self.settings)
+
+    @abstractmethod
+    def initialize(self):
+        return
 
     def predict(self) -> Union[pd.DataFrame, Tuple[pd.DataFrame]]:
         """fast-api trains model on latest labels then submits scores to
@@ -87,7 +98,6 @@ class BaseModel(ABC):
         return create_engine(self.settings.other.path_database)
 
 
-@dataclass
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
