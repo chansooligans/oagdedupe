@@ -17,12 +17,8 @@ class BaseDistance(ABC):
     """Abstract base class for all distance configurations to inherit"""
 
     @abstractmethod
-    def compute_distances(self, pairs):
+    def save_distances(self, table, newtable):
         return
-
-    # @abstractmethod
-    # def config(self):
-    #     return
 
 
 class BaseCluster(ABC):
@@ -31,3 +27,9 @@ class BaseCluster(ABC):
     @abstractmethod
     def get_df_cluster(self):
         return
+
+
+class BaseORM(ABC):
+    """Abstract base class for all ORMs to inherit"""
+
+    pass
