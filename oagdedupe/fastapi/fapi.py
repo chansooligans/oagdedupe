@@ -16,7 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sqlalchemy import update
 
 from oagdedupe._typing import Annotation, Project, Task, TaskList
-from oagdedupe.api import Dedupe
+from oagdedupe.api import Fapi
 from oagdedupe.labelstudio.lsapi import LabelStudioAPI
 from oagdedupe.settings import Settings
 
@@ -35,7 +35,7 @@ def url_checker(url):
 
 class SettingsEnabler(Protocol):
     settings: Settings
-    api: Dedupe
+    api: Fapi
     lsapi: LabelStudioAPI
     clf: ActiveLearner
     project: Project
@@ -163,7 +163,7 @@ class Model(TasksGet, TasksPost, Projects):
     settings: Settings
 
     def __post_init__(self):
-        self.api = Dedupe(settings=self.settings)
+        self.api = Fapi(settings=self.settings)
         self.lsapi = LabelStudioAPI(settings=self.settings)
 
     def initialize_learner(self) -> None:

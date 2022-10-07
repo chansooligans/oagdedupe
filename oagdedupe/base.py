@@ -1,37 +1,35 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple
+
+from oagdedupe._typing import StatsDict
+from oagdedupe.block import base as block
+from oagdedupe.settings import Settings
 
 
-class BaseBlocker(metaclass=ABCMeta):
-    """Abstract base class for all blockers to inherit"""
-
-    @abstractmethod
-    def get_block_maps(self, df, attributes):
-        return
-
-
-class BaseBlockAlgo(metaclass=ABCMeta):
-    """Abstract base class for all blocking algos to inherit"""
-
-    @abstractmethod
-    def get_block(self):
-        return
+class BaseBlocking(ABC):
+    def __init__(self):
+        self.forward = block.BaseForward
+        self.conj = block.BaseConjunctions
+        self.pairs = block.BasePairs
 
 
-class BaseDistance(metaclass=ABCMeta):
+class BaseDistance(ABC):
     """Abstract base class for all distance configurations to inherit"""
 
     @abstractmethod
-    def compute_distances(self, pairs):
+    def save_distances(self, table, newtable):
         return
 
-    # @abstractmethod
-    # def config(self):
-    #     return
 
-
-class BaseCluster(metaclass=ABCMeta):
+class BaseCluster(ABC):
     """Abstract base class for all clustering algos to inherit"""
 
     @abstractmethod
     def get_df_cluster(self):
         return
+
+
+class BaseORM(ABC):
+    """Abstract base class for all ORMs to inherit"""
+
+    pass

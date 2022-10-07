@@ -2,7 +2,19 @@ import os
 
 import pytest
 
+from oagdedupe._typing import StatsDict
 from oagdedupe.settings import Settings, SettingsOther
+
+
+@pytest.fixture(scope="module")
+def statsdict():
+    return StatsDict(
+        scheme=tuple(["find_ngrams_4_postcode"]),
+        n_pairs=7,
+        positives=2,
+        negatives=1,
+        rr=8 / 15,
+    )
 
 
 @pytest.fixture(scope="module")
