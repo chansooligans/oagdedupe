@@ -1,26 +1,19 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
+from oagdedupe.block import base as block
+from oagdedupe.settings import Settings
 
 
-class BaseOptimizer(metaclass=ABCMeta):
-    """Abstract base class for all conjunction optimizing algorithms to inherit"""
-
-    @abstractmethod
-    def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:
-        return
-
-
-class BaseBlockAlgo(metaclass=ABCMeta):
-    """Abstract base class for all blocking algos to inherit"""
-
-    @abstractmethod
-    def get_block(self):
-        return
+class BaseBlocking(ABC):
+    def __init__(self):
+        self.forward = block.BaseForward
+        self.conj = block.BaseConjunctions
+        self.pairs = block.BasePairs
 
 
-class BaseDistance(metaclass=ABCMeta):
+class BaseDistance(ABC):
     """Abstract base class for all distance configurations to inherit"""
 
     @abstractmethod
@@ -32,7 +25,7 @@ class BaseDistance(metaclass=ABCMeta):
     #     return
 
 
-class BaseCluster(metaclass=ABCMeta):
+class BaseCluster(ABC):
     """Abstract base class for all clustering algos to inherit"""
 
     @abstractmethod

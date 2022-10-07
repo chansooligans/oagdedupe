@@ -1,5 +1,5 @@
 import logging
-from abc import ABCMeta
+from abc import ABC
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple, Union
@@ -9,8 +9,12 @@ import requests
 import sqlalchemy
 from sqlalchemy import create_engine
 
+from oagdedupe.base import BaseBlocking
+from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
+from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.orm import DatabaseORM
@@ -22,7 +26,7 @@ root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
 
-class BaseModel(metaclass=ABCMeta):
+class BaseModel(ABC):
     """Abstract base class from which all model classes inherit.
     All descendent classes must implement predict, train, and candidates methods.
     """
@@ -51,16 +55,8 @@ class BaseModel(metaclass=ABCMeta):
 
     def fit_blocks(self) -> None:
 
-        # fit block scheme conjunctions to full data
-        logging.info("building forward indices")
-        self.blocker.init_forward_index_full(engine=self.engine)
-
         logging.info("getting comparisons")
-        self.cover.save_comparisons(
-            table="blocks_df",
-            n_covered=self.settings.other.n_covered,
-            engine=self.engine,
-        )
+        self.blocking.save(engine=self.engine, full=True)
 
         # get distances
         logging.info("computing distances")
@@ -74,7 +70,6 @@ class BaseModel(metaclass=ABCMeta):
         df2: Optional[pd.DataFrame] = None,
         reset: bool = True,
         resample: bool = False,
-        n_covered: int = 500,
     ) -> None:
         """learn p(match)"""
 
@@ -83,13 +78,8 @@ class BaseModel(metaclass=ABCMeta):
         logging.info("computing distances for labels")
         self.init._label_distances()
 
-        logging.info("building forward indices")
-        self.blocker.build_forward_indices(engine=self.engine)
-
         logging.info("getting comparisons")
-        self.cover.save_comparisons(
-            table="blocks_train", n_covered=n_covered, engine=self.engine
-        )
+        self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
         self.distance.save_distances(
@@ -109,12 +99,16 @@ class BaseModel(metaclass=ABCMeta):
         return DatabaseORM(settings=self.settings)
 
     @cached_property
-    def blocker(self) -> Forward:
-        return Forward(settings=self.settings)
-
-    @cached_property
-    def cover(self) -> Conjunctions:
-        return Conjunctions(settings=self.settings)
+    def blocking(self) -> BaseBlocking:
+        return Blocking(
+            settings=self.settings,
+            forward=Forward(settings=self.settings),
+            conj=Conjunctions(
+                settings=self.settings,
+                optimizer=DynamicProgram(settings=self.settings),
+            ),
+            pairs=Pairs(settings=self.settings),
+        )
 
     @cached_property
     def distance(self) -> AllJaro:
