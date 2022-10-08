@@ -70,7 +70,7 @@ class DynamicProgram(BaseOptimizer, ConjunctionMixin):
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
-                    FROM {self.settings.other.db_schema}.labels
+                    FROM {self.settings.db.db_schema}.labels
                 )
             SELECT
                 count(*) as n_pairs,
@@ -135,14 +135,14 @@ class DynamicProgram(BaseOptimizer, ConjunctionMixin):
             tuple of block schemes
         """
         dp = [
-            None for _ in range(self.settings.other.k)
+            None for _ in range(self.settings.model.k)
         ]  # type: List[StatsDict]
         dp[0] = self.score(scheme)
 
         if (dp[0].positives == 0) or (dp[0].rr < 0.99):
             return None
 
-        for n in range(1, self.settings.other.k):
+        for n in range(1, self.settings.model.k):
             scores = [
                 self.score(tuple(sorted(dp[n - 1].scheme + x)))
                 for x in self.blocking_schemes

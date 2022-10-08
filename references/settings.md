@@ -13,21 +13,31 @@ attributes = ["givenname", "surname", "suburb", "postcode"]
 
 
 settings = Settings(
-    name="test",  # the name of the project, a unique identifier
-    folder="./.dedupe",  # path to folder where settings and data will be saved
-    other=SettingsOther(
-        cpus=15,  # parallelize distance computations
-        attributes=attributes,  # list of entity attribute names
-        path_database="./.dedupe/test.db",  # where to save the database holding intermediate data
-        path_model="./.dedupe/test_model",  # where to save the model
-        label_studio={
-            "port": 8089,  # label studio port
-            "api_key": "bc66ff77abeefc91a5fecd031fc0c238f9ad4814",  # label studio port
-            "description": "gs test project",  # label studio description of project
-        },
-        fast_api={"port": 8003},  # fast api port
-    ),
-)
+        name="default",  # the name of the project, a unique identifier
+        folder=".././.dedupe",  # path to folder where settings and data will be saved
+        attributes=["givenname", "surname", "suburb", "postcode"],  # list of entity attribute names
+        model=SettingsModel(
+            dedupe=True,
+            n=1000,
+            k=3,
+            max_compare=20_000,
+            n_covered=5_000,
+            cpus=20,  # parallelize distance computations
+            path_model="./.dedupe/test_model",  # where to save the model
+        ),
+        db=SettingsDB(
+            path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
+            db_schema="dedupe",
+        ),
+        label_studio=SettingsLabelStudio(
+            api_key="33344e8a477f8adc3eb6aa1e41444bde76285d96",  # label studio port
+            description="chansoo test project",  # label studio description of project
+            port=8089,  # label studio port
+        ),
+        fast_api = SettingsService(
+            port=8090,  # fast api port
+        )
+    )
 ```
 
 #### If saved:

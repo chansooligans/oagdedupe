@@ -7,7 +7,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oagdedupe.db.tables import Tables
-from oagdedupe.settings import Settings, SettingsOther
 
 db_url = os.environ.get("DATABASE_URL")
 engine = create_engine(db_url)
@@ -37,7 +36,7 @@ def test_schema_initialization(settings):
     tables.create_schema()
     df = pd.read_sql(
         f"""SELECT schema_name FROM information_schema.schemata
-                WHERE schema_name = '{settings.other.db_schema}';""",
+                WHERE schema_name = '{settings.db.db_schema}';""",
         con=tables.engine,
     )
     assert len(df) > 0
@@ -50,7 +49,7 @@ def test_schema_inits_tables(settings):
     tables.reset_tables()
     df = pd.read_sql(
         f"""SELECT * FROM information_schema.tables
-                WHERE table_schema = '{settings.other.db_schema}';""",
+                WHERE table_schema = '{settings.db.db_schema}';""",
         con=tables.engine,
     )
     assert len(df) == 17

@@ -1,7 +1,7 @@
 def recordlinkage(f):
     def wrapper(*args, **kwargs):
         self = args[0]
-        if not self.settings.other.dedupe:
+        if not self.settings.model.dedupe:
             kwargs["rl"] = "_link"
             return f(*args, **kwargs)
         else:
@@ -14,7 +14,7 @@ def recordlinkage_both(f):
     def wrapper(*args, **kwargs):
         self = args[0]
         out1 = f(*args, **kwargs)
-        if not self.settings.other.dedupe:
+        if not self.settings.model.dedupe:
             kwargs["rl"] = "_link"
             out2 = f(*args, **kwargs)
             return out1, out2
@@ -27,7 +27,7 @@ def recordlinkage_repeat(f):
     def wrapper(*args, **kwargs):
         self = args[0]
         f(*args, **kwargs)
-        if not self.settings.other.dedupe:
+        if not self.settings.model.dedupe:
             kwargs["rl"] = "_link"
             f(*args, **kwargs)
 

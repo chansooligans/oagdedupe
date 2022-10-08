@@ -85,7 +85,7 @@ class DatabaseORM(Tables):
             q = session.query(
                 *(
                     getattr(self.FullDistances, x)
-                    for x in self.settings.other.attributes
+                    for x in self.settings.attributes
                 )
             )
             return pd.read_sql(q.statement, q.session.bind)
@@ -94,8 +94,7 @@ class DatabaseORM(Tables):
         return select(
             *(
                 getattr(self.FullDistances, x)
-                for x in self.settings.other.attributes
-                + ["_index_l", "_index_r"]
+                for x in self.settings.attributes + ["_index_l", "_index_r"]
             )
         ).execution_options(yield_per=50000)
 
@@ -124,7 +123,7 @@ class DatabaseORM(Tables):
 
         Examples
         ----------
-        >>> self.settings.other.attributes = ["name", "address"]
+        >>> self.settings.attributes = ["name", "address"]
         >>> compare_cols()
         [
             "name_l", "address_l", "name_r", "address_r",
@@ -132,8 +131,8 @@ class DatabaseORM(Tables):
         ]
         """
         columns = [
-            [f"{x}_l" for x in self.settings.other.attributes],
-            [f"{x}_r" for x in self.settings.other.attributes],
+            [f"{x}_l" for x in self.settings.attributes],
+            [f"{x}_r" for x in self.settings.attributes],
             ["_index_l", "_index_r"],
         ]
         return sum(columns, [])

@@ -43,7 +43,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
 
         scores = pd.read_sql(
             f"""
-            SELECT * FROM {self.settings.other.db_schema}.scores
+            SELECT * FROM {self.settings.db.db_schema}.scores
             WHERE score > {threshold}""",
             con=self.orm.engine,
         )
@@ -52,7 +52,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
         # reset table
         self.engine.execute(
             f"""
-            TRUNCATE TABLE {self.settings.other.db_schema}.clusters;
+            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
         """
         )
 

@@ -5,7 +5,7 @@ First, we load the dataframe to shema.df.
 Second, we generate training samples which consist of three parts, which we name "positive", "negative" and "unlabelled" samples:
 1. positive samples: a single sample repeated 4 times
 2. negative samples: 10 random samples
-3. unlabeled samples: a sample size of `settings.other.n`
+3. unlabeled samples: a sample size of `settings.model.n`
 
 These n + 10 + 4 records are loaded into schema.train.
 

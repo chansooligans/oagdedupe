@@ -74,7 +74,7 @@ class Projects(SettingsEnabler):
         if project is None:
             project = self.lsapi.create_project(
                 title=self.settings.name,
-                description=self.settings.other.label_studio.description,
+                description=self.settings.label_studio.description,
             )
         return project
 
@@ -106,7 +106,7 @@ class TasksPost(SettingsEnabler):
 
         logging.info("getting active learning samples")
         sample_idx, _ = self.clf.query(
-            distances[self.settings.other.attributes].values,
+            distances[self.settings.attributes].values,
             n_instances=n_instances,
         )
 
@@ -170,11 +170,11 @@ class Model(TasksGet, TasksPost, Projects):
         """
         initialize active learner
         """
-        if self.settings.other.path_model.is_file():
-            self.estimator = joblib.load(self.settings.other.path_model)
-            logging.info(f"reading model: {self.settings.other.path_model}")
+        if self.settings.model.path_model.is_file():
+            self.estimator = joblib.load(self.settings.model.path_model)
+            logging.info(f"reading model: {self.settings.model.path_model}")
         else:
-            self.estimator = RandomForestClassifier(self.settings.other.cpus)
+            self.estimator = RandomForestClassifier(self.settings.model.cpus)
 
         self.clf = ActiveLearner(
             estimator=self.estimator, query_strategy=uncertainty_sampling
@@ -187,7 +187,7 @@ class Model(TasksGet, TasksPost, Projects):
         """
         labels = self.api.orm.get_labels()
         self.clf.teach(
-            labels[self.settings.other.attributes].values,
+            labels[self.settings.attributes].values,
             labels["label"].values,
         )
 

@@ -33,7 +33,7 @@ class Pairs(ConjunctionMixin):
         newtable = self.comptab_map[table]
         return self.query(
             f"""
-            SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
+            SELECT count(*) FROM {self.settings.db.db_schema}.{newtable}
         """
         )["count"].values[0]
 
@@ -60,10 +60,10 @@ class Pairs(ConjunctionMixin):
         pd.DataFrame
         """
         newtable = self.comptab_map[table]
-        engine = create_engine(self.settings.other.path_database)
+        engine = create_engine(self.settings.db.path_database)
         engine.execute(
             f"""
-            INSERT INTO {self.settings.other.db_schema}.{newtable}
+            INSERT INTO {self.settings.db.db_schema}.{newtable}
             (
                 WITH
                     inverted_index AS (

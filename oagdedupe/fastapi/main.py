@@ -1,6 +1,7 @@
 """this script is used to boot up fastapi
 """
 
+import argparse
 import logging
 import time
 from typing import Union
@@ -14,14 +15,22 @@ from tqdm import tqdm
 
 from oagdedupe.fastapi import app, fapi
 from oagdedupe.labelstudio import lsapi
-from oagdedupe.settings import get_settings_from_env
+from oagdedupe.settings import Settings
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
-settings = get_settings_from_env()
-assert settings.other is not None
-while fapi.url_checker(settings.other.label_studio.url) == False:
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--settings", help="set settings file location")
+args = parser.parse_args()
+
+if args.settings:
+    settings = Settings(args.settings)
+else:
+    settings = Settings()
+
+while fapi.url_checker(settings.label_studio.url) == False:
     logging.info("waiting for label studio...")
     time.sleep(3)
 
@@ -49,12 +58,10 @@ async def predict() -> None:
 
     m._train()
 
-    logging.info(f"save model to {settings.other.path_model}")
-    joblib.dump(m.clf.estimator, settings.other.path_model)
+    logging.info(f"save model to {settings.model.path_model}")
+    joblib.dump(m.clf.estimator, settings.model.path_model)
 
-    m.api.init.engine.execute(
-        f"TRUNCATE TABLE {settings.other.db_schema}.scores"
-    )
+    m.api.init.engine.execute(f"TRUNCATE TABLE {settings.db.db_schema}.scores")
 
     with m.api.orm.Session() as session:
 
@@ -66,8 +73,7 @@ async def predict() -> None:
                 [
                     [
                         getattr(row, x)
-                        for x in settings.other.attributes
-                        + ["_index_l", "_index_r"]
+                        for x in settings.attributes + ["_index_l", "_index_r"]
                     ]
                     for row in partition
                 ]
@@ -82,7 +88,7 @@ async def predict() -> None:
 
             probs.to_sql(
                 "scores",
-                schema=settings.other.db_schema,
+                schema=settings.db.db_schema,
                 if_exists="append",
                 con=m.api.init.engine,
                 index=False,
@@ -97,6 +103,6 @@ async def payload() -> None:
 if __name__ == "__main__":
     uvicorn.run(
         app,
-        host=settings.other.fast_api.host.split("/")[-1],
-        port=settings.other.fast_api.port,
+        host=settings.fast_api.host.split("/")[-1],
+        port=settings.fast_api.port,
     )

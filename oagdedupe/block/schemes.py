@@ -19,7 +19,7 @@ class BlockSchemes:
         helper to build column names in query
         """
         mapping = {}
-        for attribute in self.settings.other.attributes:
+        for attribute in self.settings.attributes:
             for scheme, nlist in self.block_schemes:
                 for n in nlist:
                     if n:
@@ -41,7 +41,7 @@ class BlockSchemes:
             f"{scheme}({attribute},{n}) as {scheme}_{n}_{attribute}"
             if n
             else f"{scheme}({attribute}) as {scheme}_{attribute}"
-            for attribute in self.settings.other.attributes
+            for attribute in self.settings.attributes
             for scheme, nlist in self.block_schemes
             for n in nlist
         ]
@@ -67,7 +67,7 @@ class BlockSchemes:
         """
         return [
             f"{scheme}_{n}_{attribute}" if n else f"{scheme}_{attribute}"
-            for attribute in self.settings.other.attributes
+            for attribute in self.settings.attributes
             for scheme, nlist in self.block_schemes
             for n in nlist
         ]

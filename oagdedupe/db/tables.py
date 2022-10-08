@@ -109,7 +109,7 @@ class Tables(TablesRecordLinkage):
     @cached_property
     def metadata_obj(self):
         """A sqlalchemy MetaData collection that stores Tables"""
-        return MetaData(schema=self.settings.other.db_schema)
+        return MetaData(schema=self.settings.db.db_schema)
 
     @cached_property
     def Base(self):
@@ -122,7 +122,7 @@ class Tables(TablesRecordLinkage):
     @cached_property
     def engine(self):
         """manages dbapi connection, created once"""
-        return create_engine(self.settings.other.path_database)
+        return create_engine(self.settings.db.path_database)
 
     @cached_property
     def Session(self):
@@ -144,7 +144,7 @@ class Tables(TablesRecordLinkage):
         return type(
             "Attributes",
             (object,),
-            {k: Column(String) for k in self.settings.other.attributes},
+            {k: Column(String) for k in self.settings.attributes},
         )
 
     @property
@@ -153,7 +153,7 @@ class Tables(TablesRecordLinkage):
         return type(
             "Attributes",
             (object,),
-            {k: Column(Float) for k in self.settings.other.attributes},
+            {k: Column(Float) for k in self.settings.attributes},
         )
 
     @property
@@ -163,14 +163,8 @@ class Tables(TablesRecordLinkage):
             "AttributeComparisons",
             (object,),
             {
-                **{
-                    f"{k}_l": Column(String)
-                    for k in self.settings.other.attributes
-                },
-                **{
-                    f"{k}_r": Column(String)
-                    for k in self.settings.other.attributes
-                },
+                **{f"{k}_l": Column(String) for k in self.settings.attributes},
+                **{f"{k}_r": Column(String) for k in self.settings.attributes},
             },
         )
 
@@ -366,23 +360,21 @@ class Tables(TablesRecordLinkage):
         )
 
     def delete_schema(self):
-        logging.info(
-            "drop schema %s if not exists", self.settings.other.db_schema
-        )
+        logging.info("drop schema %s if not exists", self.settings.db.db_schema)
         self.engine.execute(
             f"""DROP SCHEMA IF EXISTS
-                            {self.settings.other.db_schema} CASCADE"""
+                            {self.settings.db.db_schema} CASCADE"""
         )
 
     def create_schema(self):
         """helper function to create a schema using sqlalchemy orm"""
         logging.info(
-            "create schema %s if not exists", self.settings.other.db_schema
+            "create schema %s if not exists", self.settings.db.db_schema
         )
         if not self.engine.dialect.has_schema(
-            self.engine, self.settings.other.db_schema
+            self.engine, self.settings.db.db_schema
         ):
-            self.engine.execute(CreateSchema(self.settings.other.db_schema))
+            self.engine.execute(CreateSchema(self.settings.db.db_schema))
 
     def _update_table(self, df: pd.DataFrame, to_table: TABLE) -> None:
         """

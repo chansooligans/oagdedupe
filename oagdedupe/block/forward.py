@@ -45,13 +45,13 @@ class Forward(BlockSchemes, BaseForward):
         str
         """
         return f"""
-            DROP TABLE IF EXISTS {self.settings.other.db_schema}.blocks_{table};
+            DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_{table};
 
-            CREATE TABLE {self.settings.other.db_schema}.blocks_{table} as (
+            CREATE TABLE {self.settings.db.db_schema}.blocks_{table} as (
                 SELECT
                     _index,
                     {", ".join(columns)}
-                FROM {self.settings.other.db_schema}.{table}
+                FROM {self.settings.db.db_schema}.{table}
             );
         """
 
@@ -79,18 +79,18 @@ class Forward(BlockSchemes, BaseForward):
 
         engine.execute(
             f"""
-            ALTER TABLE {self.settings.other.db_schema}.blocks_{table}{rl}
+            ALTER TABLE {self.settings.db.db_schema}.blocks_{table}{rl}
             ADD COLUMN IF NOT EXISTS {col} {coltype}
         """
         )
 
         engine.execute(
             f"""
-            UPDATE {self.settings.other.db_schema}.blocks_{table}{rl} AS t1
+            UPDATE {self.settings.db.db_schema}.blocks_{table}{rl} AS t1
             SET {col} = t2.{col}
             FROM (
                 SELECT _index, {self.block_scheme_mapping[col]} as {col}
-                FROM {self.settings.other.db_schema}.{table}{rl}
+                FROM {self.settings.db.db_schema}.{table}{rl}
             ) t2
             WHERE t1._index = t2._index;
         """
@@ -112,12 +112,12 @@ class Forward(BlockSchemes, BaseForward):
         """initialize full index table"""
         engine.execute(
             f"""
-            DROP TABLE IF EXISTS {self.settings.other.db_schema}.blocks_df{rl};
+            DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_df{rl};
 
-            CREATE TABLE {self.settings.other.db_schema}.blocks_df{rl} as (
+            CREATE TABLE {self.settings.db.db_schema}.blocks_df{rl} as (
                 SELECT
                     _index
-                FROM {self.settings.other.db_schema}.df{rl}
+                FROM {self.settings.db.db_schema}.df{rl}
             );
         """
         )
@@ -140,7 +140,7 @@ class Forward(BlockSchemes, BaseForward):
             )
 
             exists = pd.read_sql(
-                f"SELECT * FROM {self.settings.other.db_schema}.blocks_df LIMIT 1",
+                f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1",
                 con=engine,
             ).columns
 

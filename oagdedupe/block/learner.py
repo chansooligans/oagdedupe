@@ -33,7 +33,7 @@ class Conjunctions(ConjunctionMixin, BaseConjunctions):
         """
         Computes conjunctions for each block scheme in parallel
         """
-        with Pool(self.settings.other.cpus) as p:
+        with Pool(self.settings.model.cpus) as p:
             res = list(
                 tqdm.tqdm(
                     p.imap(self.optimizer.get_best, self.blocking_schemes),

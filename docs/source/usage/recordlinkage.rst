@@ -17,14 +17,14 @@ train model
       "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
    )[:1]
    df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
-   for attr in settings.other.attributes:
+   for attr in settings.attributes:
       df[attr] = df[attr].astype(str)
 
    files2 = glob.glob(
       "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
    )[1:2]
    df2 = pd.concat([pd.read_csv(f) for f in files2]).reset_index(drop=True)
-   for attr in settings.other.attributes:
+   for attr in settings.attributes:
       df2[attr] = df2[attr].astype(str)
 
    df = df.sample(100_000, random_state=1234)

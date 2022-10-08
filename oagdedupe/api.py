@@ -79,7 +79,7 @@ class BaseModel(ABC):
 
         """
         logging.info("get clusters")
-        requests.post(f"{self.settings.other.fast_api.url}/predict")
+        requests.post(f"{self.settings.fast_api.url}/predict")
         return self.cluster.get_df_cluster()
 
     def fit_blocks(self) -> None:
@@ -95,7 +95,7 @@ class BaseModel(ABC):
 
     @cached_property
     def engine(self) -> sqlalchemy.engine:
-        return create_engine(self.settings.other.path_database)
+        return create_engine(self.settings.db.path_database)
 
 
 class Dedupe(BaseModel):
@@ -104,7 +104,6 @@ class Dedupe(BaseModel):
     settings: Settings
 
     def __post_init__(self):
-        self.settings.sync()
         funcs.create_functions(settings=self.settings)
 
     def initialize(
@@ -129,14 +128,12 @@ class Dedupe(BaseModel):
         )
 
 
-@dataclass
 class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     settings: Settings
 
     def __post_init__(self):
-        self.settings.sync()
         funcs.create_functions(settings=self.settings)
 
     def initialize(
@@ -162,14 +159,12 @@ class RecordLinkage(BaseModel):
         )
 
 
-@dataclass
 class Fapi(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     settings: Settings
 
     def __post_init__(self):
-        self.settings.sync()
         funcs.create_functions(settings=self.settings)
 
     def initialize(self) -> None:
