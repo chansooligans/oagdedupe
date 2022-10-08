@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.mixin import ConjunctionMixin
 from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.containers import Container
 from oagdedupe.db.initialize import Initialize
 
 db_url = os.environ.get("DATABASE_URL")
@@ -99,7 +100,7 @@ def seed_blocks_train():
 
 def seed_labels():
     engine.execute(
-        """  
+        """
         DROP TABLE IF EXISTS dedupe.labels;
         CREATE TABLE IF NOT EXISTS dedupe.labels(_index_l int, _index_r int, label int);
         INSERT INTO dedupe.labels (_index_l, _index_r, label)
@@ -121,9 +122,11 @@ class TestDynamicProgram(unittest.TestCase):
         self.conjunctions = conjunctions
 
     def setUp(self):
+        container = Container()
+        container.settings.override(self.settings)
         self.monkeypatch = MonkeyPatch()
-        self.optimizer = DynamicProgram(settings=self.settings)
-        self.init = Initialize(settings=self.settings)
+        self.optimizer = DynamicProgram()
+        self.init = Initialize()
         self.init.reset_tables()
         seed_blocks_train()
         seed_labels()

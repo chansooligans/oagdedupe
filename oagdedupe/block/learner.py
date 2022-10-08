@@ -8,11 +8,13 @@ from multiprocessing import Pool
 from typing import List
 
 import tqdm
+from dependency_injector.wiring import Provide
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BaseConjunctions, BaseOptimizer
 from oagdedupe.block.mixin import ConjunctionMixin
 from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
@@ -23,15 +25,15 @@ class Conjunctions(ConjunctionMixin, BaseConjunctions):
     lengths 1 to k using greedy dynamic programming approach.
     """
 
-    settings: Settings
-    optimizer: BaseOptimizer
+    optimizer: BaseOptimizer = None
+    settings: Settings = Provide[Container.settings]
 
     @property
     def _conjunctions(self) -> List[List[StatsDict]]:
         """
         Computes conjunctions for each block scheme in parallel
         """
-        with Pool(self.settings.other.cpus) as p:
+        with Pool(self.settings.model.cpus) as p:
             res = list(
                 tqdm.tqdm(
                     p.imap(self.optimizer.get_best, self.blocking_schemes),

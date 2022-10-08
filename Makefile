@@ -44,7 +44,7 @@ label-studio:
 	heartexlabs/label-studio:latest label-studio
 
 fast-api:
-	python oagdedupe/fastapi/main.py 
+	python oagdedupe/fastapi/main.py --settings='.dedupe/.env'
 
 book:
 	poetry run jb build book

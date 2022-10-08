@@ -14,7 +14,6 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.db.tables import Tables
-from oagdedupe.settings import Settings, SettingsOther
 
 
 @pytest.fixture(scope="module")

@@ -10,11 +10,13 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.mixin import ConjunctionMixin
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
@@ -25,13 +27,13 @@ class Pairs(ConjunctionMixin):
     full_comparisons table.
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def _get_n_pairs(self, table: str) -> pd.DataFrame:
         newtable = self.comptab_map[table]
         return self.query(
             f"""
-            SELECT count(*) FROM {self.settings.other.db_schema}.{newtable}
+            SELECT count(*) FROM {self.settings.db.db_schema}.{newtable}
         """
         )["count"].values[0]
 
@@ -58,10 +60,10 @@ class Pairs(ConjunctionMixin):
         pd.DataFrame
         """
         newtable = self.comptab_map[table]
-        engine = create_engine(self.settings.other.path_database)
+        engine = create_engine(self.settings.db.path_database)
         engine.execute(
             f"""
-            INSERT INTO {self.settings.other.db_schema}.{newtable}
+            INSERT INTO {self.settings.db.db_schema}.{newtable}
             (
                 WITH
                     inverted_index AS (

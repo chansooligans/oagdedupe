@@ -3,11 +3,13 @@
 
 from dataclasses import dataclass
 
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
+from oagdedupe.containers import Container
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 
@@ -19,7 +21,7 @@ class AllJaro(DatabaseORM):
     common attributes.
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
@@ -43,11 +45,11 @@ class AllJaro(DatabaseORM):
             session.query(
                 *(
                     getattr(dataL, x).label(f"{x}_l")
-                    for x in self.settings.other.attributes
+                    for x in self.settings.attributes
                 ),
                 *(
                     getattr(dataR, x).label(f"{x}_r")
-                    for x in self.settings.other.attributes
+                    for x in self.settings.attributes
                 ),
                 table._index_l,
                 table._index_r,
@@ -65,7 +67,7 @@ class AllJaro(DatabaseORM):
                     getattr(subquery.c, f"{attr}_l"),
                     getattr(subquery.c, f"{attr}_r"),
                 ).label(attr)
-                for attr in self.settings.other.attributes
+                for attr in self.settings.attributes
             ),
             subquery,
         )
@@ -85,7 +87,7 @@ class AllJaro(DatabaseORM):
             distance_query = self.compute_distances(subquery)
 
             stmt = insert(newtable).from_select(
-                self.settings.other.attributes + self.compare_cols + ["label"],
+                self.settings.attributes + self.compare_cols + ["label"],
                 distance_query,
             )
 
@@ -105,7 +107,7 @@ class AllJaro(DatabaseORM):
         # reset table
         self.orm.engine.execute(
             f"""
-        TRUNCATE TABLE {self.settings.other.db_schema}.{newtable.__tablename__};
+        TRUNCATE TABLE {self.settings.db.db_schema}.{newtable.__tablename__};
         """
         )
 

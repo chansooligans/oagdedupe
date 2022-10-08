@@ -8,23 +8,25 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 import oagdedupe.utils as du
 from oagdedupe._typing import StatsDict
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
 @dataclass
 class ConjunctionMixin:
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def query(self, sql: str) -> pd.DataFrame:
         """
         for parallel implementation, need to create separate engine
         for each process
         """
-        engine = create_engine(self.settings.other.path_database)
+        engine = create_engine(self.settings.db.path_database)
         res = pd.read_sql(sql, con=engine)
         engine.dispose()
         return res
@@ -32,21 +34,21 @@ class ConjunctionMixin:
     @du.recordlinkage_both
     def n_df(self, rl: str = "") -> pd.DataFrame:
         return self.query(
-            f"SELECT count(*) FROM {self.settings.other.db_schema}.df{rl}"
+            f"SELECT count(*) FROM {self.settings.db.db_schema}.df{rl}"
         )["count"].values[0]
 
     @cached_property
     def n_comparisons(self) -> float:
         """number of total possible comparisons"""
         n = self.n_df()
-        if not self.settings.other.dedupe:
+        if not self.settings.model.dedupe:
             return np.product(n)
         return (n * (n - 1)) / 2
 
     @property
     def min_rr(self) -> float:
         """minimum reduction ratio"""
-        reduced = self.n_comparisons - self.settings.other.max_compare
+        reduced = self.n_comparisons - self.settings.model.max_compare
         return reduced / self.n_comparisons
 
     @cached_property
@@ -63,7 +65,7 @@ class ConjunctionMixin:
             for x in self.query(
                 f"""
                 SELECT *
-                FROM {self.settings.other.db_schema}.blocks_train LIMIT 1
+                FROM {self.settings.db.db_schema}.blocks_train LIMIT 1
                 """
             )
             .columns[1:]
@@ -110,7 +112,7 @@ class ConjunctionMixin:
         SELECT
             {self.signatures(names)},
             unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
-        FROM {self.settings.other.db_schema}.{table}
+        FROM {self.settings.db.db_schema}.{table}
         GROUP BY {", ".join(self._aliases(names))}
         """
 

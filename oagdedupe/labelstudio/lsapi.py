@@ -194,7 +194,7 @@ class APIWebhooks(SettingsEnabler):
         """
         query = {
             "project": project_id,
-            "url": f"{self.settings.other.fast_api.url}/payload",
+            "url": f"{self.settings.fast_api.url}/payload",
             "send_payload": False,
             "is_active": True,
             "actions": ["ANNOTATION_CREATED", "ANNOTATION_UPDATED"],
@@ -214,7 +214,7 @@ class LabelStudioAPI(APIProjects, APITasks, APIAnnotations, APIWebhooks):
     settings: Settings
 
     def __post_init__(self):
-        self.url: str = self.settings.other.label_studio.url
+        self.url: str = self.settings.label_studio.url
         self.headers: Dict[str, str] = {
-            "Authorization": f"""Token {self.settings.other.label_studio.api_key}"""
+            "Authorization": f"""Token {self.settings.label_studio.api_key}"""
         }

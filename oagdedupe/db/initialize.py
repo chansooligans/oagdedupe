@@ -3,10 +3,12 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+from dependency_injector.wiring import Provide
 from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
+from oagdedupe.containers import Container
 from oagdedupe.db.tables import Tables
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
@@ -24,7 +26,7 @@ class Initialize(Tables):
             - pos contains a random sample repeated 4 times
             - neg contains 10 random samples
         - unlabelled
-            - random sample of df of size settings.other.n,
+            - random sample of df of size settings.model.n,
             - samples are drawn each active learning loop
         - train
             - combines pos, neg, and unlabelled
@@ -34,7 +36,7 @@ class Initialize(Tables):
             - pairs from neg are labelled as a non-match
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     @du.recordlinkage_repeat
     def _init_df(self, df=None, df_link=None, rl: str = "") -> None:
@@ -87,7 +89,7 @@ class Initialize(Tables):
     def _init_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """create unlabelled samples: 'n' random samples"""
         records = self._sample(
-            session, getattr(self, f"maindf{rl}"), self.settings.other.n
+            session, getattr(self, f"maindf{rl}"), self.settings.model.n
         )
         for r in records:
             table = getattr(self, f"Unlabelled{rl}")(**r)
@@ -172,7 +174,7 @@ class Initialize(Tables):
         """delete unlabelled from train"""
         self.engine.execute(
             f"""
-                TRUNCATE TABLE {self.settings.other.db_schema}.unlabelled{rl};
+                TRUNCATE TABLE {self.settings.db.db_schema}.unlabelled{rl};
             """
         )
         records = self._to_dicts(
@@ -209,9 +211,7 @@ class Initialize(Tables):
 
         with self.Session() as session:
             if reset:
-                logging.info(
-                    f"building schema: {self.settings.other.db_schema}"
-                )
+                logging.info(f"building schema: {self.settings.db.db_schema}")
                 self.reset_tables()
                 self._init_df(df=df, df_link=df2)
                 self._init_pos(session)

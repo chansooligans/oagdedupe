@@ -10,6 +10,6 @@ Second, we create a forward index on the sample. That is, we build schema.blocks
 
 Third, for each block scheme, we use dynamic programming to greedily search for the best conjunction. 
 
-To identify the "best" conjunction, we consider the reduction ratio, positive coverage, and negative coverage. While excluding any conjunction that does not capture any positive pairs, we want to (1) maximize the reduction ratio, (2) maximize the positive coverage, and (3) minimize the negative coverage -- in that order. To reduce complexity further, we limit the length of the conjunctions to `settings.other.k` conjunctions. We find k=3 is usually sufficient.
+To identify the "best" conjunction, we consider the reduction ratio, positive coverage, and negative coverage. While excluding any conjunction that does not capture any positive pairs, we want to (1) maximize the reduction ratio, (2) maximize the positive coverage, and (3) minimize the negative coverage -- in that order. To reduce complexity further, we limit the length of the conjunctions to `settings.model.k` conjunctions. We find k=3 is usually sufficient.
 
 Fourth, we apply the blocking conjunctions to obtain comparison pairs. Iterating from best-to-worst conjunctions, we obtain comparison pairs until either stopping condition: (1) we have obtained `n_covered` pairs or (2) the conjunction would yield too many comparisons. This latter condition typically only applies when we fetch comparison pairs from the full data, and is not a concern when learning blocking from the sample.

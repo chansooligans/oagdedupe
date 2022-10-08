@@ -16,7 +16,7 @@ train model
       "/mnt/Research.CF/References & Training/Satchel/dedupe_rl/baseline_datasets/north_carolina_voters/*"
    )[:2]
    df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
-   for attr in settings.other.attributes:
+   for attr in settings.attributes:
       df[attr] = df[attr].astype(str)
    df = df.sample(100_000, random_state=1234)
 
