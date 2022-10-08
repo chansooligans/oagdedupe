@@ -7,10 +7,12 @@ from typing import List
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import select
 from tqdm import tqdm
 
-from oagdedupe._typing import SESSION, SUBQUERY, TABLE
+from oagdedupe._typing import SESSION, SUBQUERY
+from oagdedupe.containers import Container
 from oagdedupe.db.tables import Tables
 from oagdedupe.settings import Settings
 
@@ -22,7 +24,7 @@ class DatabaseORM(Tables):
     Uses the Session object as interface to the database.
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def get_train(self) -> pd.DataFrame:
         """

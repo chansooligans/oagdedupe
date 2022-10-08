@@ -3,9 +3,11 @@ from typing import List, Union
 
 import networkx as nx
 import pandas as pd
+from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe.base import BaseCluster
+from oagdedupe.containers import Container
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 
@@ -16,7 +18,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
     Uses a graph to retrieve connected components
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
@@ -41,7 +43,7 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
 
         scores = pd.read_sql(
             f"""
-            SELECT * FROM {self.settings.other.db_schema}.scores 
+            SELECT * FROM {self.settings.other.db_schema}.scores
             WHERE score > {threshold}""",
             con=self.orm.engine,
         )

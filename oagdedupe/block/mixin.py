@@ -8,16 +8,18 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 import oagdedupe.utils as du
 from oagdedupe._typing import StatsDict
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
 @dataclass
 class ConjunctionMixin:
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def query(self, sql: str) -> pd.DataFrame:
         """

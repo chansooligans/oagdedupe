@@ -16,6 +16,7 @@ from oagdedupe.block.learner import Conjunctions
 from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
+from oagdedupe.containers import Container
 from oagdedupe.db.initialize import Initialize
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.distance.string import AllJaro
@@ -40,23 +41,22 @@ class BaseModel(ABC):
         cluster: BaseCluster = ConnectedComponents,
     ):
         self.settings = settings
-        self.init = Initialize(settings=self.settings)
+        container = Container()
+        if settings:
+            container.settings.override(settings)
 
-        self.orm = orm(settings=self.settings)
+        self.init = Initialize()
+        self.orm = orm()
 
         self.blocking = blocking(
-            settings=self.settings,
-            forward=Forward(settings=self.settings),
-            conj=Conjunctions(
-                settings=self.settings,
-                optimizer=DynamicProgram(settings=self.settings),
-            ),
-            pairs=Pairs(settings=self.settings),
+            forward=Forward(),
+            conj=Conjunctions(optimizer=DynamicProgram()),
+            pairs=Pairs(),
         )
 
-        self.distance = distance(settings=self.settings)
+        self.distance = distance()
 
-        self.cluster = cluster(settings=self.settings)
+        self.cluster = cluster()
 
     @abstractmethod
     def initialize(self):

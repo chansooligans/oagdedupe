@@ -3,12 +3,14 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.base import BaseBlocking
 from oagdedupe.block.base import BaseConjunctions, BaseForward, BasePairs
 from oagdedupe.block.mixin import ConjunctionMixin
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
@@ -21,10 +23,10 @@ class Blocking(BaseBlocking, ConjunctionMixin):
     - pairs: generates pairs from inverted indices
     """
 
-    settings: Settings
-    forward: BaseForward
-    conj: BaseConjunctions
-    pairs: BasePairs
+    forward: BaseForward = None
+    conj: BaseConjunctions = None
+    pairs: BasePairs = None
+    settings: Settings = Provide[Container.settings]
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """

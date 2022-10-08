@@ -8,11 +8,13 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 
 import oagdedupe.utils as du
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.base import BaseOptimizer
 from oagdedupe.block.mixin import ConjunctionMixin
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
@@ -22,7 +24,7 @@ class DynamicProgram(BaseOptimizer, ConjunctionMixin):
     to construct best conjunction
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def __eq__(self, other):
         return self is other

@@ -3,11 +3,13 @@
 
 from dataclasses import dataclass
 
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
+from oagdedupe.containers import Container
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 
@@ -19,7 +21,7 @@ class AllJaro(DatabaseORM):
     common attributes.
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
