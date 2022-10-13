@@ -60,10 +60,14 @@ class DynamicProgram(BaseOptimizer, ConjunctionMixin):
                 f"""
             WITH
                 inverted_index AS (
-                    {self._inv_idx_query(names, table)}
+                    SELECT
+                        {self.signatures(names)}, _index as _index_l
+                    FROM {self.settings.db.db_schema}.{table}
                 ),
                 inverted_index_link AS (
-                    {self._inv_idx_query(names, table+rl, col="_index_r")}
+                    SELECT
+                        {self.signatures(names)}, _index as _index_r
+                    FROM {self.settings.db.db_schema}.{table+rl}
                 ),
                 pairs AS (
                     {self._pairs_query(names)}

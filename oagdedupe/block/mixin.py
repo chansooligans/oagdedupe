@@ -105,17 +105,6 @@ class ConjunctionMixin:
     def _aliases(self, names: Tuple[str]) -> List[str]:
         return [f"signature{i}" for i in range(len(names))]
 
-    def _inv_idx_query(
-        self, names: Tuple[str], table: str, col: str = "_index_l"
-    ) -> str:
-        return f"""
-        SELECT
-            {self.signatures(names)},
-            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
-        FROM {self.settings.db.db_schema}.{table}
-        GROUP BY {", ".join(self._aliases(names))}
-        """
-
     def _max_key(self, x: StatsDict) -> Tuple[float, int, int]:
         """
         block scheme stats ordering

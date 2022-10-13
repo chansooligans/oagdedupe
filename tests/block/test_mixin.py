@@ -54,19 +54,3 @@ class TestMixin(unittest.TestCase):
         self.mixin = ConjunctionMixin(settings=self.settings)
         seed_blocks_train()
         return
-
-    def test__inv_idx_query(self):
-        query = self.mixin._inv_idx_query(
-            names=["find_ngrams_4_postcode"], table="blocks_train"
-        )
-        df = pd.read_sql(query, con=engine)
-        self.assertEqual(len(df), 6)
-
-    def test__inv_idx_query_link(self):
-        query = self.mixin._inv_idx_query(
-            names=["find_ngrams_4_postcode"],
-            table="blocks_train_link",
-            col="_index_r",
-        )
-        df = pd.read_sql(query, con=engine)
-        self.assertEqual(len(df), 6)
