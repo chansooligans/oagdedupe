@@ -17,11 +17,11 @@ pip install oagdedupe
 
 # documentation<a name="#documentation"></a>
 
-You can find the documentation of oagdedupe at https://deduper.readthedocs.io/en/latest/, 
+You can find the documentation of oagdedupe at https://oagdedupe.readthedocs.io/en/latest/, 
 where you can find: 
 
-- [Installation and Getting Started](https://deduper.readthedocs.io/en/latest/usage/installation.html)
-- [Examples](https://deduper.readthedocs.io/en/latest/examples/example_dedupe.html)
-- the [API reference](https://deduper.readthedocs.io/en/latest/dedupe/api.html)
-- [User Guide / Methodology](https://deduper.readthedocs.io/en/latest/userguide/intro.html)
+- [Installation and Getting Started](https://oagdedupe.readthedocs.io/en/latest/usage/installation.html)
+- [Examples](https://oagdedupe.readthedocs.io/en/latest/examples/example_dedupe.html)
+- the [API reference](https://oagdedupe.readthedocs.io/en/latest/dedupe/api.html)
+- [User Guide / Methodology](https://oagdedupe.readthedocs.io/en/latest/userguide/intro.html)
 
