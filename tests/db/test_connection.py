@@ -31,25 +31,29 @@ def test_connection(db_session):
 
 
 def test_schema_initialization(settings):
-    tables = Tables(settings=settings)
-    tables.delete_schema()
-    tables.create_schema()
-    df = pd.read_sql(
-        f"""SELECT schema_name FROM information_schema.schemata
-                WHERE schema_name = '{settings.db.db_schema}';""",
-        con=tables.engine,
-    )
-    assert len(df) > 0
+    if settings.db.db == "postgresql":
+        tables = Tables(settings=settings)
+        tables.delete_schema()
+        tables.create_schema()
+        df = pd.read_sql(
+            f"""SELECT schema_name FROM information_schema.schemata
+                    WHERE schema_name = '{settings.db.db_schema}';""",
+            con=tables.engine,
+        )
+        assert len(df) > 0
+    else:
+        assert True
 
 
 def test_schema_inits_tables(settings):
-    tables = Tables(settings=settings)
-    tables.delete_schema()
-    tables.create_schema()
-    tables.reset_tables()
-    df = pd.read_sql(
-        f"""SELECT * FROM information_schema.tables
-                WHERE table_schema = '{settings.db.db_schema}';""",
-        con=tables.engine,
-    )
-    assert len(df) == 17
+    if settings.db.db == "postgresql":
+        tables = Tables(settings=settings)
+        tables.reset_tables()
+        df = pd.read_sql(
+            f"""SELECT * FROM information_schema.tables
+                    WHERE table_schema = '{settings.db.db_schema}';""",
+            con=tables.engine,
+        )
+        assert len(df) == 17
+    else:
+        assert True

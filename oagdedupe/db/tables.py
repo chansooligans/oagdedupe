@@ -409,6 +409,10 @@ class Tables(TablesRecordLinkage):
 
     def reset_tables(self):
         """resets all tables"""
-        self.delete_schema()
-        self.create_schema()
+        if self.settings.db.db == "postgresql":
+            self.delete_schema()
+            self.create_schema()
+        else:
+            self.engine.execute("DETACH DATABASE dedupe;")
+            self.engine.execute("ATTACH DATABASE ':memory:' AS dedupe;")
         self.reset_all_tables()

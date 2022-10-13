@@ -67,6 +67,10 @@ class SettingsDB(BaseModel):
     """database schema"""
     db_schema: str = "dedupe"
 
+    @property
+    def db(self):
+        return self.path_database.split("+")[0]
+
 
 class Settings(BaseSettings):
     """project settings"""
