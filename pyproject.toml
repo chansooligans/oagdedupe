@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "oagdedupe"
-version = "0.2.0"
+version = "0.2.1"
 description = "oagdedupe is a Python library for scalable entity resolution, using active learning to learn blocking configurations, generate comparison pairs, then clasify matches."
 readme = "README.md"
 homepage = ""
+license = "MIT"
 repository = "https://github.com/chansooligans/oagdedupe"
 documentation = "https://oagdedupe.readthedocs.io/en/latest/"
 keywords = ["dedupe", "entity resolution", "record linkage", "blocking"]
