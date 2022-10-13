@@ -9,13 +9,14 @@ from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
+from oagdedupe.base import BaseDistance
 from oagdedupe.containers import Container
 from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class AllJaro(DatabaseORM):
+class AllJaro(BaseDistance, DatabaseORM):
     """
     Interface to compute distance between comparison pairs along
     common attributes.
