@@ -6,22 +6,19 @@ import pandas as pd
 from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
-from oagdedupe.base import BaseCluster
+from oagdedupe.base import BaseCluster, BaseCompute
 from oagdedupe.containers import Container
-from oagdedupe.db.orm import DatabaseORM
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class ConnectedComponents(BaseCluster, DatabaseORM):
+class ConnectedComponents(BaseCluster):
     """
     Uses a graph to retrieve connected components
     """
 
     settings: Settings = Provide[Container.settings]
-
-    def __post_init__(self):
-        self.orm = DatabaseORM(settings=self.settings)
+    compute: BaseCompute = Provide[Container.compute]
 
     @du.recordlinkage
     def get_df_cluster(
@@ -41,27 +38,11 @@ class ConnectedComponents(BaseCluster, DatabaseORM):
             clusters merged with raw data
         """
 
-        scores = pd.read_sql(
-            f"""
-            SELECT * FROM {self.settings.db.db_schema}.scores
-            WHERE score > {threshold}""",
-            con=self.orm.engine,
-        )
+        scores = self.compute.get_scores(threshold=threshold)
         df_clusters = getattr(self, f"get_connected_components{rl}")(scores)
-
-        # reset table
-        self.engine.execute(
-            f"""
-            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
-        """
+        self.compute.merge_clusters_with_raw_data(
+            df_clusters=df_clusters, rl=rl
         )
-
-        self.orm.bulk_insert(df=df_clusters, to_table=self.Clusters)
-
-        if rl == "":
-            return self.orm.get_clusters()
-        else:
-            return self.orm.get_clusters_link()
 
     def get_connected_components(self, scores: pd.DataFrame) -> pd.DataFrame:
         """

@@ -61,11 +61,13 @@ async def predict() -> None:
     logging.info(f"save model to {settings.model.path_model}")
     joblib.dump(m.clf.estimator, settings.model.path_model)
 
-    m.api.init.engine.execute(f"TRUNCATE TABLE {settings.db.db_schema}.scores")
+    m.api.compute.engine.execute(
+        f"TRUNCATE TABLE {settings.db.db_schema}.scores"
+    )
 
-    with m.api.orm.Session() as session:
+    with m.api.compute.Session() as session:
 
-        stmt = m.api.orm.full_distance_partitions()
+        stmt = m.api.compute.full_distance_partitions()
 
         for partition in tqdm(session.execute(stmt).partitions()):
 
@@ -90,7 +92,7 @@ async def predict() -> None:
                 "scores",
                 schema=settings.db.db_schema,
                 if_exists="append",
-                con=m.api.init.engine,
+                con=m.api.compute.engine,
                 index=False,
             )
 

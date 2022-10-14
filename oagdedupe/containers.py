@@ -1,5 +1,6 @@
 from dependency_injector import containers, providers
 
+from oagdedupe.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
@@ -14,6 +15,6 @@ class Container(containers.DeclarativeContainer):
         ],
     )
 
-    # settings = providers.Configuration()
-
     settings = providers.Factory(Settings)
+
+    compute = providers.Factory(BaseCompute)

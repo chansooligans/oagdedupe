@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.orm import DatabaseORM
+from oagdedupe.db.postgres.orm import DatabaseORM
 from oagdedupe.db.tables import Tables
 
 

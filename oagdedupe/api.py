@@ -9,7 +9,7 @@ import requests
 import sqlalchemy
 from sqlalchemy import create_engine
 
-from oagdedupe.base import BaseBlocking, BaseCluster, BaseDistance, BaseORM
+from oagdedupe.base import BaseBlocking, BaseCluster, BaseCompute, BaseDistance
 from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
@@ -17,8 +17,7 @@ from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.containers import Container
-from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.orm import DatabaseORM
+from oagdedupe.db.postgres.compute import PostgresCompute
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.postgres import funcs
 from oagdedupe.settings import Settings
@@ -35,18 +34,19 @@ class BaseModel(ABC):
     def __init__(
         self,
         settings: Settings,
-        orm: BaseORM = DatabaseORM,
+        compute: BaseCompute = PostgresCompute,
         blocking: BaseBlocking = Blocking,
         distance: BaseDistance = AllJaro,
         cluster: BaseCluster = ConnectedComponents,
     ):
         self.settings = settings
+        self.compute = compute(settings=self.settings)
+
         container = Container()
         if settings:
             container.settings.override(settings)
-
-        self.init = Initialize()
-        self.orm = orm()
+        if compute:
+            container.compute.override(self.compute)
 
         self.blocking = blocking(
             forward=Forward(),
@@ -90,7 +90,8 @@ class BaseModel(ABC):
         # get distances
         logging.info("computing distances")
         self.distance.save_distances(
-            table=self.orm.FullComparisons, newtable=self.orm.FullDistances
+            table=self.compute.FullComparisons,
+            newtable=self.compute.FullDistances,
         )
 
     @cached_property
@@ -114,17 +115,17 @@ class Dedupe(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.init.setup(df=df, df2=None, reset=reset, resample=resample)
+        self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
 
         logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute._label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
         self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
+            table=self.compute.Comparisons, newtable=self.compute.Distances
         )
 
 
@@ -145,17 +146,17 @@ class RecordLinkage(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
+        self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
 
         logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute._label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
         self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
+            table=self.compute.Comparisons, newtable=self.compute.Distances
         )
 
 
@@ -170,15 +171,15 @@ class Fapi(BaseModel):
     def initialize(self) -> None:
         """learn p(match)"""
 
-        self.init.setup(reset=False, resample=True)
+        self.compute.setup(reset=False, resample=True)
 
         logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute._label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
         self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
+            table=self.compute.Comparisons, newtable=self.compute.Distances
         )

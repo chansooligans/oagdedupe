@@ -8,12 +8,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 from dependency_injector.wiring import Provide
-from sqlalchemy import select
+from sqlalchemy import create_engine, func, insert, select
+from sqlalchemy.orm import aliased
 from tqdm import tqdm
 
-from oagdedupe._typing import SESSION, SUBQUERY
+from oagdedupe import utils as du
+from oagdedupe._typing import SESSION, SUBQUERY, TABLE
 from oagdedupe.containers import Container
-from oagdedupe.db.tables import Tables
+from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
 
@@ -25,6 +27,10 @@ class DatabaseORM(Tables):
     """
 
     settings: Settings = Provide[Container.settings]
+
+    ########################################################################
+    # queries
+    ########################################################################
 
     def get_train(self) -> pd.DataFrame:
         """
@@ -137,6 +143,95 @@ class DatabaseORM(Tables):
         ]
         return sum(columns, [])
 
+    ########################################################################
+    # String Distance Computations
+    ########################################################################
+    @du.recordlinkage
+    def fields_table(self, table: str, rl: str = "") -> tuple:
+        mapping = {
+            "comparisons": "Train",
+            "full_comparisons": "maindf",
+            "labels": "Train",
+        }
+
+        return (
+            aliased(getattr(self, mapping[table])),
+            aliased(getattr(self, mapping[table] + rl)),
+        )
+
+    def get_attributes(self, session: SESSION, table: TABLE) -> SUBQUERY:
+        dataL, dataR = self.fields_table(table.__tablename__)
+        return (
+            session.query(
+                *(
+                    getattr(dataL, x).label(f"{x}_l")
+                    for x in self.settings.attributes
+                ),
+                *(
+                    getattr(dataR, x).label(f"{x}_r")
+                    for x in self.settings.attributes
+                ),
+                table._index_l,
+                table._index_r,
+                table.label,
+            )
+            .outerjoin(dataL, table._index_l == dataL._index)
+            .outerjoin(dataR, table._index_r == dataR._index)
+            .order_by(table._index_l, table._index_r)
+        ).subquery()
+
+    def compute_distances(self, subquery: SUBQUERY) -> select:
+        return select(
+            *(
+                func.jarowinkler(
+                    getattr(subquery.c, f"{attr}_l"),
+                    getattr(subquery.c, f"{attr}_r"),
+                ).label(attr)
+                for attr in self.settings.attributes
+            ),
+            subquery,
+        )
+
+    def save_comparison_attributes(self, table: TABLE, newtable: TABLE) -> None:
+        """
+        merge attributes on to dataframe with just comparison pair indices
+        assign "_l" and "_r" suffices
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+
+        self.engine.execute(
+            f"""
+        TRUNCATE TABLE {self.settings.db.db_schema}.{newtable.__tablename__};
+        """
+        )
+
+        with self.Session() as session:
+            subquery = self.get_attributes(session, table)
+            distance_query = self.compute_distances(subquery)
+
+            stmt = insert(newtable).from_select(
+                self.settings.attributes + self.compare_cols + ["label"],
+                distance_query,
+            )
+
+            session.execute(str(stmt) + " ON CONFLICT DO NOTHING")
+            session.commit()
+
+    ########################################################################
+    # Clustering Computations
+    ########################################################################
+
+    def get_scores(self, threshold) -> pd.DataFrame:
+        return pd.read_sql(
+            f"""
+            SELECT * FROM {self.settings.db.db_schema}.scores
+            WHERE score > {threshold}""",
+            con=self.engine,
+        )
+
     def get_clusters(self) -> pd.DataFrame:
         """
         adds cluster IDs to df
@@ -196,3 +291,18 @@ class DatabaseORM(Tables):
                 )
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
+
+    def merge_clusters_with_raw_data(self, df_clusters, rl):
+        # reset table
+        self.engine.execute(
+            f"""
+            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
+        """
+        )
+
+        self.bulk_insert(df=df_clusters, to_table=self.Clusters)
+
+        if rl == "":
+            return self.get_clusters()
+        else:
+            return self.get_clusters_link()

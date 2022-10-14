@@ -6,6 +6,12 @@ from oagdedupe.block import base as block
 from oagdedupe.settings import Settings
 
 
+# db
+class BaseCompute(ABC):
+    pass
+
+
+# blocking
 class BaseBlocking(ABC):
     def __init__(self):
         self.forward = block.BaseForward
@@ -13,6 +19,7 @@ class BaseBlocking(ABC):
         self.pairs = block.BasePairs
 
 
+# distance
 class BaseDistance(ABC):
     """Abstract base class for all distance configurations to inherit"""
 
@@ -21,15 +28,10 @@ class BaseDistance(ABC):
         return
 
 
+# cluster
 class BaseCluster(ABC):
     """Abstract base class for all clustering algos to inherit"""
 
     @abstractmethod
     def get_df_cluster(self):
         return
-
-
-class BaseORM(ABC):
-    """Abstract base class for all ORMs to inherit"""
-
-    pass

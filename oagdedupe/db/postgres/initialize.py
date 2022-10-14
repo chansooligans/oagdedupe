@@ -9,7 +9,7 @@ from sqlalchemy import delete, func, select
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
 from oagdedupe.containers import Container
-from oagdedupe.db.tables import Tables
+from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
 
