@@ -28,7 +28,6 @@ class Conjunctions(BlockSchemes, BaseConjunctions):
 
     optimizer: BaseOptimizer = None
     settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.blocking]
 
     @property
     def _conjunctions(self) -> List[List[StatsDict]]:
@@ -61,5 +60,5 @@ class Conjunctions(BlockSchemes, BaseConjunctions):
         # dedupe
         res = list(set(res))
         # sort
-        res = sorted(res, key=self.compute._max_key, reverse=True)
+        res = sorted(res, key=self.optimizer.compute._max_key, reverse=True)
         return res

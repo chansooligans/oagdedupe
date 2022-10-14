@@ -8,15 +8,34 @@ from oagdedupe.settings import Settings
 
 
 # db
+class BaseComputeBlocking(ABC):
+    pass
+
+
 class BaseCompute(ABC):
     @cached_property
     @abstractmethod
-    def blocking(self):
+    def blocking(self) -> BaseComputeBlocking:
         return
 
+    @abstractmethod
+    def setup(self):
+        """sets up environment
 
-class BaseComputeBlocking(ABC):
-    pass
+        creates:
+        - df
+        - pos
+        - neg
+        - unlabelled
+        - train
+        - labels
+        """
+        return
+
+    @abstractmethod
+    def label_distances(self):
+        """computes distances for labels"""
+        return
 
 
 # blocking

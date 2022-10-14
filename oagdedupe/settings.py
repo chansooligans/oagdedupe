@@ -67,6 +67,10 @@ class SettingsDB(BaseModel):
     """database schema"""
     db_schema: str = "dedupe"
 
+    @property
+    def db(self):
+        return self.path_database.split("+")[0]
+
 
 class Settings(BaseSettings):
     """project settings"""
@@ -84,7 +88,7 @@ class Settings(BaseSettings):
     model: SettingsModel = SettingsModel()
 
     """other project settings"""
-    db: SettingsDB = SettingsDB()
+    db: Optional[SettingsDB] = SettingsDB()
 
     """label studio settings"""
     label_studio: SettingsLabelStudio = SettingsLabelStudio()

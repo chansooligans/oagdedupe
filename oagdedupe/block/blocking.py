@@ -7,7 +7,7 @@ from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.base import BaseBlocking, BaseCompute
+from oagdedupe.base import BaseBlocking
 from oagdedupe.block.base import BaseConjunctions, BaseForward, BasePairs
 from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
@@ -26,13 +26,12 @@ class Blocking(BaseBlocking):
     conj: BaseConjunctions = None
     pairs: BasePairs = None
     settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.compute]
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """
         check if new block scheme is below minium reduction ratio
         """
-        return stats.rr < self.compute.blocking.min_rr
+        return stats.rr < self.forward.compute.min_rr
 
     def save_comparisons(
         self, table: str, n_covered: int, engine=ENGINE

@@ -17,9 +17,9 @@ from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.containers import Container
+from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.compute import PostgresCompute
 from oagdedupe.distance.string import AllJaro
-from oagdedupe.postgres import funcs
 from oagdedupe.settings import Settings
 
 root = logging.getLogger()
@@ -105,9 +105,6 @@ class Dedupe(BaseModel):
 
     settings: Settings
 
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
-
     def initialize(
         self,
         df: pd.DataFrame,
@@ -119,7 +116,7 @@ class Dedupe(BaseModel):
         self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
 
         logging.info("computing distances for labels")
-        self.compute._label_distances()
+        self.compute.label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
@@ -135,9 +132,6 @@ class RecordLinkage(BaseModel):
 
     settings: Settings
 
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
-
     def initialize(
         self,
         df: pd.DataFrame,
@@ -150,7 +144,7 @@ class RecordLinkage(BaseModel):
         self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
 
         logging.info("computing distances for labels")
-        self.compute._label_distances()
+        self.compute.label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
@@ -166,16 +160,13 @@ class Fapi(BaseModel):
 
     settings: Settings
 
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
-
     def initialize(self) -> None:
         """learn p(match)"""
 
         self.compute.setup(reset=False, resample=True)
 
         logging.info("computing distances for labels")
-        self.compute._label_distances()
+        self.compute.label_distances()
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)

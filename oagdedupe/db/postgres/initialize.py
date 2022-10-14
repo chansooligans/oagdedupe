@@ -9,6 +9,7 @@ from sqlalchemy import delete, func, select
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
 from oagdedupe.containers import Container
+from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
@@ -151,7 +152,7 @@ class Initialize(Tables):
                 session.add(label)
         session.commit()
 
-    def _label_distances(self) -> None:
+    def label_distances(self) -> None:
         """
         computes distances between pairs of records from labels table;
         """
@@ -221,6 +222,8 @@ class Initialize(Tables):
             used for active learning loops where model needs to pull a new
             sample, without deleting df, train, or labels
         """
+
+        funcs.create_functions(settings=self.settings)
 
         with self.Session() as session:
             if reset:
