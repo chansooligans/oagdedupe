@@ -7,9 +7,10 @@ from functools import cached_property
 
 import pandas as pd
 from sqlalchemy import (Boolean, Column, Float, Integer, MetaData, String,
-                        create_engine)
+                        create_engine, inspect)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.schema import CreateSchema
 
 from oagdedupe import utils as du
@@ -122,7 +123,14 @@ class Tables(TablesRecordLinkage):
     @cached_property
     def engine(self):
         """manages dbapi connection, created once"""
-        return create_engine(self.settings.db.path_database)
+        if self.settings.db.db == "postgresql":
+            return create_engine(self.settings.db.path_database)
+        else:
+            return create_engine(
+                self.settings.db.path_database,
+                connect_args={"check_same_thread": False},
+                poolclass=StaticPool,
+            )
 
     @cached_property
     def Session(self):
@@ -412,7 +420,6 @@ class Tables(TablesRecordLinkage):
         if self.settings.db.db == "postgresql":
             self.delete_schema()
             self.create_schema()
-        else:
-            self.engine.execute("DETACH DATABASE dedupe;")
-            self.engine.execute("ATTACH DATABASE ':memory:' AS dedupe;")
+        elif self.settings.db.db == "sqlite":
+            self.settings.db.db_schema = "main"
         self.reset_all_tables()

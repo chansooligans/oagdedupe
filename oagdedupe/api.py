@@ -93,10 +93,6 @@ class BaseModel(ABC):
             table=self.orm.FullComparisons, newtable=self.orm.FullDistances
         )
 
-    @cached_property
-    def engine(self) -> sqlalchemy.engine:
-        return create_engine(self.settings.db.path_database)
-
 
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""

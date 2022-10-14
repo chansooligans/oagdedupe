@@ -74,42 +74,55 @@ def conjunctions():
     ]
 
 
-def seed_blocks_train():
-    engine.execute(
-        """
+@pytest.fixture(autouse=True)
+def seed_blocks_train(settings):
+    sql = [
+        f"""
         CREATE TABLE IF NOT EXISTS
-            dedupe.blocks_train(_index INT, find_ngrams_4_postcode text[]);
-
+            {settings.db.db_schema}.blocks_train(_index INT, find_ngrams_4_postcode text[]);
+        """,
+        f"""
         CREATE TABLE IF NOT EXISTS
-            dedupe.blocks_train_link(_index INT, find_ngrams_4_postcode text[]);
-
-        INSERT INTO dedupe.blocks_train (_index, find_ngrams_4_postcode)
+            {settings.db.db_schema}.blocks_train_link(_index INT, find_ngrams_4_postcode text[]);
+        """,
+        f"""
+        INSERT INTO {settings.db.db_schema}.blocks_train (_index, find_ngrams_4_postcode)
         VALUES
             (0, '{"abcd","efgh"}'),
             (1, '{"abcd","xyzw"}'),
             (2, '{"opqr","xyzw"}');
-
-        INSERT INTO dedupe.blocks_train_link (_index, find_ngrams_4_postcode)
+        """,
+        f"""
+        INSERT INTO {settings.db.db_schema}.blocks_train_link (_index, find_ngrams_4_postcode)
         VALUES
             (0, '{"abcd","efgh"}'),
             (1, '{"abcd","xyzw"}'),
             (2, '{"opqr","xyzw"}')
-    """
-    )
+        """,
+    ]
+    for s in sql:
+        engine.execute(s)
 
 
-def seed_labels():
-    engine.execute(
-        """
-        DROP TABLE IF EXISTS dedupe.labels;
-        CREATE TABLE IF NOT EXISTS dedupe.labels(_index_l int, _index_r int, label int);
-        INSERT INTO dedupe.labels (_index_l, _index_r, label)
+@pytest.fixture(autouse=True)
+def seed_labels(settings):
+    sql = [
+        f"""
+        DROP TABLE IF EXISTS {settings.db.db_schema}.labels;
+        """,
+        f"""
+        CREATE TABLE IF NOT EXISTS {settings.db.db_schema}.labels(_index_l int, _index_r int, label int);
+        """,
+        f"""
+        INSERT INTO {settings.db.db_schema}.labels (_index_l, _index_r, label)
         VALUES
             (0, 0, 1),
             (0, 1, 1),
             (1, 1, 0);
-    """
-    )
+        """,
+    ]
+    for s in sql:
+        engine.execute(s)
 
 
 class TestDynamicProgram(unittest.TestCase):

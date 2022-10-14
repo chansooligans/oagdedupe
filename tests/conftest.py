@@ -34,6 +34,6 @@ def settings() -> Settings:
         ),
         db=SettingsDB(
             path_database=os.environ.get("DATABASE_URL"),
-            db_schema="dedupe",
+            schema_name="dedupe",
         ),
     )

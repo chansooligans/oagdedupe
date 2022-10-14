@@ -28,7 +28,7 @@ Make a `dedupe.settings.Settings` object. For example:
         ),
         db=SettingsDB(
             path_database="postgresql+psycopg2://username:password@172.22.39.26:8000/db",  # where to save the sqlite database holding intermediate data
-            db_schema="dedupe",
+            schema_name="dedupe",
         ),
         label_studio=SettingsLabelStudio(
             api_key="33344e8a477f8adc3eb6aa1e41444bde76285d96",  # label studio port

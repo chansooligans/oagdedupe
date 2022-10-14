@@ -103,14 +103,22 @@ class TestORM(unittest.TestCase):
             {"name": ["test"], "addr": ["test"], "_index": [-99]}
         )
         self.orm._update_table(newrow, self.init.maindf())
-        df = pd.read_sql("SELECT * FROM dedupe.df", con=self.orm.engine)
+        df = pd.read_sql(
+            f"SELECT * FROM {self.settings.db.db_schema}.df ORDER BY _index desc",
+            con=self.orm.engine,
+        )
         self.assertEqual(df.loc[100, "name"], "test")
 
     def test__bulk_insert(self):
         newrow = pd.DataFrame(
             {"name": ["test"], "addr": ["test"], "_index": [-99]}
         )
-        self.orm.engine.execute("TRUNCATE TABLE dedupe.df_link")
+        self.orm.engine.execute(
+            f"DELETE FROM {self.settings.db.db_schema}.df_link"
+        )
         self.orm.bulk_insert(newrow, self.init.maindf_link)
-        df = pd.read_sql("SELECT * FROM dedupe.df_link", con=self.orm.engine)
+        df = pd.read_sql(
+            f"SELECT * FROM {self.settings.db.db_schema}.df_link",
+            con=self.orm.engine,
+        )
         self.assertEqual(len(df), 1)

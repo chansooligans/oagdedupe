@@ -61,7 +61,9 @@ class TestDF(unittest.TestCase, FixtureMixin):
 
     def test__init_df(self):
         self.init._init_df(df=self.df, df_link=self.df2)
-        df = pd.read_sql("SELECT * from dedupe.df", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.df", con=engine
+        )
         self.assertEqual(len(df), 100)
 
 
@@ -76,17 +78,23 @@ class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
 
     def test__init_pos(self):
         self.init._init_pos(self.session)
-        df = pd.read_sql("SELECT * from dedupe.pos", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.pos", con=engine
+        )
         self.assertEqual(len(df), 4)
 
     def test__init_neg(self):
         self.init._init_neg(self.session)
-        df = pd.read_sql("SELECT * from dedupe.neg", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.neg", con=engine
+        )
         self.assertEqual(len(df), 10)
 
     def test__init_unlabelled(self):
         self.init._init_unlabelled(self.session)
-        df = pd.read_sql("SELECT * from dedupe.unlabelled", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.unlabelled", con=engine
+        )
         self.assertEqual(len(df), 100)
 
 
@@ -104,15 +112,21 @@ class TestTrainLabels(unittest.TestCase, FixtureMixin):
 
     def test__init_train(self):
         self.init._init_train(self.session)
-        df = pd.read_sql("SELECT * from dedupe.train", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.train", con=engine
+        )
         assert len(df) >= 103
 
     def test__init_labels(self):
         self.init._init_labels(self.session)
-        df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.labels", con=engine
+        )
         assert len(df) > 10
 
     def test__init_labels_link(self):
         self.init._init_labels_link(self.session)
-        df = pd.read_sql("SELECT * from dedupe.labels", con=engine)
+        df = pd.read_sql(
+            f"SELECT * from {self.settings.db.db_schema}.labels", con=engine
+        )
         assert len(df) > 10

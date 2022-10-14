@@ -65,11 +65,18 @@ class SettingsDB(BaseModel):
     )
 
     """database schema"""
-    db_schema: str = "dedupe"
+    schema_name: str = "dedupe"
 
     @property
     def db(self):
         return self.path_database.split("+")[0]
+
+    @property
+    def db_schema(self):
+        if self.db == "sqlite":
+            return "main"
+        else:
+            return self.schema_name
 
 
 class Settings(BaseSettings):
