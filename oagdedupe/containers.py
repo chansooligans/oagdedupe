@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 
-from oagdedupe.base import BaseCompute, BaseComputeBlocking
+from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
 from oagdedupe.settings import Settings
 
 

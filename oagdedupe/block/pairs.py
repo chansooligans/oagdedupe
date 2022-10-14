@@ -15,20 +15,17 @@ from sqlalchemy import create_engine
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.base import BaseCompute
+from oagdedupe.block.base import BasePairs
 from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class Pairs:
+class Pairs(BasePairs):
     """
     Computes pairs for conjunctions and appends to comparisons or
     full_comparisons table.
     """
-
-    settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.blocking]
 
     def add_new_comparisons(self, stats: StatsDict, table: str) -> int:
         """

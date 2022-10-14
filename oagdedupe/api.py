@@ -10,8 +10,7 @@ import sqlalchemy
 from dependency_injector import providers
 from sqlalchemy import create_engine
 
-from oagdedupe.base import (BaseBlocking, BaseCluster, BaseCompute,
-                            BaseComputeBlocking, BaseDistance)
+from oagdedupe.base import BaseBlocking, BaseCluster, BaseDistance
 from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
@@ -19,6 +18,7 @@ from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
 from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.compute import PostgresCompute
 from oagdedupe.distance.string import AllJaro
@@ -94,7 +94,8 @@ class BaseModel(ABC):
 
         """
         logging.info("get clusters")
-        requests.post(f"{self.settings.fast_api.url}/predict")
+        requests.post(f"{self.settings.fast_api.url}/train")
+        self.compute.predict()
         return self.cluster.get_df_cluster()
 
     def fit_blocks(self) -> None:

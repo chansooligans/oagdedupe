@@ -9,8 +9,9 @@ from sqlalchemy.orm import aliased
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
-from oagdedupe.base import BaseCompute, BaseDistance
+from oagdedupe.base import BaseDistance
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
@@ -21,9 +22,6 @@ class AllJaro(BaseDistance):
     common attributes.
     """
 
-    settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.compute]
-
     def save_distances(self, full: bool, labels: bool) -> None:
         """
         get comparison attributes from table then compute distances
@@ -33,4 +31,4 @@ class AllJaro(BaseDistance):
         ----------
         table: TABLE
         """
-        self.compute.save_comparison_attributes_dists(full=full, labels=labels)
+        self.compute.save_distances(full=full, labels=labels)

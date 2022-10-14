@@ -2,13 +2,15 @@
 general queries and database modification
 """
 
+import json
 from dataclasses import dataclass
 from typing import List
 
 import numpy as np
 import pandas as pd
+import requests
 from dependency_injector.wiring import Provide
-from sqlalchemy import create_engine, func, insert, select
+from sqlalchemy import create_engine, func, insert, select, types, update
 from sqlalchemy.orm import aliased
 from tqdm import tqdm
 
@@ -192,9 +194,7 @@ class DatabaseORM(Tables):
             subquery,
         )
 
-    def save_comparison_attributes_dists(
-        self, full: bool, labels: bool
-    ) -> None:
+    def save_distances(self, full: bool, labels: bool) -> None:
         """
         merge attributes on to dataframe with just comparison pair indices
         assign "_l" and "_r" suffices
@@ -306,3 +306,74 @@ class DatabaseORM(Tables):
             return self.get_clusters()
         else:
             return self.get_clusters_link()
+
+    ########################################################################
+    # Fast API
+    ########################################################################
+
+    def update_train(self, newlabels: pd.DataFrame) -> None:
+        """
+        for entities that were labelled,
+        set "labelled" column in train table to True
+        """
+        indices = set(newlabels["_index_l"]).union(set(newlabels["_index_r"]))
+        with self.Session() as session:
+            stmt = (
+                update(self.Train)
+                .where(self.Train._index.in_(indices))
+                .values(labelled=True)
+            )
+            session.execute(stmt)
+            session.commit()
+
+    def update_labels(self, newlabels: pd.DataFrame) -> None:
+        """
+        add new labels to labels table
+        """
+        self._update_table(newlabels, self.Labels())
+
+    def predict(self):
+        with self.Session() as session:
+
+            stmt = self.full_distance_partitions()
+
+            for i, partition in tqdm(
+                enumerate(session.execute(stmt).partitions())
+            ):
+
+                dists = np.array(
+                    [
+                        [
+                            getattr(row, x)
+                            for x in self.settings.attributes
+                            + ["_index_l", "_index_r"]
+                        ]
+                        for row in partition
+                    ]
+                )
+
+                preds = np.array(
+                    json.loads(
+                        requests.post(
+                            f"{self.settings.fast_api.url}/predict",
+                            json={"dists": dists.tolist()},
+                        ).content
+                    )
+                )
+
+                probs = pd.DataFrame(
+                    np.hstack([preds[:, 1:], dists[:, -2:]]),
+                    columns=["score", "_index_l", "_index_r"],
+                )
+
+                probs.to_sql(
+                    "scores",
+                    schema=self.settings.db.db_schema,
+                    if_exists="append" if i > 0 else "replace",
+                    con=self.engine,
+                    index=False,
+                    dtype={
+                        "_index_l": types.Integer(),
+                        "_index_r": types.Integer(),
+                    },
+                )

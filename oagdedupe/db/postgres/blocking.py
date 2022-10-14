@@ -14,9 +14,9 @@ from sqlalchemy import create_engine
 
 import oagdedupe.utils as du
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.base import BaseComputeBlocking
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseComputeBlocking
 from oagdedupe.settings import Settings
 
 

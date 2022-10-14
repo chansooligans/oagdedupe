@@ -130,21 +130,13 @@ class TasksGet(SettingsEnabler):
         for entities that were labelled,
         set "labelled" column in train table to True
         """
-        indices = set(newlabels["_index_l"]).union(set(newlabels["_index_r"]))
-        with self.api.compute.Session() as session:
-            stmt = (
-                update(self.api.compute.Train)
-                .where(self.api.compute.Train._index.in_(indices))
-                .values(labelled=True)
-            )
-            session.execute(stmt)
-            session.commit()
+        self.api.compute.update_train()
 
     def _update_labels(self, newlabels: pd.DataFrame) -> None:
         """
         add new labels to labels table
         """
-        self.api.compute._update_table(newlabels, self.api.compute.Labels())
+        self.api.compute.update_labels()
 
     def _get_new_labels(self) -> pd.DataFrame:
         """

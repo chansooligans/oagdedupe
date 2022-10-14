@@ -6,8 +6,9 @@ import pandas as pd
 from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
-from oagdedupe.base import BaseCluster, BaseCompute
+from oagdedupe.base import BaseCluster
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
@@ -16,9 +17,6 @@ class ConnectedComponents(BaseCluster):
     """
     Uses a graph to retrieve connected components
     """
-
-    settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.compute]
 
     @du.recordlinkage
     def get_df_cluster(

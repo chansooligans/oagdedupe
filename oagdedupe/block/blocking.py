@@ -25,7 +25,6 @@ class Blocking(BaseBlocking):
     forward: BaseForward = None
     conj: BaseConjunctions = None
     pairs: BasePairs = None
-    settings: Settings = Provide[Container.settings]
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """

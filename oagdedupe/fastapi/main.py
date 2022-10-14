@@ -2,6 +2,7 @@
 """
 
 import argparse
+import json
 import logging
 import time
 from typing import Union
@@ -13,6 +14,7 @@ import uvicorn
 from sqlalchemy import types
 from tqdm import tqdm
 
+from oagdedupe._typing import Dists
 from oagdedupe.fastapi import app, fapi
 from oagdedupe.labelstudio import lsapi
 from oagdedupe.settings import Settings
@@ -49,8 +51,8 @@ async def startup():
     m.generate_new_samples()
 
 
-@app.post("/predict")
-async def predict() -> None:
+@app.post("/train")
+async def train() -> None:
     """
     update model then make predictions on full data;
     load predictions to "scores" table
@@ -61,40 +63,16 @@ async def predict() -> None:
     logging.info(f"save model to {settings.model.path_model}")
     joblib.dump(m.clf.estimator, settings.model.path_model)
 
-    with m.api.compute.Session() as session:
 
-        stmt = m.api.compute.full_distance_partitions()
-
-        for i, partition in tqdm(enumerate(session.execute(stmt).partitions())):
-
-            dists = np.array(
-                [
-                    [
-                        getattr(row, x)
-                        for x in settings.attributes + ["_index_l", "_index_r"]
-                    ]
-                    for row in partition
-                ]
-            )
-
-            probs = pd.DataFrame(
-                np.hstack(
-                    [m.clf.predict_proba(dists[:, :-2])[:, 1:], dists[:, -2:]]
-                ),
-                columns=["score", "_index_l", "_index_r"],
-            )
-
-            probs.to_sql(
-                "scores",
-                schema=settings.db.db_schema,
-                if_exists="append" if i > 0 else "replace",
-                con=m.api.compute.engine,
-                index=False,
-                dtype={
-                    "_index_l": types.Integer(),
-                    "_index_r": types.Integer(),
-                },
-            )
+@app.post("/predict")
+async def predict(dists: Dists) -> Dists:
+    """
+    update model then make predictions on full data;
+    load predictions to "scores" table
+    """
+    dists = np.array(dists.dists)
+    res = m.clf.predict_proba(dists[:, :-2])
+    return res.tolist()
 
 
 @app.post("/payload")

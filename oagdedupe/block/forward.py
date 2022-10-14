@@ -11,10 +11,10 @@ from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE
-from oagdedupe.base import BaseCompute
 from oagdedupe.block.base import BaseForward
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
@@ -29,9 +29,6 @@ class Forward(BlockSchemes, BaseForward):
     ----------
     settings : Settings
     """
-
-    settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.blocking]
 
     @du.recordlinkage_repeat
     def build_forward_indices(

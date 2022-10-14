@@ -12,10 +12,10 @@ from dependency_injector.wiring import Provide
 
 import oagdedupe.utils as du
 from oagdedupe._typing import StatsDict
-from oagdedupe.base import BaseCompute
 from oagdedupe.block.base import BaseOptimizer
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.containers import Container
+from oagdedupe.db.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
@@ -25,9 +25,6 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
     Given a block scheme, use dynamic programming algorithm getBest()
     to construct best conjunction
     """
-
-    settings: Settings = Provide[Container.settings]
-    compute: BaseCompute = Provide[Container.blocking]
 
     def __eq__(self, other):
         return self is other

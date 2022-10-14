@@ -1,5 +1,6 @@
 """This module contains blocking schemes
 """
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from dependency_injector.wiring import Provide
@@ -8,13 +9,12 @@ from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
+@dataclass
 class BlockSchemes:
     """
     Attributes used to help build SQL queries, which are used to
     build forward indices.
     """
-
-    settings: Settings = Provide[Container.settings]
 
     @property
     def block_scheme_mapping(self) -> Dict[str, str]:
