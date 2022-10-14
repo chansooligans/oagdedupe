@@ -4,7 +4,7 @@
 # import os
 import logging
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, BaseSettings
 
@@ -73,6 +73,9 @@ class Settings(BaseSettings):
 
     """entity attribute names"""
     attributes: list = ["name", "addr"]
+
+    """entity attribute names"""
+    attribute_types: Dict[str, str] = {"name": "str", "addr": "str"}
 
     """name of the project, a unique identifier"""
     name: str = "default"

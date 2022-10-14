@@ -27,6 +27,13 @@ class AllJaro(BaseDistance, DatabaseORM):
     def __post_init__(self):
         self.orm = DatabaseORM(settings=self.settings)
 
+    @property
+    def func_map(self):
+        return {
+            "str": func.jarowinkler,
+            "int": func.subtract,
+        }
+
     @du.recordlinkage
     def fields_table(self, table: str, rl: str = "") -> tuple:
         mapping = {
@@ -64,11 +71,11 @@ class AllJaro(BaseDistance, DatabaseORM):
     def compute_distances(self, subquery: SUBQUERY) -> select:
         return select(
             *(
-                func.jarowinkler(
+                self.func_map[attr_type](
                     getattr(subquery.c, f"{attr}_l"),
                     getattr(subquery.c, f"{attr}_r"),
                 ).label(attr)
-                for attr in self.settings.attributes
+                for attr, attr_type in self.settings.attribute_types.items()
             ),
             subquery,
         )

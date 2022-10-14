@@ -114,3 +114,19 @@ def create_functions(settings: Settings):
         LANGUAGE plpython3u;
     """
     )
+
+    engine.execute(
+        """
+        CREATE OR REPLACE FUNCTION subtract(x integer, y integer) RETURNS integer
+        AS $$
+        return abs(x-y)
+        $$
+        LANGUAGE plpython3u;
+
+        CREATE OR REPLACE FUNCTION subtract(x numeric, y numeric) RETURNS numeric
+        AS $$
+        return abs(x-y)
+        $$
+        LANGUAGE plpython3u;
+    """
+    )

@@ -40,7 +40,10 @@ class BaseModel(ABC):
         distance: BaseDistance = AllJaro,
         cluster: BaseCluster = ConnectedComponents,
     ):
+
         self.settings = settings
+        funcs.create_functions(settings=self.settings)
+
         container = Container()
         if settings:
             container.settings.override(settings)
@@ -103,9 +106,6 @@ class Dedupe(BaseModel):
 
     settings: Settings
 
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
-
     def initialize(
         self,
         df: pd.DataFrame,
@@ -132,9 +132,6 @@ class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     settings: Settings
-
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
 
     def initialize(
         self,
@@ -163,9 +160,6 @@ class Fapi(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
     settings: Settings
-
-    def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
 
     def initialize(self) -> None:
         """learn p(match)"""

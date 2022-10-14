@@ -2,6 +2,7 @@
 """
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
 
@@ -139,12 +140,30 @@ class Tables(TablesRecordLinkage):
         return sessionmaker(bind=self.engine)
 
     @property
+    def AttributeMap(self):
+        return {
+            "str": Column(String),
+            "float": Column(Float),
+            "int": Column(Integer),
+        }
+
+    @property
+    def AttributeTypes(self):
+        types = defaultdict(str)
+        for x in self.settings.attributes:
+            if x in self.settings.attribute_types.keys():
+                types[x] = self.AttributeMap[self.settings.attribute_types[x]]
+            else:
+                types[x] = Column(String)
+        return types
+
+    @property
     def BaseAttributes(self):
         """mixin table used to share attribute columns"""
         return type(
             "Attributes",
             (object,),
-            {k: Column(String) for k in self.settings.attributes},
+            self.AttributeTypes,
         )
 
     @property
