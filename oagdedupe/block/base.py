@@ -24,10 +24,6 @@ class BaseForward(ABC):
     def build_forward_indices_full(self):
         return
 
-    @abstractmethod
-    def init_forward_index_full(self):
-        return
-
 
 class BaseConjunctions(ABC):
     settings: Settings

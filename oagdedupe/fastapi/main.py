@@ -10,7 +10,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import uvicorn
-from sqlalchemy import select
+from sqlalchemy import types
 from tqdm import tqdm
 
 from oagdedupe.fastapi import app, fapi
@@ -61,15 +61,11 @@ async def predict() -> None:
     logging.info(f"save model to {settings.model.path_model}")
     joblib.dump(m.clf.estimator, settings.model.path_model)
 
-    m.api.compute.engine.execute(
-        f"TRUNCATE TABLE {settings.db.db_schema}.scores"
-    )
-
     with m.api.compute.Session() as session:
 
         stmt = m.api.compute.full_distance_partitions()
 
-        for partition in tqdm(session.execute(stmt).partitions()):
+        for i, partition in tqdm(enumerate(session.execute(stmt).partitions())):
 
             dists = np.array(
                 [
@@ -91,9 +87,13 @@ async def predict() -> None:
             probs.to_sql(
                 "scores",
                 schema=settings.db.db_schema,
-                if_exists="append",
+                if_exists="append" if i > 0 else "replace",
                 con=m.api.compute.engine,
                 index=False,
+                dtype={
+                    "_index_l": types.Integer(),
+                    "_index_r": types.Integer(),
+                },
             )
 
 

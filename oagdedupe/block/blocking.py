@@ -7,15 +7,14 @@ from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.base import BaseBlocking
+from oagdedupe.base import BaseBlocking, BaseCompute
 from oagdedupe.block.base import BaseConjunctions, BaseForward, BasePairs
-from oagdedupe.block.mixin import ConjunctionMixin
 from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class Blocking(BaseBlocking, ConjunctionMixin):
+class Blocking(BaseBlocking):
     """
     General interface for blocking:
     - forward: constructs forward indices
@@ -27,22 +26,16 @@ class Blocking(BaseBlocking, ConjunctionMixin):
     conj: BaseConjunctions = None
     pairs: BasePairs = None
     settings: Settings = Provide[Container.settings]
+    compute: BaseCompute = Provide[Container.compute]
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """
         check if new block scheme is below minium reduction ratio
         """
-        return stats.rr < self.min_rr
-
-    def truncate_table(self, table: str, engine: ENGINE) -> None:
-        engine.execute(
-            f"""
-            TRUNCATE TABLE {self.settings.db.db_schema}.{table};
-        """
-        )
+        return stats.rr < self.compute.blocking.min_rr
 
     def save_comparisons(
-        self, table: str, n_covered: int, engine: ENGINE
+        self, table: str, n_covered: int, engine=ENGINE
     ) -> None:
         """
         Iterates through best conjunction from best to worst.
@@ -62,11 +55,9 @@ class Blocking(BaseBlocking, ConjunctionMixin):
         n_covered: int
             number of records that the conjunctions should cover
         """
-        # define here to avoid engine pickle error with multiprocess
-        self.truncate_table(self.comptab_map[table], engine=engine)
         stepsize = n_covered // 10
         step = 0
-        for stats in self.conj.conjunctions_list:
+        for i, stats in enumerate(self.conj.conjunctions_list):
             if self._check_rr(stats):
                 logging.warning(
                     f"""
@@ -76,8 +67,10 @@ class Blocking(BaseBlocking, ConjunctionMixin):
                 )
                 return
             if table == "blocks_df":
-                self.forward.build_forward_indices_full(stats.scheme, engine)
-            n_pairs = self.pairs.add_new_comparisons(stats, table, engine)
+                self.forward.build_forward_indices_full(
+                    columns=stats.scheme, engine=engine, iter=i
+                )
+            n_pairs = self.pairs.add_new_comparisons(stats, table)
             if n_pairs // stepsize > step:
                 logging.info(f"""{n_pairs} comparison pairs gathered""")
                 step = n_pairs // stepsize
@@ -87,7 +80,6 @@ class Blocking(BaseBlocking, ConjunctionMixin):
     def save(self, engine: ENGINE, full: bool = False):
 
         if full:
-            self.forward.init_forward_index_full(engine=engine)
             self.save_comparisons(
                 table="blocks_df",
                 n_covered=self.settings.model.n_covered,

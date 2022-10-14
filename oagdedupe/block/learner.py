@@ -11,15 +11,16 @@ import tqdm
 from dependency_injector.wiring import Provide
 
 from oagdedupe._typing import ENGINE, StatsDict
+from oagdedupe.base import BaseCompute
 from oagdedupe.block.base import BaseConjunctions, BaseOptimizer
-from oagdedupe.block.mixin import ConjunctionMixin
 from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class Conjunctions(ConjunctionMixin, BaseConjunctions):
+class Conjunctions(BlockSchemes, BaseConjunctions):
     """
     For each block scheme, get the best block scheme conjunctions of
     lengths 1 to k using greedy dynamic programming approach.
@@ -27,6 +28,7 @@ class Conjunctions(ConjunctionMixin, BaseConjunctions):
 
     optimizer: BaseOptimizer = None
     settings: Settings = Provide[Container.settings]
+    compute: BaseCompute = Provide[Container.blocking]
 
     @property
     def _conjunctions(self) -> List[List[StatsDict]]:
@@ -36,8 +38,8 @@ class Conjunctions(ConjunctionMixin, BaseConjunctions):
         with Pool(self.settings.model.cpus) as p:
             res = list(
                 tqdm.tqdm(
-                    p.imap(self.optimizer.get_best, self.blocking_schemes),
-                    total=len(self.blocking_schemes),
+                    p.imap(self.optimizer.get_best, self.block_scheme_tuples),
+                    total=len(self.block_scheme_tuples),
                 )
             )
         return res
@@ -59,5 +61,5 @@ class Conjunctions(ConjunctionMixin, BaseConjunctions):
         # dedupe
         res = list(set(res))
         # sort
-        res = sorted(res, key=self._max_key, reverse=True)
+        res = sorted(res, key=self.compute._max_key, reverse=True)
         return res

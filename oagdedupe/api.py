@@ -47,6 +47,7 @@ class BaseModel(ABC):
             container.settings.override(settings)
         if compute:
             container.compute.override(self.compute)
+            container.blocking.override(self.compute.blocking)
 
         self.blocking = blocking(
             forward=Forward(),

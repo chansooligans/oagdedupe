@@ -202,12 +202,6 @@ class DatabaseORM(Tables):
         pd.DataFrame
         """
 
-        self.engine.execute(
-            f"""
-        TRUNCATE TABLE {self.settings.db.db_schema}.{newtable.__tablename__};
-        """
-        )
-
         with self.Session() as session:
             subquery = self.get_attributes(session, table)
             distance_query = self.compute_distances(subquery)
@@ -293,12 +287,6 @@ class DatabaseORM(Tables):
             return dflist
 
     def merge_clusters_with_raw_data(self, df_clusters, rl):
-        # reset table
-        self.engine.execute(
-            f"""
-            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
-        """
-        )
 
         self.bulk_insert(df=df_clusters, to_table=self.Clusters)
 

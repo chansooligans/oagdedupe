@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from functools import cached_property
 from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
@@ -8,6 +9,13 @@ from oagdedupe.settings import Settings
 
 # db
 class BaseCompute(ABC):
+    @cached_property
+    @abstractmethod
+    def blocking(self):
+        return
+
+
+class BaseComputeBlocking(ABC):
     pass
 
 

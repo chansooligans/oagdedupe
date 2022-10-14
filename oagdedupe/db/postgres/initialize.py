@@ -190,6 +190,19 @@ class Initialize(Tables):
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
         self._resample_unlabelled(session)
+        # reset table
+        for table in [
+            "clusters",
+            "comparisons",
+            "full_comparisons",
+            "distances",
+            "full_distances",
+        ]:
+            self.engine.execute(
+                f"""
+                TRUNCATE TABLE {self.settings.db.db_schema}.{table};
+            """
+            )
 
     @du.recordlinkage
     def setup(

@@ -39,7 +39,7 @@ class ConnectedComponents(BaseCluster):
         """
         scores = self.compute.get_scores(threshold=threshold)
         df_clusters = getattr(self, f"get_connected_components{rl}")(scores)
-        self.compute.merge_clusters_with_raw_data(
+        return self.compute.merge_clusters_with_raw_data(
             df_clusters=df_clusters, rl=rl
         )
 

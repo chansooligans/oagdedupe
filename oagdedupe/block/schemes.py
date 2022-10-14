@@ -71,3 +71,7 @@ class BlockSchemes:
             for scheme, nlist in self.block_schemes
             for n in nlist
         ]
+
+    @property
+    def block_scheme_tuples(self):
+        return [tuple([x]) for x in self.block_scheme_names]
