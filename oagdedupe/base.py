@@ -51,11 +51,6 @@ class BaseComputeBlocking(ABC):
 
 @dataclass
 class BaseCompute(ABC):
-    @cached_property
-    @abstractmethod
-    def blocking(self) -> BaseComputeBlocking:
-        pass
-
     @abstractmethod
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""
