@@ -28,30 +28,34 @@ root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
 
+@dataclass
 class BaseModel(ABC):
     """Abstract base class from which all model classes inherit.
     All descendent classes must implement predict, train, and candidates methods.
     """
 
-    def __init__(
+    settings: Settings
+    compute: BaseCompute = PostgresCompute
+    compute_blocking: BaseComputeBlocking = PostgresBlocking
+    blocking: BaseBlocking = Blocking
+    distance: BaseDistance = AllJaro
+    cluster: BaseCluster = ConnectedComponents
+
+    def __post_init__(
         self,
-        settings: Settings,
-        compute: BaseCompute = PostgresCompute,
-        compute_blocking: BaseComputeBlocking = PostgresBlocking,
-        blocking: BaseBlocking = Blocking,
-        distance: BaseDistance = AllJaro,
-        cluster: BaseCluster = ConnectedComponents,
     ):
-        self.settings = settings
-        self.compute = compute(settings=self.settings)
 
         container = Container()
 
-        if settings:
-            container.settings.override(settings)
-        if compute:
-            container.compute.override(providers.Factory(compute))
-            container.blocking.override(providers.Factory(compute_blocking))
+        if self.settings:
+            container.settings.override(self.settings)
+        if self.compute:
+            container.compute.override(providers.Factory(self.compute))
+            container.blocking.override(
+                providers.Factory(self.compute_blocking)
+            )
+
+        self.compute = self.compute(settings=self.settings)
 
         container.wire(
             packages=[
@@ -63,15 +67,15 @@ class BaseModel(ABC):
             ],
         )
 
-        self.blocking = blocking(
+        self.blocking = self.blocking(
             forward=Forward(),
             conj=Conjunctions(optimizer=DynamicProgram()),
             pairs=Pairs(),
         )
 
-        self.distance = distance()
+        self.distance = self.distance()
 
-        self.cluster = cluster()
+        self.cluster = self.cluster()
 
     @abstractmethod
     def initialize(self):
@@ -112,10 +116,12 @@ class BaseModel(ABC):
         return create_engine(self.settings.db.path_database)
 
 
+@dataclass
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
+    def __post_init__(self):
+        super().__post_init__()
 
     def initialize(
         self,
@@ -137,10 +143,12 @@ class Dedupe(BaseModel):
         self.distance.save_distances(full=False, labels=False)
 
 
+@dataclass
 class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
+    def __post_init__(self):
+        super().__post_init__()
 
     def initialize(
         self,
@@ -163,10 +171,12 @@ class RecordLinkage(BaseModel):
         self.distance.save_distances(full=False, labels=False)
 
 
+@dataclass
 class Fapi(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
+    def __post_init__(self):
+        super().__post_init__()
 
     def initialize(self) -> None:
         """learn p(match)"""
