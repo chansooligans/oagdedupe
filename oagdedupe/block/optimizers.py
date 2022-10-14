@@ -67,7 +67,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         apply filters and sort block schemes
         """
         filtered = [x for x in scores if self._keep_if(x)]
-        dp[n] = max(filtered, key=self.compute._max_key)
+        dp[n] = max(filtered, key=self.compute.max_key)
         return dp
 
     def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:

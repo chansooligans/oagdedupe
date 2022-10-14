@@ -157,9 +157,7 @@ class Initialize(Tables):
         computes distances between pairs of records from labels table;
         """
         self.distance = AllJaro(settings=self.settings)
-        self.distance.save_distances(
-            table=self.Labels, newtable=self.LabelsDistances
-        )
+        self.distance.save_distances(full=False, labels=True)
 
     @du.recordlinkage_repeat
     def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:

@@ -7,9 +7,11 @@ from typing import Dict, List, Optional, Tuple, Union
 import pandas as pd
 import requests
 import sqlalchemy
+from dependency_injector import providers
 from sqlalchemy import create_engine
 
-from oagdedupe.base import BaseBlocking, BaseCluster, BaseCompute, BaseDistance
+from oagdedupe.base import (BaseBlocking, BaseCluster, BaseCompute,
+                            BaseComputeBlocking, BaseDistance)
 from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
@@ -17,7 +19,7 @@ from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
 from oagdedupe.containers import Container
-from oagdedupe.db.postgres import funcs
+from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.compute import PostgresCompute
 from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
@@ -35,6 +37,7 @@ class BaseModel(ABC):
         self,
         settings: Settings,
         compute: BaseCompute = PostgresCompute,
+        compute_blocking: BaseComputeBlocking = PostgresBlocking,
         blocking: BaseBlocking = Blocking,
         distance: BaseDistance = AllJaro,
         cluster: BaseCluster = ConnectedComponents,
@@ -43,11 +46,22 @@ class BaseModel(ABC):
         self.compute = compute(settings=self.settings)
 
         container = Container()
+
         if settings:
             container.settings.override(settings)
         if compute:
-            container.compute.override(self.compute)
-            container.blocking.override(self.compute.blocking)
+            container.compute.override(providers.Factory(compute))
+            container.blocking.override(providers.Factory(compute_blocking))
+
+        container.wire(
+            packages=[
+                "oagdedupe.db",
+                "oagdedupe.db.postgres",
+                "oagdedupe.block",
+                "oagdedupe.distance",
+                "oagdedupe.cluster",
+            ],
+        )
 
         self.blocking = blocking(
             forward=Forward(),
@@ -90,10 +104,7 @@ class BaseModel(ABC):
 
         # get distances
         logging.info("computing distances")
-        self.distance.save_distances(
-            table=self.compute.FullComparisons,
-            newtable=self.compute.FullDistances,
-        )
+        self.distance.save_distances(full=True, labels=False)
 
     @cached_property
     def engine(self) -> sqlalchemy.engine:
@@ -122,9 +133,7 @@ class Dedupe(BaseModel):
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.compute.Comparisons, newtable=self.compute.Distances
-        )
+        self.distance.save_distances(full=False, labels=False)
 
 
 class RecordLinkage(BaseModel):
@@ -150,9 +159,7 @@ class RecordLinkage(BaseModel):
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.compute.Comparisons, newtable=self.compute.Distances
-        )
+        self.distance.save_distances(full=False, labels=False)
 
 
 class Fapi(BaseModel):
@@ -172,6 +179,4 @@ class Fapi(BaseModel):
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.compute.Comparisons, newtable=self.compute.Distances
-        )
+        self.distance.save_distances(full=False, labels=False)

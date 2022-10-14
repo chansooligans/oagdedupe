@@ -66,8 +66,8 @@ class Blocking(BaseBlocking):
                 )
                 return
             if table == "blocks_df":
-                self.forward.build_forward_indices_full(
-                    columns=stats.scheme, engine=engine, iter=i
+                self.forward.build_forward_indices(
+                    columns=stats.scheme, engine=engine, iter=i, full=True
                 )
             n_pairs = self.pairs.add_new_comparisons(stats, table)
             if n_pairs // stepsize > step:
@@ -85,7 +85,7 @@ class Blocking(BaseBlocking):
                 engine=engine,
             )
         else:
-            self.forward.build_forward_indices(engine=engine)
+            self.forward.build_forward_indices(engine=engine, full=False)
             self.save_comparisons(
                 table="blocks_train", n_covered=500, engine=engine
             )

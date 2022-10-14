@@ -54,6 +54,6 @@ class Pairs:
         int
             total number of pairs gathered so far
         """
-        self.compute._save_comparison_pairs(names=stats.scheme, table=table)
-        n = self.compute._get_n_pairs(table=table)
+        self.compute.save_comparison_pairs(names=stats.scheme, table=table)
+        n = self.compute.get_n_pairs(table=table)
         return n

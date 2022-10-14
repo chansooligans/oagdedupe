@@ -2,6 +2,9 @@
 """
 from typing import Dict, List, Optional, Tuple
 
+from dependency_injector.wiring import Provide
+
+from oagdedupe.containers import Container
 from oagdedupe.settings import Settings
 
 
@@ -11,7 +14,7 @@ class BlockSchemes:
     build forward indices.
     """
 
-    settings: Settings
+    settings: Settings = Provide[Container.settings]
 
     @property
     def block_scheme_mapping(self) -> Dict[str, str]:

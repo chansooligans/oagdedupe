@@ -24,7 +24,7 @@ class AllJaro(BaseDistance):
     settings: Settings = Provide[Container.settings]
     compute: BaseCompute = Provide[Container.compute]
 
-    def save_distances(self, table: TABLE, newtable: TABLE) -> None:
+    def save_distances(self, full: bool, labels: bool) -> None:
         """
         get comparison attributes from table then compute distances
         for each pair
@@ -33,4 +33,4 @@ class AllJaro(BaseDistance):
         ----------
         table: TABLE
         """
-        self.compute.save_comparison_attributes(table=table, newtable=newtable)
+        self.compute.save_comparison_attributes_dists(full=full, labels=labels)

@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 from functools import cached_property
 from multiprocessing import Pool
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -98,12 +98,6 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
         GROUP BY {", ".join(self._aliases(names))}
         """
 
-    def _max_key(self, x: StatsDict) -> Tuple[float, int, int]:
-        """
-        block scheme stats ordering
-        """
-        return (x.rr, x.positives, -x.negatives)
-
     @property
     def comptab_map(self) -> Dict[str, str]:
         return {"blocks_train": "comparisons", "blocks_df": "full_comparisons"}
@@ -136,7 +130,6 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
             );
         """
 
-    @du.recordlinkage_repeat
     def add_scheme(
         self,
         table: str,
@@ -180,15 +173,6 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
         return
 
     @du.recordlinkage_repeat
-    def build_forward_indices(self, engine: ENGINE, rl: str = "") -> None:
-        """
-        Executes SQL queries to build forward indices for train datasets
-        """
-        engine.execute(
-            self.query_blocks(table=f"train{rl}", columns=self.block_scheme_sql)
-        )
-
-    @du.recordlinkage_repeat
     def init_forward_index_full(self, engine: ENGINE, rl: str = "") -> None:
         """initialize full index table"""
         engine.execute(
@@ -203,31 +187,46 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
         """
         )
 
-    def build_forward_indices_full(
-        self, columns: Tuple[str], engine: ENGINE, iter: int
+    @du.recordlinkage_repeat
+    def build_forward_indices(
+        self,
+        full: bool = False,
+        rl: str = "",
+        engine: Optional[ENGINE] = None,
+        iter: Optional[int] = None,
+        columns: Optional[Tuple[str]] = None,
     ) -> None:
         """
-        Executes SQL queries to build forward indices on full data.
+        Executes SQL queries to build forward indices on train or full data
 
         Parameters
         ----------
         columns : List[str]
             block schemes to include in forward index
         """
-        if iter == 0:
-            self.init_forward_index_full(engine=engine)
-        for col in columns:
+        if full:
+            if iter == 0:
+                self.init_forward_index_full(engine=engine)
+            for col in columns:
 
-            logging.info(
-                "building forward index on full data for scheme %s", col
+                logging.info(
+                    "building forward index on full data for scheme %s", col
+                )
+
+                exists = pd.read_sql(
+                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1",
+                    con=engine,
+                ).columns
+
+                self.add_scheme(
+                    table="df", col=col, exists=exists, engine=engine, rl=rl
+                )
+        else:
+            engine.execute(
+                self.query_blocks(
+                    table=f"train{rl}", columns=self.block_scheme_sql
+                )
             )
-
-            exists = pd.read_sql(
-                f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1",
-                con=engine,
-            ).columns
-
-            self.add_scheme(table="df", col=col, exists=exists, engine=engine)
 
     ########################################################################
     # optimizer
@@ -297,7 +296,7 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
     # Pairs
     ########################################################################
 
-    def _get_n_pairs(self, table: str) -> pd.DataFrame:
+    def get_n_pairs(self, table: str) -> pd.DataFrame:
         newtable = self.comptab_map[table]
         return self.query(
             f"""
@@ -306,7 +305,7 @@ class PostgresBlocking(BaseComputeBlocking, BlockSchemes):
         )["count"].values[0]
 
     @du.recordlinkage
-    def _save_comparison_pairs(
+    def save_comparison_pairs(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
         """

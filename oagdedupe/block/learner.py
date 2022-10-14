@@ -60,5 +60,5 @@ class Conjunctions(BlockSchemes, BaseConjunctions):
         # dedupe
         res = list(set(res))
         # sort
-        res = sorted(res, key=self.optimizer.compute._max_key, reverse=True)
+        res = sorted(res, key=self.optimizer.compute.max_key, reverse=True)
         return res

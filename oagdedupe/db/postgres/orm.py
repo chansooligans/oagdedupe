@@ -192,7 +192,9 @@ class DatabaseORM(Tables):
             subquery,
         )
 
-    def save_comparison_attributes(self, table: TABLE, newtable: TABLE) -> None:
+    def save_comparison_attributes_dists(
+        self, full: bool, labels: bool
+    ) -> None:
         """
         merge attributes on to dataframe with just comparison pair indices
         assign "_l" and "_r" suffices
@@ -201,6 +203,16 @@ class DatabaseORM(Tables):
         ----------
         pd.DataFrame
         """
+        if labels:
+            table = self.Labels
+            newtable = self.LabelsDistances
+        else:
+            if full:
+                table = self.FullComparisons
+                newtable = self.FullDistances
+            else:
+                table = self.Comparisons
+                newtable = self.Distances
 
         with self.Session() as session:
             subquery = self.get_attributes(session, table)

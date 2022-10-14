@@ -34,23 +34,17 @@ class Forward(BlockSchemes, BaseForward):
     compute: BaseCompute = Provide[Container.blocking]
 
     @du.recordlinkage_repeat
-    def build_forward_indices(self, engine: ENGINE, rl: str = "") -> None:
-        """
-        Executes SQL queries to build forward indices for train datasets
-        """
-        self.compute.build_forward_indices(engine=engine)
-
-    def build_forward_indices_full(
-        self, columns: Tuple[str], engine: ENGINE, iter: int
+    def build_forward_indices(
+        self,
+        engine: ENGINE,
+        rl: str = "",
+        full: bool = False,
+        iter: Optional[int] = None,
+        columns: Optional[Tuple[str]] = None,
     ) -> None:
         """
-        Executes SQL queries to build forward indices on full data.
-
-        Parameters
-        ----------
-        columns : List[str]
-            block schemes to include in forward index
+        Build forward indices for train or full datasets
         """
-        self.compute.build_forward_indices_full(
-            columns=columns, engine=engine, iter=iter
+        self.compute.build_forward_indices(
+            engine=engine, rl=rl, full=full, iter=iter, columns=columns
         )
