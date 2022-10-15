@@ -57,9 +57,7 @@ async def train() -> None:
     update model then make predictions on full data;
     load predictions to "scores" table
     """
-
     m._train()
-
     logging.info(f"save model to {settings.model.path_model}")
     joblib.dump(m.clf.estimator, settings.model.path_model)
 

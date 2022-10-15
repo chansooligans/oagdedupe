@@ -110,7 +110,7 @@ class TasksPost(SettingsEnabler):
             n_instances=n_instances,
         )
 
-        return distances.loc[sample_idx, self.api.compute.compare_cols]
+        return distances.loc[sample_idx, self.settings.compare_cols]
 
     def _post_tasks(self) -> None:
         """

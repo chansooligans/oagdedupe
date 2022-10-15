@@ -11,7 +11,6 @@ from oagdedupe._typing import SESSION, TABLE
 from oagdedupe.containers import Container
 from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.tables import Tables
-from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
 
 
@@ -152,13 +151,6 @@ class Initialize(Tables):
                 session.add(label)
         session.commit()
 
-    def label_distances(self) -> None:
-        """
-        computes distances between pairs of records from labels table;
-        """
-        self.distance = AllJaro(settings=self.settings)
-        self.distance.save_distances(full=False, labels=True)
-
     @du.recordlinkage_repeat
     def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
@@ -237,3 +229,5 @@ class Initialize(Tables):
             if resample:
                 logging.info("resampling train")
                 self._resample(session)
+
+            logging.info("computing distances for labels")

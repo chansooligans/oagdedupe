@@ -120,31 +120,6 @@ class DatabaseORM(Tables):
             ).order_by(self.FullDistances._index_l, self.FullDistances._index_r)
             return pd.read_sql(q.statement, q.session.bind)
 
-    @property
-    def compare_cols(self) -> List[str]:
-        """
-        gets comparison columns with "_l" and "_r" suffices
-
-        Returns
-        ----------
-        List[str]
-
-        Examples
-        ----------
-        >>> self.settings.attributes = ["name", "address"]
-        >>> compare_cols()
-        [
-            "name_l", "address_l", "name_r", "address_r",
-            "_index_l", "_index_r"
-        ]
-        """
-        columns = [
-            [f"{x}_l" for x in self.settings.attributes],
-            [f"{x}_r" for x in self.settings.attributes],
-            ["_index_l", "_index_r"],
-        ]
-        return sum(columns, [])
-
     ########################################################################
     # String Distance Computations
     ########################################################################
@@ -219,7 +194,9 @@ class DatabaseORM(Tables):
             distance_query = self.compute_distances(subquery)
 
             stmt = insert(newtable).from_select(
-                self.settings.attributes + self.compare_cols + ["label"],
+                self.settings.attributes
+                + self.settings.compare_cols
+                + ["label"],
                 distance_query,
             )
 

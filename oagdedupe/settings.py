@@ -100,3 +100,28 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_nested_delimiter = "__"
         env_prefix = "oagdedupe_"
+
+    @property
+    def compare_cols(self) -> List[str]:
+        """
+        gets comparison columns with "_l" and "_r" suffices
+
+        Returns
+        ----------
+        List[str]
+
+        Examples
+        ----------
+        >>> self.settings.attributes = ["name", "address"]
+        >>> compare_cols()
+        [
+            "name_l", "address_l", "name_r", "address_r",
+            "_index_l", "_index_r"
+        ]
+        """
+        columns = [
+            [f"{x}_l" for x in self.attributes],
+            [f"{x}_r" for x in self.attributes],
+            ["_index_l", "_index_r"],
+        ]
+        return sum(columns, [])

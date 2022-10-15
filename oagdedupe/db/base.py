@@ -12,7 +12,6 @@ from oagdedupe.block import base as block
 from oagdedupe.settings import Settings
 
 
-# db
 @dataclass
 class BaseComputeBlocking(ABC):
     def max_key(self, x: StatsDict) -> Tuple[float, int, int]:
@@ -31,6 +30,7 @@ class BaseComputeBlocking(ABC):
         iter: Optional[int] = None,
         columns: Optional[Tuple[str]] = None,
     ) -> None:
+        """build forward indices on train or full data"""
         pass
 
     @abstractmethod
@@ -38,6 +38,13 @@ class BaseComputeBlocking(ABC):
     def get_inverted_index_stats(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> StatsDict:
+        """get inverted index stats:
+        - reduction ratio
+        - positive coverage
+        - negative coverage
+        - the number of pairs
+        - name of scheme
+        """
         pass
 
     @abstractmethod
@@ -45,6 +52,7 @@ class BaseComputeBlocking(ABC):
     def save_comparison_pairs(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
+        """apply inverted index to get comparison pairs"""
         pass
 
     @abstractmethod
@@ -71,38 +79,13 @@ class BaseCompute(ABC):
         pass
 
     @abstractmethod
-    def label_distances(self):
-        """computes distances for labels"""
-        pass
-
-    @abstractmethod
-    def get_scores(self, threshold):
-        """returns model predictions"""
-        pass
-
-    @abstractmethod
-    def merge_clusters_with_raw_data(self, df_clusters, rl):
-        """appends attributes to predictions"""
-        pass
-
-    @abstractmethod
     def save_distances(self, full, labels):
         """computes distances on attributes"""
         pass
 
     @abstractmethod
-    def get_labels(self) -> pd.DataFrame:
-        """get the labels table"""
-        pass
-
-    @abstractmethod
-    def get_distances(self) -> pd.DataFrame:
-        """get the labels table"""
-        pass
-
-    @property
-    @abstractmethod
-    def compare_cols(self) -> List[str]:
+    def merge_clusters_with_raw_data(self, df_clusters, rl):
+        """appends attributes to predictions"""
         pass
 
     @abstractmethod
@@ -122,4 +105,23 @@ class BaseCompute(ABC):
 
     @abstractmethod
     def predict(self):
+        """
+        use active learner model to predict whether comparison pairs
+        are matches
+        """
+        pass
+
+    @abstractmethod
+    def get_scores(self, threshold):
+        """returns model predictions"""
+        pass
+
+    @abstractmethod
+    def get_distances(self) -> pd.DataFrame:
+        """get the labels table"""
+        pass
+
+    @abstractmethod
+    def get_labels(self) -> pd.DataFrame:
+        """get the labels table"""
         pass

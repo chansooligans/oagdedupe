@@ -34,45 +34,22 @@ class PostgresCompute(BaseCompute):
         - unlabelled
         - train
         - labels
+        - labels with distances
         """
-        return self.initialize.setup(
+        self.initialize.setup(
             df=df, df2=df2, reset=reset, resample=resample, rl=rl
         )
+        self.orm.save_distances(full=False, labels=True)
 
-    def label_distances(self):
-        """computes distances for labels"""
-        return self.initialize.label_distances()
-
-    def get_scores(self, threshold) -> pd.DataFrame:
-        """returns model predictions"""
-        return self.orm.get_scores(threshold=threshold)
-
-    def get_distances(self) -> pd.DataFrame:
-        """
-        query unlabelled distances for sample data
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        return self.orm.get_distances()
+    def save_distances(self, full, labels):
+        """computes distances on attributes"""
+        return self.orm.save_distances(full=full, labels=labels)
 
     def merge_clusters_with_raw_data(self, df_clusters, rl):
         """appends attributes to predictions"""
         return self.orm.merge_clusters_with_raw_data(
             df_clusters=df_clusters, rl=rl
         )
-
-    def save_distances(self, full, labels):
-        """computes distances on attributes"""
-        return self.orm.save_distances(full=full, labels=labels)
-
-    def get_labels(self):
-        return self.orm.get_labels()
-
-    @property
-    def compare_cols(self) -> List[str]:
-        return self.orm.compare_cols
 
     def update_train(self, newlabels: pd.DataFrame) -> None:
         """
@@ -89,3 +66,20 @@ class PostgresCompute(BaseCompute):
 
     def predict(self):
         return self.orm.predict()
+
+    def get_scores(self, threshold) -> pd.DataFrame:
+        """returns model predictions"""
+        return self.orm.get_scores(threshold=threshold)
+
+    def get_distances(self) -> pd.DataFrame:
+        """
+        query unlabelled distances for sample data
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+        return self.orm.get_distances()
+
+    def get_labels(self):
+        return self.orm.get_labels()

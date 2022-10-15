@@ -11,12 +11,8 @@ import tqdm
 from dependency_injector.wiring import Provide
 
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.block.base import BaseConjunctions, BaseOptimizer
-from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.block.base import BaseConjunctions
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.containers import Container
-from oagdedupe.db.base import BaseCompute
-from oagdedupe.settings import Settings
 
 
 @dataclass

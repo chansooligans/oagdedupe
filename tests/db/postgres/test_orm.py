@@ -92,12 +92,6 @@ class TestORM(unittest.TestCase):
         df = self.orm.get_full_comparison_indices()
         self.assertEqual(df.loc[0, "_index_l"], 1)
 
-    def test_compare_cols(self):
-        self.assertEqual(
-            self.orm.compare_cols,
-            ["name_l", "addr_l", "name_r", "addr_r", "_index_l", "_index_r"],
-        )
-
     def test__update_table(self):
         newrow = pd.DataFrame(
             {"name": ["test"], "addr": ["test"], "_index": [-99]}

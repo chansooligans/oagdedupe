@@ -21,7 +21,6 @@ from oagdedupe.containers import Container
 from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
 from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.compute import PostgresCompute
-from oagdedupe.distance.string import AllJaro
 from oagdedupe.settings import Settings
 
 root = logging.getLogger()
@@ -38,7 +37,6 @@ class BaseModel(ABC):
     compute: BaseCompute = PostgresCompute
     compute_blocking: BaseComputeBlocking = PostgresBlocking
     blocking: BaseBlocking = Blocking
-    distance: BaseDistance = AllJaro
     cluster: BaseCluster = ConnectedComponents
 
     def __post_init__(
@@ -62,7 +60,6 @@ class BaseModel(ABC):
                 "oagdedupe.db",
                 "oagdedupe.db.postgres",
                 "oagdedupe.block",
-                "oagdedupe.distance",
                 "oagdedupe.cluster",
             ],
         )
@@ -72,8 +69,6 @@ class BaseModel(ABC):
             conj=Conjunctions(optimizer=DynamicProgram()),
             pairs=Pairs(),
         )
-
-        self.distance = self.distance()
 
         self.cluster = self.cluster()
 
@@ -109,7 +104,7 @@ class BaseModel(ABC):
 
         # get distances
         logging.info("computing distances")
-        self.distance.save_distances(full=True, labels=False)
+        self.compute.save_distances(full=True, labels=False)
 
     @cached_property
     def engine(self) -> sqlalchemy.engine:
@@ -133,14 +128,11 @@ class Dedupe(BaseModel):
 
         self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
 
-        logging.info("computing distances for labels")
-        self.compute.label_distances()
-
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=False)
 
 
 @dataclass
@@ -161,14 +153,11 @@ class RecordLinkage(BaseModel):
 
         self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
 
-        logging.info("computing distances for labels")
-        self.compute.label_distances()
-
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=False)
 
 
 @dataclass
@@ -183,11 +172,8 @@ class Fapi(BaseModel):
 
         self.compute.setup(reset=False, resample=True)
 
-        logging.info("computing distances for labels")
-        self.compute.label_distances()
-
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=False)
