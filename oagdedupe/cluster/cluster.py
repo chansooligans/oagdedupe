@@ -6,6 +6,8 @@ import pandas as pd
 
 from oagdedupe import utils as du
 from oagdedupe.base import BaseCluster
+from oagdedupe.db.base import BaseCompute
+from oagdedupe.settings import Settings
 
 
 @dataclass
@@ -13,6 +15,9 @@ class ConnectedComponents(BaseCluster):
     """
     Uses a graph to retrieve connected components
     """
+
+    compute: BaseCompute
+    settings: Settings
 
     @du.recordlinkage
     def get_df_cluster(

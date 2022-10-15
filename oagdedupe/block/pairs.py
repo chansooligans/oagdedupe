@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BasePairs
+from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.settings import Settings
 
 
 @dataclass
@@ -16,6 +18,9 @@ class Pairs(BasePairs):
     Computes pairs for conjunctions and appends to comparisons or
     full_comparisons table.
     """
+
+    compute: BaseComputeBlocking
+    settings: Settings
 
     def add_new_comparisons(self, stats: StatsDict, table: str) -> int:
         """

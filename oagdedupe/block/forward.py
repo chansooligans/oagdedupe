@@ -8,10 +8,13 @@ from typing import Dict, List, Optional, Tuple
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE
 from oagdedupe.block.base import BaseForward
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.settings import Settings
 
 
 @dataclass
-class Forward(BaseForward):
+class Forward(BaseForward, BlockSchemes):
     """
     Used to build forward indices. A forward index
     is a table where rows are entities, columns are block schemes,
@@ -21,6 +24,9 @@ class Forward(BaseForward):
     ----------
     settings : Settings
     """
+
+    compute: BaseComputeBlocking
+    settings: Settings
 
     def build_forward_indices(
         self,

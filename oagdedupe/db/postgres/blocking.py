@@ -13,7 +13,9 @@ from sqlalchemy import create_engine
 
 import oagdedupe.utils as du
 from oagdedupe._typing import ENGINE, StatsDict
+from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.settings import Settings
 
 
 @dataclass
@@ -181,7 +183,8 @@ class BlockingMixin:
 
 
 @dataclass
-class PostgresBlocking(BaseComputeBlocking, BlockingMixin):
+class PostgresBlocking(BaseComputeBlocking, BlockingMixin, BlockSchemes):
+    settings: Settings
 
     ########################################################################
     # forward

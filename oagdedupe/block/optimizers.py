@@ -8,14 +8,20 @@ from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.base import BaseOptimizer
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.settings import Settings
 
 
 @dataclass
-class DynamicProgram(BaseOptimizer):
+class DynamicProgram(BaseOptimizer, BlockSchemes):
     """
     Given a block scheme, use dynamic programming algorithm getBest()
     to construct best conjunction
     """
+
+    compute: BaseComputeBlocking
+    settings: Settings
 
     def __eq__(self, other):
         return self is other

@@ -10,15 +10,20 @@ from typing import List
 import tqdm
 
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.block.base import BaseConjunctions
+from oagdedupe.block.base import BaseConjunctions, BaseOptimizer
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.settings import Settings
 
 
 @dataclass
-class Conjunctions(BaseConjunctions):
+class Conjunctions(BaseConjunctions, BlockSchemes):
     """
     For each block scheme, get the best block scheme conjunctions of
     lengths 1 to k using greedy dynamic programming approach.
     """
+
+    optimizer: BaseOptimizer
+    settings: Settings
 
     @property
     def _conjunctions(self) -> List[List[StatsDict]]:
