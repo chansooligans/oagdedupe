@@ -21,6 +21,10 @@ class PostgresCompute(BaseCompute):
     def blocking(self):
         return PostgresBlocking(settings=self.settings)
 
+    ########################################################################
+    # initialize
+    ########################################################################
+
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""
     ) -> None:
@@ -44,11 +48,26 @@ class PostgresCompute(BaseCompute):
         """computes distances on attributes"""
         return self.orm.save_distances(full=full, labels=labels)
 
+    ########################################################################
+    # clusters
+    ########################################################################
+
+    def predict(self):
+        return self.orm.predict()
+
     def merge_clusters_with_raw_data(self, df_clusters, rl):
         """appends attributes to predictions"""
         return self.orm.merge_clusters_with_raw_data(
             df_clusters=df_clusters, rl=rl
         )
+
+    def get_scores(self, threshold) -> pd.DataFrame:
+        """returns model predictions"""
+        return self.orm.get_scores(threshold=threshold)
+
+    ########################################################################
+    # fapi
+    ########################################################################
 
     def update_train(self, newlabels: pd.DataFrame) -> None:
         """
@@ -62,13 +81,6 @@ class PostgresCompute(BaseCompute):
         add new labels to labels table
         """
         return self.orm.update_labels(newlabels=newlabels)
-
-    def predict(self):
-        return self.orm.predict()
-
-    def get_scores(self, threshold) -> pd.DataFrame:
-        """returns model predictions"""
-        return self.orm.get_scores(threshold=threshold)
 
     def get_distances(self) -> pd.DataFrame:
         """

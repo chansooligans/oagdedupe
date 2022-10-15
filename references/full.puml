@@ -35,10 +35,6 @@ BaseBlocking *-- BasePairs
 BaseBlocking *-- BaseConjunctions
 
 BaseConjunctions *-- BaseOptimizer
-BaseBlocking <|-- "ext" Blocking
-BaseForward <|-- "ext" Forward
-BasePairs <|-- "ext" Pairs
-BaseConjunctions <|-- "ext" Conjunctions
 BaseOptimizer <|-- "ext" DynamicProgram
 
 BaseForward <|-- BlockSchemes
@@ -49,6 +45,7 @@ BaseOptimizer <|-- BlockSchemes
 BaseCluster <|-- "ext" ConnectedComponents
 
 'compute
+BaseCompute *-- BaseComputeBlocking
 BaseForward *-- BaseComputeBlocking
 BasePairs *-- BaseComputeBlocking
 BaseConjunctions *-- BaseComputeBlocking
