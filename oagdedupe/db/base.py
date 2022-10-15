@@ -62,14 +62,7 @@ class BaseComputeBlocking(ABC, BlockSchemes):
 
 
 @dataclass
-class BaseCompute(ABC):
-    settings: Settings
-
-    @cached_property
-    @abstractmethod
-    def blocking(self):
-        return BaseComputeBlocking(settings=self.settings)
-
+class BaseInitialize(ABC):
     @abstractmethod
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""
@@ -86,6 +79,9 @@ class BaseCompute(ABC):
         """
         pass
 
+
+@dataclass
+class BaseORM(ABC):
     @abstractmethod
     def save_distances(self, full, labels):
         """computes distances on attributes"""
@@ -133,3 +129,13 @@ class BaseCompute(ABC):
     def get_labels(self) -> pd.DataFrame:
         """get the labels table"""
         pass
+
+
+@dataclass
+class BaseCompute(BaseInitialize, BaseORM, ABC):
+    settings: Settings
+
+    @cached_property
+    @abstractmethod
+    def blocking(self):
+        return BaseComputeBlocking(settings=self.settings)

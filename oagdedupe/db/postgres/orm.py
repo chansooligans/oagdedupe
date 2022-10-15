@@ -16,12 +16,13 @@ from tqdm import tqdm
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
+from oagdedupe.db.base import BaseORM
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class DatabaseORM(Tables):
+class DatabaseORM(BaseORM, Tables):
     """
     Object to query database using sqlalchemy ORM.
     Uses the Session object as interface to the database.
