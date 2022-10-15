@@ -13,7 +13,7 @@ from oagdedupe.settings import Settings
 
 @dataclass
 class PostgresCompute(BaseCompute, Initialize, DatabaseORM):
-    """ """
+    """concrete implementation for compute"""
 
     settings: Settings
 

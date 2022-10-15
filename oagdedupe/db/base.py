@@ -13,6 +13,8 @@ from oagdedupe.settings import Settings
 
 @dataclass
 class BaseComputeBlocking(ABC, BlockSchemes):
+    """abstract implementation for blocking-related operations"""
+
     settings: Settings
 
     def max_key(self, x: StatsDict) -> Tuple[float, int, int]:
@@ -63,6 +65,8 @@ class BaseComputeBlocking(ABC, BlockSchemes):
 
 @dataclass
 class BaseInitialize(ABC):
+    """abstract implementation for initialization operations"""
+
     @abstractmethod
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""
@@ -82,6 +86,8 @@ class BaseInitialize(ABC):
 
 @dataclass
 class BaseORM(ABC):
+    """abstract implementation for orm operations"""
+
     @abstractmethod
     def save_distances(self, full, labels):
         """computes distances on attributes"""
@@ -133,6 +139,8 @@ class BaseORM(ABC):
 
 @dataclass
 class BaseCompute(BaseInitialize, BaseORM, ABC):
+    """abstract implementation for compute"""
+
     settings: Settings
 
     @cached_property
