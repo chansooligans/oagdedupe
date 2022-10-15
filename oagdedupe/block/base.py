@@ -2,11 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from dependency_injector.wiring import Provide
-
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseComputeBlocking
 from oagdedupe.settings import Settings
 
@@ -16,7 +13,7 @@ class BaseOptimizer(ABC, BlockSchemes):
     """Abstract base class for all conjunction optimizing algorithms to inherit"""
 
     compute: BaseComputeBlocking
-    settings: Settings = Provide[SettingsContainer.settings]
+    settings: Settings
 
     @abstractmethod
     def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:
@@ -26,7 +23,7 @@ class BaseOptimizer(ABC, BlockSchemes):
 @dataclass
 class BaseForward(ABC, BlockSchemes):
     compute: BaseComputeBlocking
-    settings: Settings = Provide[SettingsContainer.settings]
+    settings: Settings
 
     @abstractmethod
     def build_forward_indices(self):
@@ -36,7 +33,7 @@ class BaseForward(ABC, BlockSchemes):
 @dataclass
 class BaseConjunctions(ABC, BlockSchemes):
     optimizer: BaseOptimizer
-    settings: Settings = Provide[SettingsContainer.settings]
+    settings: Settings
 
     @property
     @abstractmethod
@@ -47,7 +44,7 @@ class BaseConjunctions(ABC, BlockSchemes):
 @dataclass
 class BasePairs(ABC):
     compute: BaseComputeBlocking
-    settings: Settings = Provide[SettingsContainer.settings]
+    settings: Settings
 
     @abstractmethod
     def add_new_comparisons(self):

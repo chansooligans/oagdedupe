@@ -8,7 +8,6 @@ from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
-from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings

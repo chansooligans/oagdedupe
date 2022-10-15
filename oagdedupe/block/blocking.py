@@ -15,9 +15,17 @@ class Blocking(BaseBlocking):
     """
 
     def __post_init__(self):
-        self.forward = self.forward(compute=self.compute)
-        self.conj = self.conj(optimizer=self.optimizer(compute=self.compute))
-        self.pairs = self.pairs(compute=self.compute)
+        self.settings = self.compute.settings
+        self.forward = self.forward(
+            compute=self.compute, settings=self.settings
+        )
+        self.pairs = self.pairs(compute=self.compute, settings=self.settings)
+        self.conj = self.conj(
+            settings=self.settings,
+            optimizer=self.optimizer(
+                compute=self.compute, settings=self.settings
+            ),
+        )
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """

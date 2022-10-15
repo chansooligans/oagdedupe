@@ -16,7 +16,6 @@ from oagdedupe.block.forward import Forward
 from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
-from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
 from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.compute import PostgresCompute
@@ -41,32 +40,15 @@ class BaseModel(ABC):
     def __post_init__(
         self,
     ):
-
-        self._inject_settings()
-        self.compute = self.compute()
+        self.compute = self.compute(settings=self.settings)
 
         self.blocking = self.blocking(
-            compute=self.compute_blocking(),
-            forward=Forward,
+            compute=self.compute_blocking(settings=self.settings),
             optimizer=DynamicProgram,
-            pairs=Pairs,
         )
 
-        self.cluster = self.cluster(compute=self.compute)
-
-    def _inject_settings(self):
-        settings_container = SettingsContainer()
-
-        if self.settings:
-            settings_container.settings.override(self.settings)
-
-        settings_container.wire(
-            packages=[
-                "oagdedupe.db",
-                "oagdedupe.db.postgres",
-                "oagdedupe.block",
-                "oagdedupe.cluster",
-            ],
+        self.cluster = self.cluster(
+            settings=self.settings, compute=self.compute
         )
 
     @abstractmethod

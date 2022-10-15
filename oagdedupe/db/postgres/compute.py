@@ -1,13 +1,10 @@
 from dataclasses import dataclass
 
 import pandas as pd
-from dependency_injector.wiring import Provide
 
-from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseCompute
 from oagdedupe.db.postgres.initialize import Initialize
 from oagdedupe.db.postgres.orm import DatabaseORM
-from oagdedupe.settings import Settings
 
 
 @dataclass

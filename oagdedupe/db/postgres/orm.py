@@ -16,7 +16,6 @@ from tqdm import tqdm
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
-from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
