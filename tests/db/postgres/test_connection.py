@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.db.tables import Tables
+from oagdedupe.db.postgres.tables import Tables
 
 db_url = os.environ.get("DATABASE_URL")
 engine = create_engine(db_url)

@@ -1,11 +1,12 @@
 import unittest
+from dataclasses import dataclass
 
 import pytest
 from pytest import MonkeyPatch
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.learner import Conjunctions
-from oagdedupe.block.optimizers import DynamicProgram
+from oagdedupe.db.base import BaseComputeBlocking
 
 
 @pytest.fixture
@@ -47,10 +48,14 @@ def conjunctions():
     ]
 
 
+@dataclass
+class FakeOptimizer:
+    compute = BaseComputeBlocking
+
+
 class TestConjunctions(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def prepare_fixtures(self, settings, conjunctions):
-        # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.conjunctions = conjunctions
 
@@ -58,13 +63,18 @@ class TestConjunctions(unittest.TestCase):
         self.monkeypatch = MonkeyPatch()
         self.cover = Conjunctions(
             settings=self.settings,
-            optimizer=DynamicProgram(settings=self.settings),
+            optimizer=FakeOptimizer(),
         )
         return
 
     def test_conjunctions_list(self):
         with self.monkeypatch.context() as m:
             m.setattr(Conjunctions, "_conjunctions", self.conjunctions)
+            m.setattr(
+                BaseComputeBlocking,
+                "max_key",
+                lambda x: (x.rr, x.positives, -x.negatives),
+            )
             res = self.cover.conjunctions_list
         self.assertEqual(res[0].rr, 0.99)
         self.monkeypatch.delattr(Conjunctions, "_conjunctions")

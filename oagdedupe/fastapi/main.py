@@ -2,6 +2,7 @@
 """
 
 import argparse
+import json
 import logging
 import time
 from typing import Union
@@ -10,9 +11,10 @@ import joblib
 import numpy as np
 import pandas as pd
 import uvicorn
-from sqlalchemy import select
+from sqlalchemy import types
 from tqdm import tqdm
 
+from oagdedupe._typing import Dists
 from oagdedupe.fastapi import app, fapi
 from oagdedupe.labelstudio import lsapi
 from oagdedupe.settings import Settings
@@ -49,50 +51,26 @@ async def startup():
     m.generate_new_samples()
 
 
-@app.post("/predict")
-async def predict() -> None:
+@app.post("/train")
+async def train() -> None:
     """
     update model then make predictions on full data;
     load predictions to "scores" table
     """
-
     m._train()
-
     logging.info(f"save model to {settings.model.path_model}")
     joblib.dump(m.clf.estimator, settings.model.path_model)
 
-    m.api.init.engine.execute(f"TRUNCATE TABLE {settings.db.db_schema}.scores")
 
-    with m.api.orm.Session() as session:
-
-        stmt = m.api.orm.full_distance_partitions()
-
-        for partition in tqdm(session.execute(stmt).partitions()):
-
-            dists = np.array(
-                [
-                    [
-                        getattr(row, x)
-                        for x in settings.attributes + ["_index_l", "_index_r"]
-                    ]
-                    for row in partition
-                ]
-            )
-
-            probs = pd.DataFrame(
-                np.hstack(
-                    [m.clf.predict_proba(dists[:, :-2])[:, 1:], dists[:, -2:]]
-                ),
-                columns=["score", "_index_l", "_index_r"],
-            )
-
-            probs.to_sql(
-                "scores",
-                schema=settings.db.db_schema,
-                if_exists="append",
-                con=m.api.init.engine,
-                index=False,
-            )
+@app.post("/predict")
+async def predict(dists: Dists) -> Dists:
+    """
+    update model then make predictions on full data;
+    load predictions to "scores" table
+    """
+    dists = np.array(dists.dists)
+    res = m.clf.predict_proba(dists[:, :-2])
+    return res.tolist()
 
 
 @app.post("/payload")

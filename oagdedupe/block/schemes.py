@@ -1,17 +1,15 @@
 """This module contains blocking schemes
 """
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from oagdedupe.settings import Settings
 
-
+@dataclass
 class BlockSchemes:
     """
     Attributes used to help build SQL queries, which are used to
     build forward indices.
     """
-
-    settings: Settings
 
     @property
     def block_scheme_mapping(self) -> Dict[str, str]:
@@ -71,3 +69,7 @@ class BlockSchemes:
             for scheme, nlist in self.block_schemes
             for n in nlist
         ]
+
+    @property
+    def block_scheme_tuples(self):
+        return [tuple([x]) for x in self.block_scheme_names]

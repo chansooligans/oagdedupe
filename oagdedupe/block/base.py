@@ -1,13 +1,18 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.db.base import BaseComputeBlocking
 from oagdedupe.settings import Settings
 
 
-class BaseOptimizer(ABC):
-    """Abstract base class for all conjunction optimizing algorithms to inherit"""
+@dataclass
+class BaseOptimizer(ABC, BlockSchemes):
+    """Abstract class for all conjunction optimizing algorithms to inherit"""
 
+    compute: BaseComputeBlocking
     settings: Settings
 
     @abstractmethod
@@ -15,23 +20,24 @@ class BaseOptimizer(ABC):
         return
 
 
-class BaseForward(ABC):
+@dataclass
+class BaseForward(ABC, BlockSchemes):
+    """Abstract class for building forward index"""
+
+    compute: BaseComputeBlocking
+    settings: Settings
+
     @abstractmethod
     def build_forward_indices(self):
         return
 
-    @abstractmethod
-    def build_forward_indices_full(self):
-        return
 
-    @abstractmethod
-    def init_forward_index_full(self):
-        return
+@dataclass
+class BaseConjunctions(ABC, BlockSchemes):
+    """Abstract class for building conjunction lists"""
 
-
-class BaseConjunctions(ABC):
+    optimizer: BaseOptimizer
     settings: Settings
-    Optimizer: BaseOptimizer
 
     @property
     @abstractmethod
@@ -39,7 +45,13 @@ class BaseConjunctions(ABC):
         return
 
 
+@dataclass
 class BasePairs(ABC):
+    """Abstract class for applying conjunctions to obtain comparison pairs"""
+
+    compute: BaseComputeBlocking
+    settings: Settings
+
     @abstractmethod
     def add_new_comparisons(self):
         return

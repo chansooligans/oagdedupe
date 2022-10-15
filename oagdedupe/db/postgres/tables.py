@@ -12,7 +12,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import CreateSchema
 
-from oagdedupe import utils as du
 from oagdedupe._typing import TABLE
 from oagdedupe.settings import Settings
 

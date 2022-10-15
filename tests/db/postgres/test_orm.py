@@ -11,9 +11,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.orm import DatabaseORM
-from oagdedupe.db.tables import Tables
+from oagdedupe.db.postgres.initialize import Initialize
+from oagdedupe.db.postgres.orm import DatabaseORM
+from oagdedupe.db.postgres.tables import Tables
 
 
 @pytest.fixture(scope="module")
@@ -91,12 +91,6 @@ class TestORM(unittest.TestCase):
     def test_get_full_comparison_indices(self):
         df = self.orm.get_full_comparison_indices()
         self.assertEqual(df.loc[0, "_index_l"], 1)
-
-    def test_compare_cols(self):
-        self.assertEqual(
-            self.orm.compare_cols,
-            ["name_l", "addr_l", "name_r", "addr_r", "_index_l", "_index_r"],
-        )
 
     def test__update_table(self):
         newrow = pd.DataFrame(

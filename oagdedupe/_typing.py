@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 from pydantic import BaseModel
 from sqlalchemy import engine, orm, sql
 
@@ -8,6 +9,10 @@ SESSION = orm.session.Session
 TABLE = orm.decl_api.DeclarativeMeta
 SUBQUERY = sql.selectable.Subquery
 ENGINE = engine.base.Engine
+
+# Fast API
+class Dists(BaseModel):
+    dists: List[List[float]]
 
 
 # LSAPI

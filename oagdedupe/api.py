@@ -9,54 +9,39 @@ import requests
 import sqlalchemy
 from sqlalchemy import create_engine
 
-from oagdedupe.base import BaseBlocking, BaseCluster, BaseDistance, BaseORM
+from oagdedupe import db
+from oagdedupe.base import BaseCluster
 from oagdedupe.block.blocking import Blocking
-from oagdedupe.block.forward import Forward
-from oagdedupe.block.learner import Conjunctions
 from oagdedupe.block.optimizers import DynamicProgram
-from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
-from oagdedupe.containers import Container
-from oagdedupe.db.initialize import Initialize
-from oagdedupe.db.orm import DatabaseORM
-from oagdedupe.distance.string import AllJaro
-from oagdedupe.postgres import funcs
 from oagdedupe.settings import Settings
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
 
+@dataclass
 class BaseModel(ABC):
     """Abstract base class from which all model classes inherit.
     All descendent classes must implement predict, train, and candidates methods.
     """
 
-    def __init__(
+    settings: Settings
+    cluster: BaseCluster = ConnectedComponents
+
+    def __post_init__(
         self,
-        settings: Settings,
-        orm: BaseORM = DatabaseORM,
-        blocking: BaseBlocking = Blocking,
-        distance: BaseDistance = AllJaro,
-        cluster: BaseCluster = ConnectedComponents,
     ):
-        self.settings = settings
-        container = Container()
-        if settings:
-            container.settings.override(settings)
+        self.compute = db.get_computer(settings=self.settings)
 
-        self.init = Initialize()
-        self.orm = orm()
-
-        self.blocking = blocking(
-            forward=Forward(),
-            conj=Conjunctions(optimizer=DynamicProgram()),
-            pairs=Pairs(),
+        self.blocking = Blocking(
+            compute=self.compute.blocking,
+            optimizer=DynamicProgram,
         )
 
-        self.distance = distance()
-
-        self.cluster = cluster()
+        self.cluster = self.cluster(
+            settings=self.settings, compute=self.compute
+        )
 
     @abstractmethod
     def initialize(self):
@@ -79,7 +64,8 @@ class BaseModel(ABC):
 
         """
         logging.info("get clusters")
-        requests.post(f"{self.settings.fast_api.url}/predict")
+        requests.post(f"{self.settings.fast_api.url}/train")
+        self.compute.predict()
         return self.cluster.get_df_cluster()
 
     def fit_blocks(self) -> None:
@@ -89,22 +75,19 @@ class BaseModel(ABC):
 
         # get distances
         logging.info("computing distances")
-        self.distance.save_distances(
-            table=self.orm.FullComparisons, newtable=self.orm.FullDistances
-        )
+        self.compute.save_distances(full=True, labels=False)
 
     @cached_property
     def engine(self) -> sqlalchemy.engine:
         return create_engine(self.settings.db.path_database)
 
 
+@dataclass
 class Dedupe(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
-
     def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
+        super().__post_init__()
 
     def initialize(
         self,
@@ -114,27 +97,21 @@ class Dedupe(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.init.setup(df=df, df2=None, reset=reset, resample=resample)
-
-        logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
-        )
+        self.compute.save_distances(full=False, labels=False)
 
 
+@dataclass
 class RecordLinkage(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
-
     def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
+        super().__post_init__()
 
     def initialize(
         self,
@@ -145,40 +122,29 @@ class RecordLinkage(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.init.setup(df=df, df2=df2, reset=reset, resample=resample)
-
-        logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
-        )
+        self.compute.save_distances(full=False, labels=False)
 
 
+@dataclass
 class Fapi(BaseModel):
     """General dedupe block, inherits from BaseModel."""
 
-    settings: Settings
-
     def __post_init__(self):
-        funcs.create_functions(settings=self.settings)
+        super().__post_init__()
 
     def initialize(self) -> None:
         """learn p(match)"""
 
-        self.init.setup(reset=False, resample=True)
-
-        logging.info("computing distances for labels")
-        self.init._label_distances()
+        self.compute.setup(reset=False, resample=True)
 
         logging.info("getting comparisons")
         self.blocking.save(engine=self.engine, full=False)
 
         logging.info("get distance matrix")
-        self.distance.save_distances(
-            table=self.orm.Comparisons, newtable=self.orm.Distances
-        )
+        self.compute.save_distances(full=False, labels=False)
