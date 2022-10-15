@@ -20,6 +20,11 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
     """
     For each block scheme, get the best block scheme conjunctions of
     lengths 1 to k using greedy dynamic programming approach.
+
+    Attributes
+    ----------
+    optimizer: BaseOptimizer
+    settings: Settings
     """
 
     optimizer: BaseOptimizer
@@ -29,6 +34,10 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
     def _conjunctions(self) -> List[List[StatsDict]]:
         """
         Computes conjunctions for each block scheme in parallel
+
+        Returns
+        ----------
+        List[List[StatsDict]]
         """
         with Pool(self.settings.model.cpus) as p:
             res = list(
@@ -42,18 +51,16 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
     @cached_property
     def conjunctions_list(self) -> List[StatsDict]:
         """
-        attribute containing list of conjunctions;
-        sorted by reduction ratio, positive coverage, negative coverage
+        flattens, dedupes and sorts list of conjunctions
 
         Returns
         ----------
-        List[dict]
+        List[StatsDict]
         """
         # flatten
         res = sum(
             [sublist for sublist in self._conjunctions if sublist], []
         )  # type: List[StatsDict]
-        # dedupe
         res = list(set(res))
         # sort
         res = sorted(res, key=self.optimizer.compute.max_key, reverse=True)

@@ -5,7 +5,6 @@ creating forward index.
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE
 from oagdedupe.block.base import BaseForward
 from oagdedupe.block.schemes import BlockSchemes
@@ -23,6 +22,7 @@ class Forward(BaseForward, BlockSchemes):
     Attributes
     ----------
     settings : Settings
+    compute : BaseComputeBlocking
     """
 
     compute: BaseComputeBlocking

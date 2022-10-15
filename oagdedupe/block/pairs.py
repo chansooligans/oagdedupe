@@ -17,6 +17,11 @@ class Pairs(BasePairs):
     """
     Computes pairs for conjunctions and appends to comparisons or
     full_comparisons table.
+
+    Attributes
+    ----------
+    compute: BaseComputeBlocking
+    settings: Settings
     """
 
     compute: BaseComputeBlocking
@@ -33,9 +38,7 @@ class Pairs(BasePairs):
 
         Parameters
         ----------
-        df: pd.DataFrame
-            comparisons pairs already gathered
-        stats: dict
+        stats: StatsDict
             stats for new block scheme
         table: str
             table used to get pairs (either blocks_train for sample or

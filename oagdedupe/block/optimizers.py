@@ -18,6 +18,11 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
     """
     Given a block scheme, use dynamic programming algorithm getBest()
     to construct best conjunction
+
+    Attributes
+    ----------
+    compute: BaseComputeBlocking
+    settings: Settings
     """
 
     compute: BaseComputeBlocking

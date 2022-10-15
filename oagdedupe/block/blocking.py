@@ -88,6 +88,11 @@ class Blocking(BaseBlocking):
                 return
 
     def save(self, engine: ENGINE, full: bool = False):
+        """save comparison pairs, using conjunctions list;
+
+        if using sample, build all forward indices first, otherwise
+        builds forward index as needed
+        """
 
         if full:
             self.save_comparisons(

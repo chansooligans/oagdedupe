@@ -10,7 +10,7 @@ from oagdedupe.settings import Settings
 
 @dataclass
 class BaseOptimizer(ABC, BlockSchemes):
-    """Abstract base class for all conjunction optimizing algorithms to inherit"""
+    """Abstract class for all conjunction optimizing algorithms to inherit"""
 
     compute: BaseComputeBlocking
     settings: Settings
@@ -22,6 +22,8 @@ class BaseOptimizer(ABC, BlockSchemes):
 
 @dataclass
 class BaseForward(ABC, BlockSchemes):
+    """Abstract class for building forward index"""
+
     compute: BaseComputeBlocking
     settings: Settings
 
@@ -32,6 +34,8 @@ class BaseForward(ABC, BlockSchemes):
 
 @dataclass
 class BaseConjunctions(ABC, BlockSchemes):
+    """Abstract class for building conjunction lists"""
+
     optimizer: BaseOptimizer
     settings: Settings
 
@@ -43,6 +47,8 @@ class BaseConjunctions(ABC, BlockSchemes):
 
 @dataclass
 class BasePairs(ABC):
+    """Abstract class for applying conjunctions to obtain comparison pairs"""
+
     compute: BaseComputeBlocking
     settings: Settings
 
