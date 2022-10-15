@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import cached_property
 from typing import List, Optional, Tuple
 
 import pandas as pd
@@ -63,6 +64,11 @@ class BaseComputeBlocking(ABC, BlockSchemes):
 @dataclass
 class BaseCompute(ABC):
     settings: Settings
+
+    @cached_property
+    @abstractmethod
+    def blocking(self):
+        return BaseComputeBlocking(settings=self.settings)
 
     @abstractmethod
     def setup(

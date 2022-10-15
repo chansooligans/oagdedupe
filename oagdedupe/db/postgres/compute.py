@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from functools import cached_property
 
 import pandas as pd
 
 from oagdedupe.db.base import BaseCompute
+from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.initialize import Initialize
 from oagdedupe.db.postgres.orm import DatabaseORM
 
@@ -14,6 +16,10 @@ class PostgresCompute(BaseCompute):
     def __post_init__(self):
         self.initialize = Initialize(settings=self.settings)
         self.orm = DatabaseORM(settings=self.settings)
+
+    @cached_property
+    def blocking(self):
+        return PostgresBlocking(settings=self.settings)
 
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""

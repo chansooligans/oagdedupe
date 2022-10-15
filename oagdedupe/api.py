@@ -7,18 +7,13 @@ from typing import Dict, List, Optional, Tuple, Union
 import pandas as pd
 import requests
 import sqlalchemy
-from dependency_injector import providers
 from sqlalchemy import create_engine
 
-from oagdedupe.base import BaseBlocking, BaseCluster
+from oagdedupe import db
+from oagdedupe.base import BaseCluster
 from oagdedupe.block.blocking import Blocking
-from oagdedupe.block.forward import Forward
 from oagdedupe.block.optimizers import DynamicProgram
-from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
-from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
-from oagdedupe.db.postgres.blocking import PostgresBlocking
-from oagdedupe.db.postgres.compute import PostgresCompute
 from oagdedupe.settings import Settings
 
 root = logging.getLogger()
@@ -32,18 +27,15 @@ class BaseModel(ABC):
     """
 
     settings: Settings
-    compute: BaseCompute = PostgresCompute
-    compute_blocking: BaseComputeBlocking = PostgresBlocking
-    blocking: BaseBlocking = Blocking
     cluster: BaseCluster = ConnectedComponents
 
     def __post_init__(
         self,
     ):
-        self.compute = self.compute(settings=self.settings)
+        self.compute = db.get_computer(settings=self.settings)
 
-        self.blocking = self.blocking(
-            compute=self.compute_blocking(settings=self.settings),
+        self.blocking = Blocking(
+            compute=self.compute.blocking,
             optimizer=DynamicProgram,
         )
 
