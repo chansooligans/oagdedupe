@@ -30,7 +30,6 @@ class Forward(BaseForward, BlockSchemes):
 
     def build_forward_indices(
         self,
-        engine: ENGINE,
         rl: str = "",
         full: bool = False,
         iter: Optional[int] = None,
@@ -40,5 +39,5 @@ class Forward(BaseForward, BlockSchemes):
         Build forward indices for train or full datasets
         """
         self.compute.build_forward_indices(
-            engine=engine, rl=rl, full=full, iter=iter, columns=columns
+            rl=rl, full=full, iter=iter, columns=columns
         )

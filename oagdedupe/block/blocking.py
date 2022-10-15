@@ -44,9 +44,7 @@ class Blocking(BaseBlocking):
         """
         return stats.rr < self.forward.compute.min_rr
 
-    def save_comparisons(
-        self, table: str, n_covered: int, engine=ENGINE
-    ) -> None:
+    def save_comparisons(self, table: str, n_covered: int) -> None:
         """
         Iterates through best conjunction from best to worst.
 
@@ -78,7 +76,7 @@ class Blocking(BaseBlocking):
                 return
             if table == "blocks_df":
                 self.forward.build_forward_indices(
-                    columns=stats.scheme, engine=engine, iter=i, full=True
+                    columns=stats.scheme, iter=i, full=True
                 )
             n_pairs = self.pairs.add_new_comparisons(stats, table)
             if n_pairs // stepsize > step:
@@ -87,7 +85,7 @@ class Blocking(BaseBlocking):
             if n_pairs > n_covered:
                 return
 
-    def save(self, engine: ENGINE, full: bool = False):
+    def save(self, full: bool = False):
         """save comparison pairs, using conjunctions list;
 
         if using sample, build all forward indices first, otherwise
@@ -96,12 +94,8 @@ class Blocking(BaseBlocking):
 
         if full:
             self.save_comparisons(
-                table="blocks_df",
-                n_covered=self.settings.model.n_covered,
-                engine=engine,
+                table="blocks_df", n_covered=self.settings.model.n_covered
             )
         else:
-            self.forward.build_forward_indices(engine=engine, full=False)
-            self.save_comparisons(
-                table="blocks_train", n_covered=500, engine=engine
-            )
+            self.forward.build_forward_indices(full=False)
+            self.save_comparisons(table="blocks_train", n_covered=500)

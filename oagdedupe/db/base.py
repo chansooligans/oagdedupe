@@ -29,7 +29,6 @@ class BaseComputeBlocking(ABC, BlockSchemes):
         self,
         full: bool = False,
         rl: str = "",
-        engine: Optional[ENGINE] = None,
         iter: Optional[int] = None,
         columns: Optional[Tuple[str]] = None,
     ) -> None:

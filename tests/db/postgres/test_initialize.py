@@ -54,8 +54,8 @@ class FixtureMixin:
 class TestDF(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
+        self.init.engine = engine
         self.init.reset_tables()
         return
 
@@ -68,9 +68,9 @@ class TestDF(unittest.TestCase, FixtureMixin):
 class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
         self.init.reset_tables()
+        self.init.engine = engine
         self.init._init_df(df=self.df, df_link=self.df2)
         return
 
@@ -93,8 +93,8 @@ class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
 class TestTrainLabels(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
+        self.init.engine = engine
         self.init.reset_tables()
         self.init._init_df(df=self.df, df_link=self.df2)
         self.init._init_pos(self.session)

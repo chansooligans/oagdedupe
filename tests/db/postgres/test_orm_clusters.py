@@ -61,8 +61,8 @@ class TestORM(unittest.TestCase):
 
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.monkeypatch.setattr(Tables, "engine", engine)
         self.init = Initialize(settings=self.settings)
+        self.init.engine = engine
         self.init.reset_tables()
         self.orm = DatabaseORM(settings=self.settings)
         seed_maindf(orm=self.orm)

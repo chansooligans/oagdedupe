@@ -1,13 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import cached_property
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import requests
-import sqlalchemy
-from sqlalchemy import create_engine
 
 from oagdedupe import db
 from oagdedupe.base import BaseCluster
@@ -71,15 +68,11 @@ class BaseModel(ABC):
     def fit_blocks(self) -> None:
 
         logging.info("getting comparisons")
-        self.blocking.save(engine=self.engine, full=True)
+        self.blocking.save(full=True)
 
         # get distances
         logging.info("computing distances")
         self.compute.save_distances(full=True, labels=False)
-
-    @cached_property
-    def engine(self) -> sqlalchemy.engine:
-        return create_engine(self.settings.db.path_database)
 
 
 @dataclass
@@ -100,10 +93,10 @@ class Dedupe(BaseModel):
         self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
-        self.blocking.save(engine=self.engine, full=False)
+        self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=True)
 
 
 @dataclass
@@ -125,10 +118,10 @@ class RecordLinkage(BaseModel):
         self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
-        self.blocking.save(engine=self.engine, full=False)
+        self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=True)
 
 
 @dataclass
@@ -144,7 +137,7 @@ class Fapi(BaseModel):
         self.compute.setup(reset=False, resample=True)
 
         logging.info("getting comparisons")
-        self.blocking.save(engine=self.engine, full=False)
+        self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=False)
+        self.compute.save_distances(full=False, labels=True)

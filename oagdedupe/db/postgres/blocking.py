@@ -51,7 +51,6 @@ class BlockingMixin:
         table: str,
         col: str,
         exists: List[str],
-        engine: ENGINE,
         rl: str = "",
     ) -> None:
         """
@@ -67,14 +66,14 @@ class BlockingMixin:
         else:
             coltype = "text"
 
-        engine.execute(
+        self.execute(
             f"""
             ALTER TABLE {self.settings.db.db_schema}.blocks_{table}{rl}
             ADD COLUMN IF NOT EXISTS {col} {coltype}
         """
         )
 
-        engine.execute(
+        self.execute(
             f"""
             UPDATE {self.settings.db.db_schema}.blocks_{table}{rl} AS t1
             SET {col} = t2.{col}
@@ -85,13 +84,12 @@ class BlockingMixin:
             WHERE t1._index = t2._index;
         """
         )
-        engine.dispose()
         return
 
     @du.recordlinkage_repeat
-    def init_forward_index_full(self, engine: ENGINE, rl: str = "") -> None:
+    def init_forward_index_full(self, rl: str = "") -> None:
         """initialize full index table"""
-        engine.execute(
+        self.execute(
             f"""
             DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_df{rl};
 
@@ -112,6 +110,15 @@ class BlockingMixin:
         res = pd.read_sql(sql, con=engine)
         engine.dispose()
         return res
+
+    def execute(self, sql: str) -> None:
+        """
+        for parallel implementation, need to create separate engine
+        for each process
+        """
+        engine = create_engine(self.settings.db.path_database)
+        engine.execute(sql)
+        engine.dispose()
 
     @du.recordlinkage_both
     def n_df(self, rl: str = "") -> pd.DataFrame:
@@ -186,16 +193,11 @@ class BlockingMixin:
 class PostgresBlocking(BaseComputeBlocking, BlockingMixin, BlockSchemes):
     settings: Settings
 
-    ########################################################################
-    # forward
-    ########################################################################
-
     @du.recordlinkage_repeat
     def build_forward_indices(
         self,
         full: bool = False,
         rl: str = "",
-        engine: Optional[ENGINE] = None,
         iter: Optional[int] = None,
         columns: Optional[Tuple[str]] = None,
     ) -> None:
@@ -209,31 +211,24 @@ class PostgresBlocking(BaseComputeBlocking, BlockingMixin, BlockSchemes):
         """
         if full:
             if iter == 0:
-                self.init_forward_index_full(engine=engine)
+                self.init_forward_index_full()
             for col in columns:
 
                 logging.info(
                     "building forward index on full data for scheme %s", col
                 )
 
-                exists = pd.read_sql(
-                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1",
-                    con=engine,
+                exists = self.query(
+                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
                 ).columns
 
-                self.add_scheme(
-                    table="df", col=col, exists=exists, engine=engine, rl=rl
-                )
+                self.add_scheme(table="df", col=col, exists=exists, rl=rl)
         else:
-            engine.execute(
+            self.execute(
                 self.query_blocks(
                     table=f"train{rl}", columns=self.block_scheme_sql
                 )
             )
-
-    ########################################################################
-    # optimizer
-    ########################################################################
 
     @du.recordlinkage
     def get_inverted_index_stats(
@@ -294,10 +289,6 @@ class PostgresBlocking(BaseComputeBlocking, BlockingMixin, BlockSchemes):
         res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
 
         return StatsDict(**res)
-
-    ########################################################################
-    # Pairs
-    ########################################################################
 
     def get_n_pairs(self, table: str) -> pd.DataFrame:
         newtable = self.comptab_map[table]
