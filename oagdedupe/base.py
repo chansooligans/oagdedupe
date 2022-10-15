@@ -19,19 +19,6 @@ class BaseBlocking(ABC):
         self.pairs = block.BasePairs
 
 
-# distance
-@dataclass
-class BaseDistance(ABC):
-    """Abstract base class for all distance configurations to inherit"""
-
-    settings: Settings = Provide[Container.settings]
-    compute = Provide[Container.compute]
-
-    @abstractmethod
-    def save_distances(self, full: bool):
-        return
-
-
 # cluster
 @dataclass
 class BaseCluster(ABC):

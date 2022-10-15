@@ -1,16 +1,9 @@
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
-
-import pandas as pd
-from dependency_injector.wiring import Provide
-from sqlalchemy import create_engine
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.base import BaseBlocking
 from oagdedupe.block.base import BaseConjunctions, BaseForward, BasePairs
-from oagdedupe.containers import Container
-from oagdedupe.settings import Settings
 
 
 @dataclass

@@ -1,6 +1,4 @@
-from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 import pandas as pd
 from dependency_injector.wiring import Provide

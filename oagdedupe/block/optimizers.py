@@ -3,20 +3,12 @@ block scheme conjunctions and uses these to generate comparison pairs.
 """
 
 from dataclasses import dataclass
-from functools import cached_property, lru_cache
+from functools import lru_cache
 from typing import List, Optional, Tuple
 
-import numpy as np
-import pandas as pd
-from dependency_injector.wiring import Provide
-
-import oagdedupe.utils as du
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.base import BaseOptimizer
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.containers import Container
-from oagdedupe.db.base import BaseCompute
-from oagdedupe.settings import Settings
 
 
 @dataclass

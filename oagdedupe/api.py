@@ -10,7 +10,7 @@ import sqlalchemy
 from dependency_injector import providers
 from sqlalchemy import create_engine
 
-from oagdedupe.base import BaseBlocking, BaseCluster, BaseDistance
+from oagdedupe.base import BaseBlocking, BaseCluster
 from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions

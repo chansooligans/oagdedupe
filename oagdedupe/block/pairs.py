@@ -5,19 +5,9 @@ This module is only used by oagdedupe.block.learner
 """
 
 from dataclasses import dataclass
-from functools import cached_property
-from typing import Dict, List, Tuple
 
-import numpy as np
-import pandas as pd
-from dependency_injector.wiring import Provide
-from sqlalchemy import create_engine
-
-from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BasePairs
-from oagdedupe.containers import Container
-from oagdedupe.settings import Settings
 
 
 @dataclass

@@ -8,7 +8,6 @@ from multiprocessing import Pool
 from typing import List
 
 import tqdm
-from dependency_injector.wiring import Provide
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BaseConjunctions

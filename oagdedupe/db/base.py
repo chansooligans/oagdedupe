@@ -1,15 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import cached_property
 from typing import List, Optional, Tuple
 
 import pandas as pd
-from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
-from oagdedupe.block import base as block
-from oagdedupe.settings import Settings
 
 
 @dataclass

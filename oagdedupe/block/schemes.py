@@ -3,11 +3,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from dependency_injector.wiring import Provide
-
-from oagdedupe.containers import Container
-from oagdedupe.settings import Settings
-
 
 @dataclass
 class BlockSchemes:

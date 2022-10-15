@@ -3,13 +3,9 @@ from typing import List, Union
 
 import networkx as nx
 import pandas as pd
-from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe.base import BaseCluster
-from oagdedupe.containers import Container
-from oagdedupe.db.base import BaseCompute
-from oagdedupe.settings import Settings
 
 
 @dataclass

@@ -2,20 +2,13 @@
 creating forward index.
 """
 
-import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
-
-import pandas as pd
-from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE
 from oagdedupe.block.base import BaseForward
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.containers import Container
-from oagdedupe.db.base import BaseCompute
-from oagdedupe.settings import Settings
 
 
 @dataclass
