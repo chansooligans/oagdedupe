@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
-from oagdedupe.containers import Container
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
@@ -28,7 +28,7 @@ class DatabaseORM(Tables):
     Uses the Session object as interface to the database.
     """
 
-    settings: Settings = Provide[Container.settings]
+    settings: Settings
 
     ########################################################################
     # queries

@@ -13,11 +13,10 @@ from sqlalchemy import create_engine
 from oagdedupe.base import BaseBlocking, BaseCluster
 from oagdedupe.block.blocking import Blocking
 from oagdedupe.block.forward import Forward
-from oagdedupe.block.learner import Conjunctions
 from oagdedupe.block.optimizers import DynamicProgram
 from oagdedupe.block.pairs import Pairs
 from oagdedupe.cluster.cluster import ConnectedComponents
-from oagdedupe.containers import Container
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseCompute, BaseComputeBlocking
 from oagdedupe.db.postgres.blocking import PostgresBlocking
 from oagdedupe.db.postgres.compute import PostgresCompute
@@ -43,19 +42,25 @@ class BaseModel(ABC):
         self,
     ):
 
-        container = Container()
+        self._inject_settings()
+        self.compute = self.compute()
+
+        self.blocking = self.blocking(
+            compute=self.compute_blocking(),
+            forward=Forward,
+            optimizer=DynamicProgram,
+            pairs=Pairs,
+        )
+
+        self.cluster = self.cluster(compute=self.compute)
+
+    def _inject_settings(self):
+        settings_container = SettingsContainer()
 
         if self.settings:
-            container.settings.override(self.settings)
-        if self.compute:
-            container.compute.override(providers.Factory(self.compute))
-            container.blocking.override(
-                providers.Factory(self.compute_blocking)
-            )
+            settings_container.settings.override(self.settings)
 
-        self.compute = self.compute(settings=self.settings)
-
-        container.wire(
+        settings_container.wire(
             packages=[
                 "oagdedupe.db",
                 "oagdedupe.db.postgres",
@@ -63,14 +68,6 @@ class BaseModel(ABC):
                 "oagdedupe.cluster",
             ],
         )
-
-        self.blocking = self.blocking(
-            forward=Forward(),
-            conj=Conjunctions(optimizer=DynamicProgram()),
-            pairs=Pairs(),
-        )
-
-        self.cluster = self.cluster()
 
     @abstractmethod
     def initialize(self):

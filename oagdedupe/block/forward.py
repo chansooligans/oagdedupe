@@ -22,7 +22,6 @@ class Forward(BaseForward):
     settings : Settings
     """
 
-    @du.recordlinkage_repeat
     def build_forward_indices(
         self,
         engine: ENGINE,

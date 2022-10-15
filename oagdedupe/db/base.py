@@ -8,13 +8,13 @@ from dependency_injector.wiring import Provide
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.containers import Container
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.settings import Settings
 
 
 @dataclass
 class BaseComputeBlocking(ABC, BlockSchemes):
-    settings: Settings = Provide[Container.settings]
+    settings: Settings = Provide[SettingsContainer.settings]
 
     def max_key(self, x: StatsDict) -> Tuple[float, int, int]:
         """
@@ -64,6 +64,8 @@ class BaseComputeBlocking(ABC, BlockSchemes):
 
 @dataclass
 class BaseCompute(ABC):
+    settings: Settings = Provide[SettingsContainer.settings]
+
     @abstractmethod
     def setup(
         self, df=None, df2=None, reset=True, resample=False, rl: str = ""

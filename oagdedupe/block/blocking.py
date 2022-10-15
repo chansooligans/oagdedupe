@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.base import BaseBlocking
-from oagdedupe.block.base import BaseConjunctions, BaseForward, BasePairs
 
 
 @dataclass
@@ -15,9 +14,10 @@ class Blocking(BaseBlocking):
     - pairs: generates pairs from inverted indices
     """
 
-    forward: BaseForward = None
-    conj: BaseConjunctions = None
-    pairs: BasePairs = None
+    def __post_init__(self):
+        self.forward = self.forward(compute=self.compute)
+        self.conj = self.conj(optimizer=self.optimizer(compute=self.compute))
+        self.pairs = self.pairs(compute=self.compute)
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """

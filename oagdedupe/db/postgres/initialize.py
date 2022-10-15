@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
-from oagdedupe.containers import Container
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
@@ -36,7 +36,7 @@ class Initialize(Tables):
             - pairs from neg are labelled as a non-match
     """
 
-    settings: Settings = Provide[Container.settings]
+    settings: Settings
 
     @du.recordlinkage_repeat
     def _init_df(self, df=None, df_link=None, rl: str = "") -> None:

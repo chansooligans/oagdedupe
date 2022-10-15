@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pandas as pd
 from dependency_injector.wiring import Provide
 
-from oagdedupe.containers import Container
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseCompute
 from oagdedupe.db.postgres.initialize import Initialize
 from oagdedupe.db.postgres.orm import DatabaseORM
@@ -13,8 +13,6 @@ from oagdedupe.settings import Settings
 @dataclass
 class PostgresCompute(BaseCompute):
     """ """
-
-    settings: Settings = Provide[Container.settings]
 
     def __post_init__(self):
         self.initialize = Initialize(settings=self.settings)

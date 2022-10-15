@@ -9,12 +9,15 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine
 
 import oagdedupe.utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.containers import SettingsContainer
 from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.settings import Settings
 
 
 @dataclass
@@ -183,6 +186,7 @@ class BlockingMixin:
 
 @dataclass
 class PostgresBlocking(BaseComputeBlocking, BlockingMixin):
+    settings: Settings = Provide[SettingsContainer.settings]
 
     ########################################################################
     # forward

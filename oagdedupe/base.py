@@ -4,19 +4,22 @@ from dataclasses import dataclass
 from dependency_injector.wiring import Provide
 
 from oagdedupe.block import base as block
-from oagdedupe.containers import Container
+from oagdedupe.block.learner import Conjunctions
+from oagdedupe.containers import SettingsContainer
+from oagdedupe.db.base import BaseCompute
 from oagdedupe.settings import Settings
 
 
 # blocking
 @dataclass
 class BaseBlocking(ABC):
-    settings: Settings = Provide[Container.settings]
 
-    def __init__(self):
-        self.forward = block.BaseForward
-        self.conj = block.BaseConjunctions
-        self.pairs = block.BasePairs
+    compute: BaseCompute
+    conj: block.BaseConjunctions = Conjunctions
+    forward: block.BaseForward = None
+    optimizer: block.BaseConjunctions = None
+    pairs: block.BasePairs = None
+    settings: Settings = Provide[SettingsContainer.settings]
 
 
 # cluster
@@ -24,8 +27,8 @@ class BaseBlocking(ABC):
 class BaseCluster(ABC):
     """Abstract base class for all clustering algos to inherit"""
 
-    settings: Settings = Provide[Container.settings]
-    compute = Provide[Container.compute]
+    compute: BaseCompute
+    settings: Settings = Provide[SettingsContainer.settings]
 
     @abstractmethod
     def get_df_cluster(self):
