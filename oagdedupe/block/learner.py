@@ -11,11 +11,10 @@ import tqdm
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BaseConjunctions
-from oagdedupe.block.schemes import BlockSchemes
 
 
 @dataclass
-class Conjunctions(BaseConjunctions, BlockSchemes):
+class Conjunctions(BaseConjunctions):
     """
     For each block scheme, get the best block scheme conjunctions of
     lengths 1 to k using greedy dynamic programming approach.

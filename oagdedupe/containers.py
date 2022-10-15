@@ -11,3 +11,15 @@ class Container(containers.DeclarativeContainer):
     compute = providers.AbstractFactory(BaseCompute)
 
     blocking = providers.AbstractFactory(BaseComputeBlocking)
+
+
+class SettingsContainer(containers.DeclarativeContainer):
+
+    settings = providers.Factory(Settings)
+
+
+class ComputeContainer(containers.DeclarativeContainer):
+
+    compute = providers.AbstractFactory(BaseCompute)
+
+    blocking = providers.AbstractFactory(BaseComputeBlocking)

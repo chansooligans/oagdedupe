@@ -3,13 +3,19 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import pandas as pd
+from dependency_injector.wiring import Provide
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
+from oagdedupe.block.schemes import BlockSchemes
+from oagdedupe.containers import Container
+from oagdedupe.settings import Settings
 
 
 @dataclass
-class BaseComputeBlocking(ABC):
+class BaseComputeBlocking(ABC, BlockSchemes):
+    settings: Settings = Provide[Container.settings]
+
     def max_key(self, x: StatsDict) -> Tuple[float, int, int]:
         """
         block scheme stats ordering

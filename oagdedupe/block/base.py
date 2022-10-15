@@ -11,7 +11,7 @@ from oagdedupe.settings import Settings
 
 
 @dataclass
-class BaseOptimizer(ABC):
+class BaseOptimizer(ABC, BlockSchemes):
     """Abstract base class for all conjunction optimizing algorithms to inherit"""
 
     settings: Settings = Provide[Container.settings]
@@ -23,7 +23,7 @@ class BaseOptimizer(ABC):
 
 
 @dataclass
-class BaseForward(ABC):
+class BaseForward(ABC, BlockSchemes):
     settings: Settings = Provide[Container.settings]
     compute = Provide[Container.blocking]
 

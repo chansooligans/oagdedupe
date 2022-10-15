@@ -1,0 +1,58 @@
+@startuml Class Hierarchy
+
+'---------------------Abstract Nodes------------------------------'
+
+abstract class BaseModel
+
+'compute'
+abstract class BaseCompute
+abstract class BaseComputeBlocking
+
+'blocking'
+abstract class BaseBlocking
+abstract class BaseForward
+abstract class BaseConjunctions
+abstract class BasePairs
+abstract class BaseOptimizer
+
+'clustering'
+abstract class BaseCluster
+
+'---------------------Edges------------------------------'
+
+'api'
+BaseModel <|-- "ext" Dedupe
+BaseModel <|-- "ext" RecordLinkage
+BaseModel <|-- "ext" Fapi
+BaseModel *-- BaseCompute
+BaseModel *-- BaseComputeBlocking
+BaseModel *-- BaseBlocking
+BaseModel *-- BaseCluster
+
+'blocking
+BaseBlocking *-- BaseForward
+BaseBlocking *-- BasePairs
+BaseBlocking *-- BaseConjunctions
+
+BaseConjunctions *-- BaseOptimizer
+BaseBlocking <|-- "ext" Blocking
+BaseForward <|-- "ext" Forward
+BasePairs <|-- "ext" Pairs
+BaseConjunctions <|-- "ext" Conjunctions
+BaseOptimizer <|-- "ext" DynamicProgram
+
+BaseForward <|-- BlockSchemes
+BaseConjunctions <|-- BlockSchemes
+BaseOptimizer <|-- BlockSchemes
+
+'clustering
+BaseCluster <|-- "ext" ConnectedComponents
+
+'compute
+BaseForward *-- BaseComputeBlocking
+BasePairs *-- BaseComputeBlocking
+BaseConjunctions *-- BaseComputeBlocking
+BaseOptimizer *-- BaseComputeBlocking
+BaseCluster *-- BaseCompute
+
+@enduml

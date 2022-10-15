@@ -8,11 +8,10 @@ from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.base import BaseOptimizer
-from oagdedupe.block.schemes import BlockSchemes
 
 
 @dataclass
-class DynamicProgram(BaseOptimizer, BlockSchemes):
+class DynamicProgram(BaseOptimizer):
     """
     Given a block scheme, use dynamic programming algorithm getBest()
     to construct best conjunction
