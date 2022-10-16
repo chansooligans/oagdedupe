@@ -6,7 +6,7 @@ from pytest import MonkeyPatch
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.learner import Conjunctions
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ def conjunctions():
 
 @dataclass
 class FakeOptimizer:
-    compute = BaseComputeBlocking
+    repo = BaseRepositoryBlocking
 
 
 class TestConjunctions(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestConjunctions(unittest.TestCase):
         with self.monkeypatch.context() as m:
             m.setattr(Conjunctions, "_conjunctions", self.conjunctions)
             m.setattr(
-                BaseComputeBlocking,
+                BaseRepositoryBlocking,
                 "max_key",
                 lambda x: (x.rr, x.positives, -x.negatives),
             )

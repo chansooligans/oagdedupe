@@ -5,8 +5,8 @@
 abstract class BaseModel
 
 'compute'
-abstract class BaseCompute
-abstract class BaseComputeBlocking
+abstract class BaseRepository
+abstract class BaseRepositoryBlocking
 
 'blocking'
 abstract class BaseBlocking
@@ -24,8 +24,8 @@ abstract class BaseCluster
 ' BaseModel <|-- "ext" Dedupe
 ' BaseModel <|-- "ext" RecordLinkage
 ' BaseModel <|-- "ext" Fapi
-BaseModel *-- BaseCompute
-BaseModel *-- BaseComputeBlocking
+BaseModel *-- BaseRepository
+BaseModel *-- BaseRepositoryBlocking
 BaseModel *-- BaseBlocking
 BaseModel *-- BaseCluster
 ' BaseModel *-- Setting
@@ -50,10 +50,10 @@ BaseConjunctions *-- BaseOptimizer
 ' BaseCluster <|-- "ext" ConnectedComponents
 
 'compute
-BaseForward *-- BaseComputeBlocking
-BasePairs *-- BaseComputeBlocking
-BaseConjunctions *-- BaseComputeBlocking
-BaseOptimizer *-- BaseComputeBlocking
-BaseCluster *-- BaseCompute
+BaseForward *-- BaseRepositoryBlocking
+BasePairs *-- BaseRepositoryBlocking
+BaseConjunctions *-- BaseRepositoryBlocking
+BaseOptimizer *-- BaseRepositoryBlocking
+BaseCluster *-- BaseRepository
 
 @enduml

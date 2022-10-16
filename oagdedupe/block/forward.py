@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 from oagdedupe._typing import ENGINE
 from oagdedupe.block.base import BaseForward
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 from oagdedupe.settings import Settings
 
 
@@ -22,10 +22,10 @@ class Forward(BaseForward, BlockSchemes):
     Attributes
     ----------
     settings : Settings
-    compute : BaseComputeBlocking
+    compute : BaseRepositoryBlocking
     """
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     def build_forward_indices(
@@ -38,6 +38,6 @@ class Forward(BaseForward, BlockSchemes):
         """
         Build forward indices for train or full datasets
         """
-        self.compute.build_forward_indices(
+        self.repo.build_forward_indices(
             rl=rl, full=full, iter=iter, columns=columns
         )

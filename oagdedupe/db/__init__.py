@@ -1,4 +1,4 @@
-from oagdedupe.db.postgres.compute import PostgresCompute
+from oagdedupe.db.postgres.repository import PostgresCompute
 from oagdedupe.settings import Settings
 
 

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.base import BasePairs
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 from oagdedupe.settings import Settings
 
 
@@ -20,11 +20,11 @@ class Pairs(BasePairs):
 
     Attributes
     ----------
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
     """
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     def add_new_comparisons(self, stats: StatsDict, table: str) -> int:
@@ -49,6 +49,6 @@ class Pairs(BasePairs):
         int
             total number of pairs gathered so far
         """
-        self.compute.save_comparison_pairs(names=stats.scheme, table=table)
-        n = self.compute.get_n_pairs(table=table)
+        self.repo.save_comparison_pairs(names=stats.scheme, table=table)
+        n = self.repo.get_n_pairs(table=table)
         return n

@@ -7,7 +7,7 @@ from oagdedupe.block import base as block
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
 from oagdedupe.block.pairs import Pairs
-from oagdedupe.db.base import BaseCompute
+from oagdedupe.db.base import BaseRepository
 
 
 @dataclass
@@ -19,30 +19,26 @@ class Blocking(BaseBlocking):
     - pairs: generates pairs from inverted indices
     """
 
-    compute: BaseCompute
+    repo: BaseRepository
     conj: block.BaseConjunctions = Conjunctions
     forward: block.BaseForward = Forward
     pairs: block.BasePairs = Pairs
     optimizer: block.BaseConjunctions = None
 
     def __post_init__(self):
-        self.settings = self.compute.settings
-        self.forward = self.forward(
-            compute=self.compute, settings=self.settings
-        )
-        self.pairs = self.pairs(compute=self.compute, settings=self.settings)
+        self.settings = self.repo.settings
+        self.forward = self.forward(repo=self.repo, settings=self.settings)
+        self.pairs = self.pairs(repo=self.repo, settings=self.settings)
         self.conj = self.conj(
             settings=self.settings,
-            optimizer=self.optimizer(
-                compute=self.compute, settings=self.settings
-            ),
+            optimizer=self.optimizer(repo=self.repo, settings=self.settings),
         )
 
     def _check_rr(self, stats: StatsDict) -> bool:
         """
         check if new block scheme is below minium reduction ratio
         """
-        return stats.rr < self.forward.compute.min_rr
+        return stats.rr < self.forward.repo.min_rr
 
     def save_comparisons(self, table: str, n_covered: int) -> None:
         """

@@ -102,7 +102,7 @@ class TasksPost(SettingsEnabler):
         """
 
         logging.info("getting distances")
-        distances = self.api.compute.get_distances()
+        distances = self.api.repo.get_distances()
 
         logging.info("getting active learning samples")
         sample_idx, _ = self.clf.query(
@@ -130,13 +130,13 @@ class TasksGet(SettingsEnabler):
         for entities that were labelled,
         set "labelled" column in train table to True
         """
-        self.api.compute.update_train()
+        self.api.repo.update_train()
 
     def _update_labels(self, newlabels: pd.DataFrame) -> None:
         """
         add new labels to labels table
         """
-        self.api.compute.update_labels()
+        self.api.repo.update_labels()
 
     def _get_new_labels(self) -> pd.DataFrame:
         """
@@ -177,7 +177,7 @@ class Model(TasksGet, TasksPost, Projects):
         """
         trains active learning model
         """
-        labels = self.api.compute.get_labels()
+        labels = self.api.repo.get_labels()
         self.clf.teach(
             labels[self.settings.attributes].values,
             labels["label"].values,

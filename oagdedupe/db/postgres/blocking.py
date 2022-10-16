@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 import oagdedupe.utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 from oagdedupe.settings import Settings
 
 
@@ -190,7 +190,7 @@ class BlockingMixin:
 
 
 @dataclass
-class PostgresBlocking(BaseComputeBlocking, BlockingMixin, BlockSchemes):
+class PostgresBlocking(BaseRepositoryBlocking, BlockingMixin, BlockSchemes):
     settings: Settings
 
     @du.recordlinkage_repeat

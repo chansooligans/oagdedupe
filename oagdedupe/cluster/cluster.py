@@ -6,7 +6,7 @@ import pandas as pd
 
 from oagdedupe import utils as du
 from oagdedupe.base import BaseCluster
-from oagdedupe.db.base import BaseCompute
+from oagdedupe.db.base import BaseRepository
 from oagdedupe.settings import Settings
 
 
@@ -16,7 +16,7 @@ class ConnectedComponents(BaseCluster):
     Uses a graph to retrieve connected components
     """
 
-    compute: BaseCompute
+    repo: BaseRepository
     settings: Settings
 
     @du.recordlinkage
@@ -36,9 +36,9 @@ class ConnectedComponents(BaseCluster):
         pd.DataFrame
             clusters merged with raw data
         """
-        scores = self.compute.get_scores(threshold=threshold)
+        scores = self.repo.get_scores(threshold=threshold)
         df_clusters = getattr(self, f"get_connected_components{rl}")(scores)
-        return self.compute.merge_clusters_with_raw_data(
+        return self.repo.merge_clusters_with_raw_data(
             df_clusters=df_clusters, rl=rl
         )
 

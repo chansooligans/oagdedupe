@@ -12,7 +12,7 @@ from oagdedupe.settings import Settings
 
 
 @dataclass
-class BaseComputeBlocking(ABC, BlockSchemes):
+class BaseRepositoryBlocking(ABC, BlockSchemes):
     """abstract implementation for blocking-related operations"""
 
     settings: Settings
@@ -137,7 +137,7 @@ class BaseORM(ABC):
 
 
 @dataclass
-class BaseCompute(BaseInitialize, BaseORM, ABC):
+class BaseRepository(BaseInitialize, BaseORM, ABC):
     """abstract implementation for compute"""
 
     settings: Settings
@@ -145,4 +145,4 @@ class BaseCompute(BaseInitialize, BaseORM, ABC):
     @cached_property
     @abstractmethod
     def blocking(self):
-        return BaseComputeBlocking(settings=self.settings)
+        return BaseRepositoryBlocking(settings=self.settings)

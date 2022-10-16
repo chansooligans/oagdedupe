@@ -63,5 +63,5 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
         )  # type: List[StatsDict]
         res = list(set(res))
         # sort
-        res = sorted(res, key=self.optimizer.compute.max_key, reverse=True)
+        res = sorted(res, key=self.optimizer.repo.max_key, reverse=True)
         return res

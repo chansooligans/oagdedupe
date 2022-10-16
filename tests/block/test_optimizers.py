@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.optimizers import DynamicProgram
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ class TestDynamicProgram(unittest.TestCase):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
         self.optimizer = DynamicProgram(
-            compute=FakeComputeBlocking(), settings=self.settings
+            repo=FakeComputeBlocking(), settings=self.settings
         )
         return
 

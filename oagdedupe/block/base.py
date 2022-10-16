@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 from oagdedupe.settings import Settings
 
 
@@ -12,7 +12,7 @@ from oagdedupe.settings import Settings
 class BaseOptimizer(ABC, BlockSchemes):
     """Abstract class for all conjunction optimizing algorithms to inherit"""
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     @abstractmethod
@@ -24,7 +24,7 @@ class BaseOptimizer(ABC, BlockSchemes):
 class BaseForward(ABC, BlockSchemes):
     """Abstract class for building forward index"""
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     @abstractmethod
@@ -49,7 +49,7 @@ class BaseConjunctions(ABC, BlockSchemes):
 class BasePairs(ABC):
     """Abstract class for applying conjunctions to obtain comparison pairs"""
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     @abstractmethod

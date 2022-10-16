@@ -29,16 +29,14 @@ class BaseModel(ABC):
     def __post_init__(
         self,
     ):
-        self.compute = db.get_computer(settings=self.settings)
+        self.repo = db.get_computer(settings=self.settings)
 
         self.blocking = Blocking(
-            compute=self.compute.blocking,
+            repo=self.repo.blocking,
             optimizer=DynamicProgram,
         )
 
-        self.cluster = self.cluster(
-            settings=self.settings, compute=self.compute
-        )
+        self.cluster = self.cluster(settings=self.settings, repo=self.repo)
 
     @abstractmethod
     def initialize(self):
@@ -62,7 +60,7 @@ class BaseModel(ABC):
         """
         logging.info("get clusters")
         requests.post(f"{self.settings.fast_api.url}/train")
-        self.compute.predict()
+        self.repo.predict()
         return self.cluster.get_df_cluster()
 
     def fit_blocks(self) -> None:
@@ -72,7 +70,7 @@ class BaseModel(ABC):
 
         # get distances
         logging.info("computing distances")
-        self.compute.save_distances(full=True, labels=False)
+        self.repo.save_distances(full=True, labels=False)
 
 
 @dataclass
@@ -90,13 +88,13 @@ class Dedupe(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.compute.setup(df=df, df2=None, reset=reset, resample=resample)
+        self.repo.setup(df=df, df2=None, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=True)
 
 
 @dataclass
@@ -115,13 +113,13 @@ class RecordLinkage(BaseModel):
     ) -> None:
         """learn p(match)"""
 
-        self.compute.setup(df=df, df2=df2, reset=reset, resample=resample)
+        self.repo.setup(df=df, df2=df2, reset=reset, resample=resample)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=True)
 
 
 @dataclass
@@ -134,10 +132,10 @@ class Fapi(BaseModel):
     def initialize(self) -> None:
         """learn p(match)"""
 
-        self.compute.setup(reset=False, resample=True)
+        self.repo.setup(reset=False, resample=True)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.compute.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=True)

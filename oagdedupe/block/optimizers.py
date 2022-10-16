@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 from oagdedupe._typing import StatsDict
 from oagdedupe.block.base import BaseOptimizer
 from oagdedupe.block.schemes import BlockSchemes
-from oagdedupe.db.base import BaseComputeBlocking
+from oagdedupe.db.base import BaseRepositoryBlocking
 from oagdedupe.settings import Settings
 
 
@@ -21,11 +21,11 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
 
     Attributes
     ----------
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
     """
 
-    compute: BaseComputeBlocking
+    repo: BaseRepositoryBlocking
     settings: Settings
 
     def __eq__(self, other):
@@ -44,7 +44,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         arr: tuple
             tuple of block schemes
         """
-        return self.compute.get_inverted_index_stats(
+        return self.repo.get_inverted_index_stats(
             names=arr, table="blocks_train"
         )
 
@@ -66,7 +66,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         apply filters and sort block schemes
         """
         filtered = [x for x in scores if self._keep_if(x)]
-        dp[n] = max(filtered, key=self.compute.max_key)
+        dp[n] = max(filtered, key=self.repo.max_key)
         return dp
 
     def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:
