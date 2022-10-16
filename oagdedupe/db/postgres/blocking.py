@@ -190,7 +190,9 @@ class BlockingMixin:
 
 
 @dataclass
-class PostgresBlocking(BaseRepositoryBlocking, BlockingMixin, BlockSchemes):
+class PostgresBlockingRepository(
+    BaseRepositoryBlocking, BlockingMixin, BlockSchemes
+):
     settings: Settings
 
     @du.recordlinkage_repeat

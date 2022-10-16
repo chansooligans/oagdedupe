@@ -14,7 +14,7 @@ from oagdedupe.settings import Settings
 
 
 @dataclass
-class BaseInitialize(ABC):
+class BaseInitializeRepository(ABC):
     """abstract implementation for initialization operations"""
 
     @abstractmethod
@@ -92,7 +92,7 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
 
 
 @dataclass
-class BaseDistance(ABC):
+class BaseDistanceRepository(ABC):
     @abstractmethod
     def get_distances(self) -> pd.DataFrame:
         """get the labels table"""
@@ -110,7 +110,7 @@ class BaseDistance(ABC):
 
 
 @dataclass
-class BaseCluster(ABC):
+class BaseClusterRepository(ABC):
     @abstractmethod
     def get_scores(self, threshold):
         """returns model predictions"""
@@ -133,7 +133,7 @@ class BaseCluster(ABC):
 
 
 @dataclass
-class BaseFapi(ABC):
+class BaseFapiRepository(ABC):
     def predict(self, dists):
         return json.loads(
             requests.post(
@@ -172,7 +172,13 @@ class BaseFapi(ABC):
 
 
 @dataclass
-class BaseRepository(BaseInitialize, BaseDistance, BaseCluster, BaseFapi, ABC):
+class BaseRepository(
+    BaseInitializeRepository,
+    BaseDistanceRepository,
+    BaseClusterRepository,
+    BaseFapiRepository,
+    ABC,
+):
     """abstract implementation for compute"""
 
     settings: Settings

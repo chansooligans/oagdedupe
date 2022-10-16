@@ -8,14 +8,14 @@ from sqlalchemy import delete, func, select
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, TABLE
-from oagdedupe.db.base import BaseInitialize
+from oagdedupe.db.base import BaseInitializeRepository
 from oagdedupe.db.postgres import funcs
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class Initialize(BaseInitialize, Tables):
+class InitializeRepository(BaseInitializeRepository, Tables):
     """
     Object used to initialize SQL tables using sqlalchemy
 

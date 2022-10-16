@@ -15,13 +15,14 @@ from tqdm import tqdm
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
-from oagdedupe.db.base import BaseCluster, BaseDistance, BaseFapi
+from oagdedupe.db.base import (BaseClusterRepository, BaseDistanceRepository,
+                               BaseFapiRepository)
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class Distance(BaseDistance, Tables):
+class DistanceRepository(BaseDistanceRepository, Tables):
     def get_distances(self) -> pd.DataFrame:
         """
         query unlabelled distances for sample data
@@ -127,7 +128,7 @@ class Distance(BaseDistance, Tables):
 
 
 @dataclass
-class Cluster(BaseCluster, Tables):
+class ClusterRepository(BaseClusterRepository, Tables):
     def get_scores(self, threshold) -> pd.DataFrame:
         return pd.read_sql(
             f"""
@@ -207,7 +208,7 @@ class Cluster(BaseCluster, Tables):
 
 
 @dataclass
-class Fapi(BaseFapi, Tables):
+class FapiRepository(BaseFapiRepository, Tables):
     def predict(self, dists):
         return json.loads(
             requests.post(
