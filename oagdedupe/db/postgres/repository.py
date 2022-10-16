@@ -13,8 +13,8 @@ from oagdedupe.settings import Settings
 
 
 @dataclass
-class PostgresCompute(BaseRepository, Initialize, Distance, Cluster, Fapi):
-    """concrete implementation for compute"""
+class PostgresRepository(BaseRepository, Initialize, Distance, Cluster, Fapi):
+    """concrete implementation for repository"""
 
     settings: Settings
 

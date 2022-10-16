@@ -29,7 +29,7 @@ class BaseModel(ABC):
     def __post_init__(
         self,
     ):
-        self.repo = db.get_computer(settings=self.settings)
+        self.repo = db.get_repository(settings=self.settings)
 
         self.blocking = Blocking(
             repo=self.repo.blocking,

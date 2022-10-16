@@ -22,7 +22,7 @@ class Forward(BaseForward, BlockSchemes):
     Attributes
     ----------
     settings : Settings
-    compute : BaseRepositoryBlocking
+    repository : BaseRepositoryBlocking
     """
 
     repo: BaseRepositoryBlocking
