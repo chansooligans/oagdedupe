@@ -76,3 +76,5 @@ scratch/
 .dedupe_test
 
 *.code-workspace
+
+out/*
