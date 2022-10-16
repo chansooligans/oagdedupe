@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.db.postgres.initialize import Initialize
+from oagdedupe.db.postgres.initialize import InitializeRepository
 from oagdedupe.db.postgres.tables import Tables
 
 db_url = os.environ.get("DATABASE_URL")
@@ -44,7 +44,6 @@ def session():
 class FixtureMixin:
     @pytest.fixture(autouse=True)
     def prepare_fixtures(self, settings, df, session):
-        # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.df = df
         self.df2 = df.copy()
@@ -54,7 +53,7 @@ class FixtureMixin:
 class TestDF(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.init = Initialize(settings=self.settings)
+        self.init = InitializeRepository(settings=self.settings)
         self.init.engine = engine
         self.init.reset_tables()
         return
@@ -68,7 +67,7 @@ class TestDF(unittest.TestCase, FixtureMixin):
 class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.init = Initialize(settings=self.settings)
+        self.init = InitializeRepository(settings=self.settings)
         self.init.reset_tables()
         self.init.engine = engine
         self.init._init_df(df=self.df, df_link=self.df2)
@@ -93,7 +92,7 @@ class TestPosNegUnlabelled(unittest.TestCase, FixtureMixin):
 class TestTrainLabels(unittest.TestCase, FixtureMixin):
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.init = Initialize(settings=self.settings)
+        self.init = InitializeRepository(settings=self.settings)
         self.init.engine = engine
         self.init.reset_tables()
         self.init._init_df(df=self.df, df_link=self.df2)

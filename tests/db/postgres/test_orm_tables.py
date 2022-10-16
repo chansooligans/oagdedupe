@@ -1,18 +1,12 @@
 """ integration testing postgres database initialization functions
 """
-import os
 import unittest
 
 import pandas as pd
 import pytest
 from faker import Faker
-from pytest import MonkeyPatch
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.db.postgres.initialize import Initialize
-from oagdedupe.db.postgres.orm import DatabaseORM
+from oagdedupe.db.postgres.initialize import InitializeRepository
 from oagdedupe.db.postgres.tables import Tables
 
 
@@ -54,39 +48,22 @@ def seed_distances(orm):
             session.commit()
 
 
-class TestORM(unittest.TestCase):
+class TestDistanceRepository(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def prepare_fixtures(self, settings, df):
-        # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.df = df
         self.df2 = df.copy()
 
     def setUp(self):
-        self.init = Initialize(settings=self.settings)
+        self.init = InitializeRepository(settings=self.settings)
         self.init.setup(
             df=self.df, df2=self.df2, reset=True, resample=False, rl=""
         )
-        self.orm = DatabaseORM(settings=self.settings)
+        self.orm = Tables(settings=self.settings)
         seed_labels_distances(orm=self.orm)
         seed_distances(orm=self.orm)
         return
-
-    def test_get_labels(self):
-        df = self.orm.get_labels()
-        self.assertEqual(len(df), 2)
-
-    def test_get_distances(self):
-        df = self.orm.get_distances()
-        self.assertEqual(len(df), 1)
-
-    def test__update_table(self):
-        newrow = pd.DataFrame(
-            {"name": ["test"], "addr": ["test"], "_index": [-99]}
-        )
-        self.orm._update_table(newrow, self.init.maindf())
-        df = pd.read_sql("SELECT * FROM dedupe.df", con=self.orm.engine)
-        self.assertEqual(df.loc[100, "name"], "test")
 
     def test__bulk_insert(self):
         newrow = pd.DataFrame(

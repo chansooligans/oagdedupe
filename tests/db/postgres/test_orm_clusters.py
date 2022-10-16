@@ -11,8 +11,8 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oagdedupe.db.postgres.initialize import Initialize
-from oagdedupe.db.postgres.orm import DatabaseORM
+from oagdedupe.db.postgres.initialize import InitializeRepository
+from oagdedupe.db.postgres.orm import ClusterRepository
 from oagdedupe.db.postgres.tables import Tables
 
 db_url = os.environ.get("DATABASE_URL")
@@ -55,16 +55,15 @@ def seed_clusters(orm):
 class TestORM(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def prepare_fixtures(self, settings, session):
-        # https://stackoverflow.com/questions/22677654/why-cant-unittest-testcases-see-my-py-test-fixtures
         self.settings = settings
         self.session = session
 
     def setUp(self):
         self.monkeypatch = MonkeyPatch()
-        self.init = Initialize(settings=self.settings)
+        self.init = InitializeRepository(settings=self.settings)
         self.init.engine = engine
         self.init.reset_tables()
-        self.orm = DatabaseORM(settings=self.settings)
+        self.orm = ClusterRepository(settings=self.settings)
         seed_maindf(orm=self.orm)
         seed_clusters(orm=self.orm)
         return
