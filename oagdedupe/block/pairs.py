@@ -49,6 +49,4 @@ class Pairs(BasePairs):
         int
             total number of pairs gathered so far
         """
-        self.repo.save_comparison_pairs(names=stats.scheme, table=table)
-        n = self.repo.get_n_pairs(table=table)
-        return n
+        self.repo.add_new_comparisons(names=stats.scheme, table=table)

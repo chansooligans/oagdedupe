@@ -4,7 +4,6 @@ from functools import cached_property
 import pandas as pd
 from sqlalchemy import create_engine
 
-from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.db.base import BaseRepository
 from oagdedupe.db.postgres.blocking import PostgresBlockingRepository
 from oagdedupe.db.postgres.initialize import InitializeRepository

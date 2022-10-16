@@ -140,23 +140,6 @@ class BlockingMixin:
         reduced = self.n_comparisons - self.settings.model.max_compare
         return reduced / self.n_comparisons
 
-    @du.recordlinkage
-    def _pairs_query(self, names: Tuple[str], rl: str = "") -> str:
-        if rl == "":
-            where = "WHERE t1._index_l < t2._index_r"
-        else:
-            where = ""
-        return f"""
-            SELECT _index_l, _index_r
-            FROM inverted_index t1
-            JOIN inverted_index_link t2
-                ON {" and ".join(
-                    [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
-                )}
-            {where}
-            GROUP BY _index_l, _index_r
-            """
-
     def check_unnest(self, name):
         if "ngrams" in name:
             return f"unnest({name})"
@@ -172,17 +155,6 @@ class BlockingMixin:
 
     def _aliases(self, names: Tuple[str]) -> List[str]:
         return [f"signature{i}" for i in range(len(names))]
-
-    def _inv_idx_query(
-        self, names: Tuple[str], table: str, col: str = "_index_l"
-    ) -> str:
-        return f"""
-        SELECT
-            {self.signatures(names)},
-            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
-        FROM {self.settings.db.db_schema}.{table}
-        GROUP BY {", ".join(self._aliases(names))}
-        """
 
     @property
     def comptab_map(self) -> Dict[str, str]:
@@ -232,6 +204,17 @@ class PostgresBlockingRepository(
                 )
             )
 
+    def build_inverted_index(
+        self, names: Tuple[str], table: str, col: str = "_index_l"
+    ) -> str:
+        return f"""
+        SELECT
+            {self.signatures(names)},
+            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
+        FROM {self.settings.db.db_schema}.{table}
+        GROUP BY {", ".join(self._aliases(names))}
+        """
+
     @du.recordlinkage
     def get_inverted_index_stats(
         self, names: Tuple[str], table: str, rl: str = ""
@@ -260,13 +243,13 @@ class PostgresBlockingRepository(
                 f"""
             WITH
                 inverted_index AS (
-                    {self._inv_idx_query(names, table)}
+                    {self.build_inverted_index(names, table)}
                 ),
                 inverted_index_link AS (
-                    {self._inv_idx_query(names, table+rl, col="_index_r")}
+                    {self.build_inverted_index(names, table+rl, col="_index_r")}
                 ),
                 pairs AS (
-                    {self._pairs_query(names)}
+                    {self.pairs_query(names)}
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
@@ -292,16 +275,25 @@ class PostgresBlockingRepository(
 
         return StatsDict(**res)
 
-    def get_n_pairs(self, table: str) -> pd.DataFrame:
-        newtable = self.comptab_map[table]
-        return self.query(
-            f"""
-            SELECT count(*) FROM {self.settings.db.db_schema}.{newtable}
-        """
-        )["count"].values[0]
+    @du.recordlinkage
+    def pairs_query(self, names: Tuple[str], rl: str = "") -> str:
+        if rl == "":
+            where = "WHERE t1._index_l < t2._index_r"
+        else:
+            where = ""
+        return f"""
+            SELECT _index_l, _index_r
+            FROM inverted_index t1
+            JOIN inverted_index_link t2
+                ON {" and ".join(
+                    [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
+                )}
+            {where}
+            GROUP BY _index_l, _index_r
+            """
 
     @du.recordlinkage
-    def save_comparison_pairs(
+    def add_new_comparisons(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
         """
@@ -330,14 +322,22 @@ class PostgresBlockingRepository(
             (
                 WITH
                     inverted_index AS (
-                        {self._inv_idx_query(names, table)}
+                        {self.build_inverted_index(names, table)}
                     ),
                     inverted_index_link AS (
-                        {self._inv_idx_query(names, table+rl, col="_index_r")}
+                        {self.build_inverted_index(names, table+rl, col="_index_r")}
                     )
-                {self._pairs_query(names)}
+                {self.pairs_query(names)}
             )
             ON CONFLICT DO NOTHING
             """
         )
         engine.dispose()
+
+    def get_n_pairs(self, table: str) -> pd.DataFrame:
+        newtable = self.comptab_map[table]
+        return self.query(
+            f"""
+            SELECT count(*) FROM {self.settings.db.db_schema}.{newtable}
+        """
+        )["count"].values[0]

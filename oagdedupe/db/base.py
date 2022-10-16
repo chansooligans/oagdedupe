@@ -64,6 +64,11 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         """build forward indices on train or full data"""
         pass
 
+    def build_inverted_index(
+        self, names: Tuple[str], table: str, col: str = "_index_l"
+    ) -> str:
+        pass
+
     @abstractmethod
     @du.recordlinkage
     def get_inverted_index_stats(
@@ -78,16 +83,20 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         """
         pass
 
-    @abstractmethod
-    def get_n_pairs(self, table: str):
+    @du.recordlinkage
+    def pairs_query(self, names: Tuple[str], rl: str = "") -> str:
         pass
 
     @abstractmethod
     @du.recordlinkage
-    def save_comparison_pairs(
+    def add_new_comparisons(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
         """apply inverted index to get comparison pairs"""
+        pass
+
+    @abstractmethod
+    def get_n_pairs(self, table: str):
         pass
 
 

@@ -7,7 +7,7 @@ from oagdedupe.block import base as block
 from oagdedupe.block.forward import Forward
 from oagdedupe.block.learner import Conjunctions
 from oagdedupe.block.pairs import Pairs
-from oagdedupe.db.base import BaseRepository
+from oagdedupe.db.base import BaseRepositoryBlocking
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Blocking(BaseBlocking):
     - pairs: generates pairs from inverted indices
     """
 
-    repo: BaseRepository
+    repo: BaseRepositoryBlocking
     conj: block.BaseConjunctions = Conjunctions
     forward: block.BaseForward = Forward
     pairs: block.BasePairs = Pairs
@@ -74,7 +74,8 @@ class Blocking(BaseBlocking):
                 self.forward.build_forward_indices(
                     columns=stats.scheme, iter=i, full=True
                 )
-            n_pairs = self.pairs.add_new_comparisons(stats, table)
+            self.pairs.add_new_comparisons(stats=stats, table=table)
+            n_pairs = self.repo.get_n_pairs(table=table)
             if n_pairs // stepsize > step:
                 logging.info(f"""{n_pairs} comparison pairs gathered""")
                 step = n_pairs // stepsize
