@@ -161,7 +161,7 @@ class Initialize(BaseInitialize, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _resample_unlabelled(self, session: SESSION, rl: str = "") -> None:
+    def resample_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
         self.engine.execute(
             f"""
@@ -177,10 +177,10 @@ class Initialize(BaseInitialize, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _resample(self, session: SESSION) -> None:
+    def resample(self, session: SESSION) -> None:
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
-        self._resample_unlabelled(session)
+        self.resample_unlabelled(session)
         # reset table
         for table in [
             "clusters",
@@ -228,6 +228,6 @@ class Initialize(BaseInitialize, Tables):
 
             if resample:
                 logging.info("resampling train")
-                self._resample(session)
+                self.resample(session)
 
             logging.info("computing distances for labels")

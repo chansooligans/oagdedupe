@@ -9,55 +9,19 @@ from typing import List
 import numpy as np
 import pandas as pd
 import requests
-from dependency_injector.wiring import Provide
 from sqlalchemy import create_engine, func, insert, select, types, update
 from sqlalchemy.orm import aliased
 from tqdm import tqdm
 
 from oagdedupe import utils as du
 from oagdedupe._typing import SESSION, SUBQUERY, TABLE
-from oagdedupe.db.base import BaseORM
+from oagdedupe.db.base import BaseCluster, BaseDistance, BaseFapi
 from oagdedupe.db.postgres.tables import Tables
 from oagdedupe.settings import Settings
 
 
 @dataclass
-class DatabaseORM(BaseORM, Tables):
-    """
-    Object to query database using sqlalchemy ORM.
-    Uses the Session object as interface to the database.
-    """
-
-    settings: Settings
-
-    ########################################################################
-    # queries
-    ########################################################################
-
-    def get_train(self) -> pd.DataFrame:
-        """
-        query the train table
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        with self.Session() as session:
-            query = session.query(self.Train)
-            return pd.read_sql(query.statement, query.session.bind)
-
-    def get_labels(self) -> pd.DataFrame:
-        """
-        query the labels table
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        with self.Session() as session:
-            query = session.query(self.LabelsDistances)
-            return pd.read_sql(query.statement, query.session.bind)
-
+class Distance(BaseDistance, Tables):
     def get_distances(self) -> pd.DataFrame:
         """
         query unlabelled distances for sample data
@@ -81,48 +45,6 @@ class DatabaseORM(BaseORM, Tables):
             )
             return pd.read_sql(q.statement, q.session.bind)
 
-    def get_full_distances(self) -> pd.DataFrame:
-        """
-        query distances for full data
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        with self.Session() as session:
-            q = session.query(
-                *(
-                    getattr(self.FullDistances, x)
-                    for x in self.settings.attributes
-                )
-            )
-            return pd.read_sql(q.statement, q.session.bind)
-
-    def full_distance_partitions(self) -> select:
-        return select(
-            *(
-                getattr(self.FullDistances, x)
-                for x in self.settings.attributes + ["_index_l", "_index_r"]
-            )
-        ).execution_options(yield_per=50000)
-
-    def get_full_comparison_indices(self) -> pd.DataFrame:
-        """
-        query indices of comparison pairs for full data
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        with self.Session() as session:
-            q = session.query(
-                self.FullDistances._index_l, self.FullDistances._index_r
-            ).order_by(self.FullDistances._index_l, self.FullDistances._index_r)
-            return pd.read_sql(q.statement, q.session.bind)
-
-    ########################################################################
-    # String Distance Computations
-    ########################################################################
     @du.recordlinkage
     def fields_table(self, table: str, rl: str = "") -> tuple:
         mapping = {
@@ -203,10 +125,9 @@ class DatabaseORM(BaseORM, Tables):
             session.execute(str(stmt) + " ON CONFLICT DO NOTHING")
             session.commit()
 
-    ########################################################################
-    # Clustering Computations
-    ########################################################################
 
+@dataclass
+class Cluster(BaseCluster, Tables):
     def get_scores(self, threshold) -> pd.DataFrame:
         return pd.read_sql(
             f"""
@@ -284,9 +205,24 @@ class DatabaseORM(BaseORM, Tables):
         else:
             return self.get_clusters_link()
 
-    ########################################################################
-    # Fast API
-    ########################################################################
+
+@dataclass
+class Fapi(BaseFapi, Tables):
+    def predict(self, dists):
+        return json.loads(
+            requests.post(
+                f"{self.settings.fast_api.url}/predict",
+                json={"dists": dists.tolist()},
+            ).content
+        )
+
+    def full_distance_partitions(self) -> select:
+        return select(
+            *(
+                getattr(self.FullDistances, x)
+                for x in self.settings.attributes + ["_index_l", "_index_r"]
+            )
+        ).execution_options(yield_per=50000)
 
     def update_train(self, newlabels: pd.DataFrame) -> None:
         """
@@ -309,7 +245,19 @@ class DatabaseORM(BaseORM, Tables):
         """
         self._update_table(newlabels, self.Labels())
 
-    def predict(self):
+    def get_labels(self) -> pd.DataFrame:
+        """
+        query the labels table
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+        with self.Session() as session:
+            query = session.query(self.LabelsDistances)
+            return pd.read_sql(query.statement, query.session.bind)
+
+    def save_predictions(self):
         with self.Session() as session:
 
             stmt = self.full_distance_partitions()
@@ -329,14 +277,7 @@ class DatabaseORM(BaseORM, Tables):
                     ]
                 )
 
-                preds = np.array(
-                    json.loads(
-                        requests.post(
-                            f"{self.settings.fast_api.url}/predict",
-                            json={"dists": dists.tolist()},
-                        ).content
-                    )
-                )
+                preds = np.array(self.predict(dists))
 
                 probs = pd.DataFrame(
                     np.hstack([preds[:, 1:], dists[:, -2:]]),

@@ -1,14 +1,43 @@
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
 from typing import List, Optional, Tuple
 
 import pandas as pd
+import requests
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.settings import Settings
+
+
+@dataclass
+class BaseInitialize(ABC):
+    """abstract implementation for initialization operations"""
+
+    @abstractmethod
+    @du.recordlinkage_repeat
+    def resample(self) -> None:
+        """resample unlabelled from train"""
+        pass
+
+    @abstractmethod
+    def setup(
+        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
+    ) -> None:
+        """sets up environment
+
+        creates:
+        - df
+        - pos
+        - neg
+        - unlabelled
+        - train
+        - labels
+        """
+        pass
 
 
 @dataclass
@@ -50,6 +79,10 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         pass
 
     @abstractmethod
+    def get_n_pairs(self, table: str):
+        pass
+
+    @abstractmethod
     @du.recordlinkage
     def save_comparison_pairs(
         self, names: Tuple[str], table: str, rl: str = ""
@@ -57,45 +90,57 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         """apply inverted index to get comparison pairs"""
         pass
 
-    @abstractmethod
-    def get_n_pairs(self, table: str):
-        pass
-
 
 @dataclass
-class BaseInitialize(ABC):
-    """abstract implementation for initialization operations"""
-
+class BaseDistance(ABC):
     @abstractmethod
-    def setup(
-        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
-    ) -> None:
-        """sets up environment
-
-        creates:
-        - df
-        - pos
-        - neg
-        - unlabelled
-        - train
-        - labels
-        """
+    def get_distances(self) -> pd.DataFrame:
+        """get the labels table"""
         pass
 
-
-@dataclass
-class BaseORM(ABC):
-    """abstract implementation for orm operations"""
+    @abstractmethod
+    def compute_distances(self) -> pd.DataFrame:
+        """get the labels table"""
+        pass
 
     @abstractmethod
     def save_distances(self, full, labels):
         """computes distances on attributes"""
         pass
 
+
+@dataclass
+class BaseCluster(ABC):
+    @abstractmethod
+    def get_scores(self, threshold):
+        """returns model predictions"""
+        pass
+
+    @abstractmethod
+    def get_clusters(self, threshold):
+        """returns model predictions"""
+        pass
+
+    @abstractmethod
+    def get_clusters_link(self, threshold):
+        """returns model predictions"""
+        pass
+
     @abstractmethod
     def merge_clusters_with_raw_data(self, df_clusters, rl):
         """appends attributes to predictions"""
         pass
+
+
+@dataclass
+class BaseFapi(ABC):
+    def predict(self, dists):
+        return json.loads(
+            requests.post(
+                f"{self.settings.fast_api.url}/predict",
+                json={"dists": dists.tolist()},
+            ).content
+        )
 
     @abstractmethod
     def update_train(self, newlabels: pd.DataFrame) -> None:
@@ -113,31 +158,21 @@ class BaseORM(ABC):
         pass
 
     @abstractmethod
-    def predict(self):
-        """
-        use active learner model to predict whether comparison pairs
-        are matches
-        """
-        pass
-
-    @abstractmethod
-    def get_scores(self, threshold):
-        """returns model predictions"""
-        pass
-
-    @abstractmethod
-    def get_distances(self) -> pd.DataFrame:
-        """get the labels table"""
-        pass
-
-    @abstractmethod
     def get_labels(self) -> pd.DataFrame:
         """get the labels table"""
         pass
 
+    @abstractmethod
+    def save_predictions(self):
+        """
+        submits post request to FastAPI to get predicted labels using
+        active learner model;
+        """
+        pass
+
 
 @dataclass
-class BaseRepository(BaseInitialize, BaseORM, ABC):
+class BaseRepository(BaseInitialize, BaseDistance, BaseCluster, BaseFapi, ABC):
     """abstract implementation for compute"""
 
     settings: Settings

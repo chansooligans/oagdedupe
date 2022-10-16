@@ -60,7 +60,7 @@ class BaseModel(ABC):
         """
         logging.info("get clusters")
         requests.post(f"{self.settings.fast_api.url}/train")
-        self.repo.predict()
+        self.repo.save_predictions()
         return self.cluster.get_df_cluster()
 
     def fit_blocks(self) -> None:

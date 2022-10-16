@@ -72,10 +72,6 @@ class TestORM(unittest.TestCase):
         seed_distances(orm=self.orm)
         return
 
-    def test_get_train(self):
-        df = self.orm.get_train()
-        assert len(df) >= 103
-
     def test_get_labels(self):
         df = self.orm.get_labels()
         self.assertEqual(len(df), 2)
@@ -83,14 +79,6 @@ class TestORM(unittest.TestCase):
     def test_get_distances(self):
         df = self.orm.get_distances()
         self.assertEqual(len(df), 1)
-
-    def test_get_full_distances(self):
-        df = self.orm.get_full_distances()
-        self.assertEqual(len(df), 2)
-
-    def test_get_full_comparison_indices(self):
-        df = self.orm.get_full_comparison_indices()
-        self.assertEqual(df.loc[0, "_index_l"], 1)
 
     def test__update_table(self):
         newrow = pd.DataFrame(
