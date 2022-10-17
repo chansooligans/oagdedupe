@@ -2,6 +2,7 @@
 block scheme conjunctions and uses these to generate comparison pairs.
 """
 
+import time
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, Optional, Tuple
@@ -34,8 +35,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
     def __hash__(self):
         return hash(id(self))
 
-    @lru_cache
-    def score(self, arr: Tuple[str]) -> StatsDict:
+    def score(self, arr: Tuple[str], shared_dict: dict, lock) -> StatsDict:
         """
         Wraps scheme_stats() function with @lru_cache decorator for caching.
 
@@ -44,9 +44,19 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         arr: tuple
             tuple of block schemes
         """
+
+        with lock:
+            if arr in shared_dict.keys():
+                while shared_dict[arr] == True:
+                    time.sleep(2)
+                return shared_dict[arr]
+            else:
+                shared_dict[arr] = True
+
         self.repo.build_inverted_index(names=arr, forward="blocks_train")
         self.repo.build_pairs(names=arr, forward="blocks_train")
-        return self.repo.get_inverted_index_stats(names=arr)
+        shared_dict[arr] = self.repo.get_inverted_index_stats(names=arr)
+        return shared_dict[arr]
 
     def _keep_if(self, x: StatsDict) -> bool:
         """
@@ -70,7 +80,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         return dp
 
     def get_best(
-        self, scheme: Tuple[str], shared_dict: dict
+        self, scheme: Tuple[str], shared_dict: dict, lock
     ) -> Optional[List[StatsDict]]:
         """
         Dynamic programming implementation to get best conjunction.
@@ -80,28 +90,26 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         scheme: tuple
             tuple of block schemes
         """
-        if scheme in shared_dict.keys():
-            return shared_dict[scheme]
-
         dp = [
             None for _ in range(self.settings.model.k)
         ]  # type: List[StatsDict]
-        dp[0] = self.score(scheme)
+        dp[0] = self.score(scheme, shared_dict=shared_dict, lock=lock)
 
         if (dp[0].positives == 0) or (dp[0].rr < 0.99):
-            shared_dict[scheme] = None
-            return shared_dict[scheme]
+            return None
 
         for n in range(1, self.settings.model.k):
             scores = [
-                self.score(tuple(sorted(dp[n - 1].scheme + x)))
+                self.score(
+                    tuple(sorted(dp[n - 1].scheme + x)),
+                    shared_dict=shared_dict,
+                    lock=lock,
+                )
                 for x in self.block_scheme_tuples
                 if x not in dp[n - 1].scheme
             ]
             if len(scores) == 0:
-                shared_dict[scheme] = dp[n:]
-                return shared_dict[scheme]
+                return dp[n:]
             dp = self._filter_and_sort(dp, n, scores)
 
-        shared_dict[scheme] = dp
-        return shared_dict[scheme]
+        return dp

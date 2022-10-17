@@ -41,8 +41,11 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
         List[List[StatsDict]]
         """
         with mp.Manager() as manager:
+            lock = manager.Lock()
             shared_dict = manager.dict()
-            func = partial(self.optimizer.get_best, shared_dict=shared_dict)
+            func = partial(
+                self.optimizer.get_best, shared_dict=shared_dict, lock=lock
+            )
             with manager.Pool(self.settings.model.cpus) as p:
                 res = list(
                     tqdm.tqdm(
