@@ -32,3 +32,14 @@ def recordlinkage_repeat(f):
             f(*args, **kwargs)
 
     return wrapper
+
+
+def shared_memory_cache(f):
+    def wrapper(*args, **kwargs):
+        if kwargs["scheme"] in kwargs["shared_dict"].keys():
+            return kwargs["shared_dict"][kwargs["scheme"]]
+        else:
+            kwargs["shared_dict"][kwargs["scheme"]] = f(*args, **kwargs)
+            return kwargs["shared_dict"][kwargs["scheme"]]
+
+    return wrapper

@@ -2,8 +2,9 @@
 block scheme conjunctions and uses these to generate comparison pairs.
 """
 
+import multiprocessing as mp
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, partial
 from multiprocessing import Pool
 from typing import List
 
@@ -39,13 +40,16 @@ class Conjunctions(BaseConjunctions, BlockSchemes):
         ----------
         List[List[StatsDict]]
         """
-        with Pool(self.settings.model.cpus) as p:
-            res = list(
-                tqdm.tqdm(
-                    p.imap(self.optimizer.get_best, self.block_scheme_tuples),
-                    total=len(self.block_scheme_tuples),
+        with mp.Manager() as manager:
+            shared_dict = manager.dict()
+            func = partial(self.optimizer.get_best, shared_dict=shared_dict)
+            with manager.Pool(self.settings.model.cpus) as p:
+                res = list(
+                    tqdm.tqdm(
+                        p.imap(func, self.block_scheme_tuples),
+                        total=len(self.block_scheme_tuples),
+                    )
                 )
-            )
         return res
 
     @cached_property

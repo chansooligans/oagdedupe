@@ -44,9 +44,9 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         arr: tuple
             tuple of block schemes
         """
-        return self.repo.get_inverted_index_stats(
-            names=arr, table="blocks_train"
-        )
+        self.repo.build_inverted_index(names=arr, forward="blocks_train")
+        self.repo.build_pairs(names=arr, forward="blocks_train")
+        return self.repo.get_inverted_index_stats(names=arr)
 
     def _keep_if(self, x: StatsDict) -> bool:
         """
@@ -69,7 +69,9 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         dp[n] = max(filtered, key=self.repo.max_key)
         return dp
 
-    def get_best(self, scheme: Tuple[str]) -> Optional[List[StatsDict]]:
+    def get_best(
+        self, scheme: Tuple[str], shared_dict: dict
+    ) -> Optional[List[StatsDict]]:
         """
         Dynamic programming implementation to get best conjunction.
 
@@ -78,13 +80,17 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         scheme: tuple
             tuple of block schemes
         """
+        if scheme in shared_dict.keys():
+            return shared_dict[scheme]
+
         dp = [
             None for _ in range(self.settings.model.k)
         ]  # type: List[StatsDict]
         dp[0] = self.score(scheme)
 
         if (dp[0].positives == 0) or (dp[0].rr < 0.99):
-            return None
+            shared_dict[scheme] = None
+            return shared_dict[scheme]
 
         for n in range(1, self.settings.model.k):
             scores = [
@@ -93,6 +99,9 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
                 if x not in dp[n - 1].scheme
             ]
             if len(scores) == 0:
-                return dp[:n]
+                shared_dict[scheme] = dp[n:]
+                return shared_dict[scheme]
             dp = self._filter_and_sort(dp, n, scores)
-        return dp
+
+        shared_dict[scheme] = dp
+        return shared_dict[scheme]

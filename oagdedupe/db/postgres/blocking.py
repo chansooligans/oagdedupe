@@ -204,21 +204,59 @@ class PostgresBlockingRepository(
                 )
             )
 
+    @du.recordlinkage
     def build_inverted_index(
-        self, names: Tuple[str], table: str, col: str = "_index_l"
+        self, names: Tuple[str], forward: str, rl=""
     ) -> str:
-        return f"""
-        SELECT
-            {self.signatures(names)},
-            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
-        FROM {self.settings.db.db_schema}.{table}
-        GROUP BY {", ".join(self._aliases(names))}
-        """
+        for col in ["l", "r"]:
+            newtable = f"{forward}"
+            if col == "r":
+                newtable = f"{forward}{rl}"
+            table = f"inv_{forward}_{col}_" + "_".join(names)
+            self.execute(
+                f"""
+                DROP TABLE IF EXISTS {self.settings.db.db_schema}.{table};
+                CREATE TABLE {self.settings.db.db_schema}.{table} AS (
+                    SELECT
+                        {self.signatures(names)},
+                        unnest(ARRAY_AGG(_index ORDER BY _index asc)) _index_{col}
+                    FROM {self.settings.db.db_schema}.{newtable}
+                    GROUP BY {", ".join(self._aliases(names))}
+                )
+            """
+            )
 
     @du.recordlinkage
-    def get_inverted_index_stats(
-        self, names: Tuple[str], table: str, rl: str = ""
-    ) -> StatsDict:
+    def build_pairs(
+        self, names: Tuple[str], forward: str = "blocks_train", rl: str = ""
+    ) -> str:
+
+        if rl == "":
+            where = "WHERE t1._index_l < t2._index_r"
+        else:
+            where = ""
+
+        inv_table_l = f"inv_{forward}_l_" + "_".join(names)
+        inv_table_r = f"inv_{forward}_r_" + "_".join(names)
+        table = f"pairs_{forward}_" + "_".join(names)
+
+        self.execute(
+            f"""
+            DROP TABLE IF EXISTS {self.settings.db.db_schema}.{table};
+            CREATE TABLE {self.settings.db.db_schema}.{table} AS (
+                SELECT _index_l, _index_r
+                FROM {self.settings.db.db_schema}.{inv_table_l} t1
+                JOIN {self.settings.db.db_schema}.{inv_table_r} t2
+                    ON {" and ".join(
+                        [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
+                    )}
+                {where}
+                GROUP BY _index_l, _index_r
+            )
+        """
+        )
+
+    def get_inverted_index_stats(self, names: Tuple[str]) -> StatsDict:
         """
         Given forward index, construct inverted index.
         Then for each row in inverted index, get all "nC2" distinct
@@ -238,19 +276,14 @@ class PostgresBlockingRepository(
         ----------
         StatsDict
         """
+        forward = "blocks_train"
+
+        pairs = f"pairs_{forward}_" + "_".join(names)
+
         res = (
             self.query(
                 f"""
             WITH
-                inverted_index AS (
-                    {self.build_inverted_index(names, table)}
-                ),
-                inverted_index_link AS (
-                    {self.build_inverted_index(names, table+rl, col="_index_r")}
-                ),
-                pairs AS (
-                    {self.pairs_query(names)}
-                ),
                 labels AS (
                     SELECT _index_l, _index_r, label
                     FROM {self.settings.db.db_schema}.labels
@@ -259,7 +292,7 @@ class PostgresBlockingRepository(
                 count(*) as n_pairs,
                 SUM(CASE WHEN t2.label = 1 THEN 1 ELSE 0 END) positives,
                 SUM(CASE WHEN t2.label = 0 THEN 1 ELSE 0 END) negatives
-            FROM pairs t1
+            FROM {self.settings.db.db_schema}.{pairs} t1
             LEFT JOIN labels t2
                 ON t2._index_l = t1._index_l
                 AND t2._index_r = t1._index_r
@@ -275,24 +308,6 @@ class PostgresBlockingRepository(
 
         return StatsDict(**res)
 
-    @du.recordlinkage
-    def pairs_query(self, names: Tuple[str], rl: str = "") -> str:
-        if rl == "":
-            where = "WHERE t1._index_l < t2._index_r"
-        else:
-            where = ""
-        return f"""
-            SELECT _index_l, _index_r
-            FROM inverted_index t1
-            JOIN inverted_index_link t2
-                ON {" and ".join(
-                    [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
-                )}
-            {where}
-            GROUP BY _index_l, _index_r
-            """
-
-    @du.recordlinkage
     def add_new_comparisons(
         self, names: Tuple[str], table: str, rl: str = ""
     ) -> None:
@@ -322,12 +337,12 @@ class PostgresBlockingRepository(
             (
                 WITH
                     inverted_index AS (
-                        {self.build_inverted_index(names, table)}
+                        {self.build_inverted_index(names, forward=table)}
                     ),
                     inverted_index_link AS (
-                        {self.build_inverted_index(names, table+rl, col="_index_r")}
+                        {self.build_inverted_index(names, forward=table, col="r", rl=rl)}
                     )
-                {self.pairs_query(names)}
+                {self.build_pairs(names)}
             )
             ON CONFLICT DO NOTHING
             """
