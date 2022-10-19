@@ -89,12 +89,13 @@ class Dedupe(BaseModel):
         """learn p(match)"""
 
         self.repo.setup(df=df, df2=None, reset=reset, resample=resample)
+        self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.repo.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=False)
 
 
 @dataclass
@@ -114,12 +115,13 @@ class RecordLinkage(BaseModel):
         """learn p(match)"""
 
         self.repo.setup(df=df, df2=df2, reset=reset, resample=resample)
+        self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.repo.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=False)
 
 
 @dataclass
@@ -133,9 +135,10 @@ class Fapi(BaseModel):
         """learn p(match)"""
 
         self.repo.setup(reset=False, resample=True)
+        self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
         self.blocking.save(full=False)
 
         logging.info("get distance matrix")
-        self.repo.save_distances(full=False, labels=True)
+        self.repo.save_distances(full=False, labels=False)

@@ -10,6 +10,7 @@ TABLE = orm.decl_api.DeclarativeMeta
 SUBQUERY = sql.selectable.Subquery
 ENGINE = engine.base.Engine
 
+
 # Fast API
 class Dists(BaseModel):
     dists: List[List[float]]
@@ -35,7 +36,10 @@ class Annotation(BaseModel):
 
     @property
     def label(self):
-        annotation = self.result[0]["value"]["choices"][0]
+        if self.result:
+            annotation = self.result[0]["value"]["choices"][0]
+        else:
+            annotation = "Uncertain"
         return self.label_map[annotation]
 
 
