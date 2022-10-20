@@ -46,61 +46,6 @@ class BlockingMixin:
             );
         """
 
-    def add_scheme(
-        self,
-        table: str,
-        col: str,
-        exists: List[str],
-        rl: str = "",
-    ) -> None:
-        """
-        check if column is in exists
-        if not, add to blocks_{tablle}
-        """
-
-        if col in exists:
-            return
-
-        if "ngrams" in col:
-            coltype = "text[]"
-        else:
-            coltype = "text"
-
-        self.execute(
-            f"""
-            ALTER TABLE {self.settings.db.db_schema}.blocks_{table}{rl}
-            ADD COLUMN IF NOT EXISTS {col} {coltype}
-        """
-        )
-
-        self.execute(
-            f"""
-            UPDATE {self.settings.db.db_schema}.blocks_{table}{rl} AS t1
-            SET {col} = t2.{col}
-            FROM (
-                SELECT _index, {self.block_scheme_mapping[col]} as {col}
-                FROM {self.settings.db.db_schema}.{table}{rl}
-            ) t2
-            WHERE t1._index = t2._index;
-        """
-        )
-        return
-
-    @du.recordlinkage_repeat
-    def init_forward_index_full(self, rl: str = "") -> None:
-        """initialize full index table"""
-        self.execute(
-            f"""
-            DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_df{rl};
-
-            CREATE TABLE {self.settings.db.db_schema}.blocks_df{rl} as (
-                SELECT
-                    _index
-                FROM {self.settings.db.db_schema}.df{rl}
-            );
-        """
-        )
-
     def query(self, sql: str) -> pd.DataFrame:
         """
         for parallel implementation, need to create separate engine
@@ -172,31 +117,29 @@ class PostgresBlockingRepository(
         self,
         full: bool = False,
         rl: str = "",
-        iter: Optional[int] = None,
-        columns: Optional[Tuple[str]] = None,
+        conjunction: Optional[Tuple[str]] = None,
     ) -> None:
         """
         Executes SQL queries to build forward indices on train or full data
 
         Parameters
         ----------
-        columns : List[str]
+        schemes : List[str]
             block schemes to include in forward index
         """
         if full:
-            if iter == 0:
-                self.init_forward_index_full()
-            for col in columns:
+            for scheme in conjunction:
 
                 logging.info(
-                    "building forward index on full data for scheme %s", col
+                    "building forward index on full data for scheme %s", scheme
                 )
 
-                exists = self.query(
+                columns = self.query(
                     f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
                 ).columns
 
-                self.add_scheme(table="df", col=col, exists=exists, rl=rl)
+                if scheme not in columns:
+                    self.add_scheme(scheme=scheme, rl=rl)
         else:
             self.execute(
                 self.query_blocks(
@@ -204,20 +147,55 @@ class PostgresBlockingRepository(
                 )
             )
 
+    def add_scheme(
+        self,
+        scheme: str,
+        rl: str = "",
+    ) -> None:
+        """
+        only used for building blocks_train on full data;
+
+        check if column is in exists
+        if not, add to blocks_df
+        """
+
+        if "ngrams" in scheme:
+            coltype = "text[]"
+        else:
+            coltype = "text"
+
+        self.execute(
+            f"""
+            ALTER TABLE {self.settings.db.db_schema}.blocks_df{rl}
+            ADD COLUMN IF NOT EXISTS {scheme} {coltype}
+        """
+        )
+
+        self.execute(
+            f"""
+            UPDATE {self.settings.db.db_schema}.blocks_df{rl} AS t1
+            SET {scheme} = t2.{scheme}
+            FROM (
+                SELECT _index, {self.block_scheme_mapping[scheme]} as {scheme}
+                FROM {self.settings.db.db_schema}.df{rl}
+            ) t2
+            WHERE t1._index = t2._index;
+        """
+        )
+        return
+
     def build_inverted_index(
-        self, names: Tuple[str], table: str, col: str = "_index_l"
+        self, conjunction: Tuple[str], table: str, col: str = "_index_l"
     ) -> str:
         return f"""
         SELECT
-            {self.signatures(names)},
-            unnest(ARRAY_AGG(_index ORDER BY _index asc)) {col}
+            {self.signatures(conjunction)}, _index {col}
         FROM {self.settings.db.db_schema}.{table}
-        GROUP BY {", ".join(self._aliases(names))}
         """
 
     @du.recordlinkage
-    def get_inverted_index_stats(
-        self, names: Tuple[str], table: str, rl: str = ""
+    def get_conjunction_stats(
+        self, conjunction: Tuple[str], table: str, rl: str = ""
     ) -> StatsDict:
         """
         Given forward index, construct inverted index.
@@ -229,7 +207,7 @@ class PostgresBlockingRepository(
 
         Parameters
         ----------
-        names : List[str]
+        conjunction : List[str]
             list of block schemes
         table : str
             table name of forward index
@@ -243,13 +221,13 @@ class PostgresBlockingRepository(
                 f"""
             WITH
                 inverted_index AS (
-                    {self.build_inverted_index(names, table)}
+                    {self.build_inverted_index(conjunction, table)}
                 ),
                 inverted_index_link AS (
-                    {self.build_inverted_index(names, table+rl, col="_index_r")}
+                    {self.build_inverted_index(conjunction, table+rl, col="_index_r")}
                 ),
                 pairs AS (
-                    {self.pairs_query(names)}
+                    {self.pairs_query(conjunction)}
                 ),
                 labels AS (
                     SELECT _index_l, _index_r, label
@@ -270,13 +248,13 @@ class PostgresBlockingRepository(
             .to_dict()
         )
 
-        res["scheme"] = names
+        res["conjunction"] = conjunction
         res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
 
         return StatsDict(**res)
 
     @du.recordlinkage
-    def pairs_query(self, names: Tuple[str], rl: str = "") -> str:
+    def pairs_query(self, conjunction: Tuple[str], rl: str = "") -> str:
         if rl == "":
             where = "WHERE t1._index_l < t2._index_r"
         else:
@@ -286,7 +264,7 @@ class PostgresBlockingRepository(
             FROM inverted_index t1
             JOIN inverted_index_link t2
                 ON {" and ".join(
-                    [f"t1.{s} = t2.{s}" for s in self._aliases(names)]
+                    [f"t1.{s} = t2.{s}" for s in self._aliases(conjunction)]
                 )}
             {where}
             GROUP BY _index_l, _index_r
@@ -294,7 +272,7 @@ class PostgresBlockingRepository(
 
     @du.recordlinkage
     def add_new_comparisons(
-        self, names: Tuple[str], table: str, rl: str = ""
+        self, conjunction: Tuple[str], table: str, rl: str = ""
     ) -> None:
         """
         Given forward index, construct inverted index.
@@ -305,7 +283,7 @@ class PostgresBlockingRepository(
 
         Parameters
         ----------
-        names : List[str]
+        conjunction : List[str]
             list of block schemes
         table : str
             table name of forward index
@@ -322,19 +300,19 @@ class PostgresBlockingRepository(
             (
                 WITH
                     inverted_index AS (
-                        {self.build_inverted_index(names, table)}
+                        {self.build_inverted_index(conjunction, table)}
                     ),
                     inverted_index_link AS (
-                        {self.build_inverted_index(names, table+rl, col="_index_r")}
+                        {self.build_inverted_index(conjunction, table+rl, col="_index_r")}
                     )
-                {self.pairs_query(names)}
+                {self.pairs_query(conjunction)}
             )
             ON CONFLICT DO NOTHING
             """
         )
         engine.dispose()
 
-    def get_n_pairs(self, table: str) -> pd.DataFrame:
+    def get_n_pairs(self, table: str) -> int:
         newtable = self.comptab_map[table]
         return self.query(
             f"""

@@ -80,15 +80,10 @@ class Dedupe(BaseModel):
     def __post_init__(self):
         super().__post_init__()
 
-    def initialize(
-        self,
-        df: pd.DataFrame,
-        reset: bool = True,
-        resample: bool = False,
-    ) -> None:
+    def initialize(self, df: pd.DataFrame) -> None:
         """learn p(match)"""
 
-        self.repo.setup(df=df, df2=None, reset=reset, resample=resample)
+        self.repo.setup(df=df, df2=None)
         self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
@@ -109,12 +104,10 @@ class RecordLinkage(BaseModel):
         self,
         df: pd.DataFrame,
         df2: pd.DataFrame,
-        reset: bool = True,
-        resample: bool = False,
     ) -> None:
         """learn p(match)"""
 
-        self.repo.setup(df=df, df2=df2, reset=reset, resample=resample)
+        self.repo.setup(df=df, df2=df2)
         self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
@@ -134,7 +127,7 @@ class Fapi(BaseModel):
     def initialize(self) -> None:
         """learn p(match)"""
 
-        self.repo.setup(reset=False, resample=True)
+        self.repo.resample(reset=False)
         self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")

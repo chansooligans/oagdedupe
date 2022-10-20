@@ -83,8 +83,8 @@ class StatsDict:
     n_pairs: int
     positives: int
     negatives: int
-    scheme: Tuple[str]
+    conjunction: Tuple[str]
     rr: float
 
     def __hash__(self):
-        return hash(self.scheme)
+        return hash(self.conjunction)

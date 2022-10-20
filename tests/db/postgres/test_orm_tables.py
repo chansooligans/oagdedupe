@@ -57,9 +57,7 @@ class TestDistanceRepository(unittest.TestCase):
 
     def setUp(self):
         self.init = InitializeRepository(settings=self.settings)
-        self.init.setup(
-            df=self.df, df2=self.df2, reset=True, resample=False, rl=""
-        )
+        self.init.setup(df=self.df, df2=self.df2, rl="")
         self.orm = Tables(settings=self.settings)
         seed_labels_distances(orm=self.orm)
         seed_distances(orm=self.orm)

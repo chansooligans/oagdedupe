@@ -49,4 +49,6 @@ class Pairs(BasePairs):
         int
             total number of pairs gathered so far
         """
-        self.repo.add_new_comparisons(names=stats.scheme, table=table)
+        self.repo.add_new_comparisons(
+            conjunction=stats.conjunction, table=table
+        )

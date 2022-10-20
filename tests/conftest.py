@@ -9,7 +9,7 @@ from oagdedupe.settings import Settings, SettingsDB, SettingsModel
 @pytest.fixture(scope="module")
 def statsdict():
     return StatsDict(
-        scheme=tuple(["find_ngrams_4_postcode"]),
+        conjunction=tuple(["find_ngrams_4_postcode"]),
         n_pairs=7,
         positives=2,
         negatives=1,

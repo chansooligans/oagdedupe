@@ -66,13 +66,13 @@ class Blocking(BaseBlocking):
                 logging.warning(
                     f"""
                     next conjunction exceeds reduction ratio limit;
-                    stopping pair generation with scheme {stats.scheme}
+                    stopping pair generation with scheme {stats.conjunction}
                 """
                 )
                 return
             if table == "blocks_df":
                 self.forward.build_forward_indices(
-                    columns=stats.scheme, iter=i, full=True
+                    full=True, conjunction=stats.conjunction
                 )
             self.pairs.add_new_comparisons(stats=stats, table=table)
             n_pairs = self.repo.get_n_pairs(table=table)

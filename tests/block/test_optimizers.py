@@ -16,14 +16,14 @@ def statslist():
     return [
         StatsDict(
             n_pairs=100,
-            scheme=tuple(["scheme"]),
+            conjunction=tuple(["scheme"]),
             rr=0.9,
             positives=100,
             negatives=1,
         ),
         StatsDict(
             n_pairs=100,
-            scheme=tuple(["scheme"]),
+            conjunction=tuple(["scheme"]),
             rr=0.99,
             positives=1,
             negatives=100,
@@ -34,7 +34,7 @@ def statslist():
 def fake_sort(x):
     return StatsDict(
         n_pairs=10,
-        scheme=x,
+        conjunction=x,
         rr=0.999,
         positives=100,
         negatives=1,
@@ -43,10 +43,10 @@ def fake_sort(x):
 
 @dataclass
 class FakeComputeBlocking:
-    def get_inverted_index_stats(self, names, table):
+    def get_conjunction_stats(self, conjunction, table):
         return StatsDict(
             n_pairs=10,
-            scheme=names,
+            conjunction=conjunction,
             rr=0.999,
             positives=100,
             negatives=1,

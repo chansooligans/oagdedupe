@@ -155,7 +155,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
     def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
         stmt = delete(getattr(self, f"Train{rl}")).where(
-            getattr(self, f"Train{rl}").labelled is False
+            getattr(self, f"Train{rl}").labelled == False
         )
         session.execute(stmt)
         session.commit()
@@ -168,6 +168,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
                 TRUNCATE TABLE {self.settings.db.db_schema}.unlabelled{rl};
             """
         )
+        self._init_unlabelled(session=session)
         records = self._to_dicts(
             session.query(getattr(self, f"Unlabelled{rl}")).all()
         )
@@ -177,10 +178,29 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
+    def _init_forward_index_full(self, rl: str = "") -> None:
+        """initialize full index table
+
+        (only required for sql implementation)
+        """
+        self.engine.execute(
+            f"""
+            DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_df{rl};
+
+            CREATE TABLE {self.settings.db.db_schema}.blocks_df{rl} as (
+                SELECT
+                    _index
+                FROM {self.settings.db.db_schema}.df{rl}
+            );
+        """
+        )
+
+    @du.recordlinkage_repeat
     def resample(self, session: SESSION) -> None:
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
         self.resample_unlabelled(session)
+        self._init_forward_index_full()
         # reset table
         for table in [
             "clusters",
@@ -196,9 +216,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
             )
 
     @du.recordlinkage
-    def setup(
-        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
-    ) -> None:
+    def setup(self, df, df2=None, rl: str = "") -> None:
         """
         runs table creation functions
 
@@ -206,28 +224,17 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         ----------
         df: Optional[pd.DataFrame]
             dataframe to dedupe
-        reset: bool
-            set True to delete and create all tables
-        resample: bool
-            used for active learning loops where model needs to pull a new
-            sample, without deleting df, train, or labels
         """
 
         funcs.create_functions(settings=self.settings)
 
         with self.Session() as session:
-            if reset:
-                logging.info(f"building schema: {self.settings.db.db_schema}")
-                self.reset_tables()
-                self._init_df(df=df, df_link=df2)
-                self._init_pos(session)
-                self._init_neg(session)
-                self._init_unlabelled(session)
-                self._init_train(session)
-                getattr(self, f"_init_labels{rl}")(session)
-
-            if resample:
-                logging.info("resampling train")
-                self.resample(session)
-
-            logging.info("computing distances for labels")
+            logging.info(f"building schema: {self.settings.db.db_schema}")
+            self.reset_tables()
+            self._init_df(df=df, df_link=df2)
+            self._init_pos(session)
+            self._init_neg(session)
+            self._init_unlabelled(session)
+            self._init_train(session)
+            getattr(self, f"_init_labels{rl}")(session)
+            self._init_forward_index_full()
