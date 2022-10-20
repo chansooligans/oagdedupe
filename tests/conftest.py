@@ -10,6 +10,12 @@ from oagdedupe.settings import Settings, SettingsDB, SettingsModel
 
 
 @pytest.fixture(scope="module")
+def engine():
+    db_url = os.environ.get("DATABASE_URL")
+    return create_engine(db_url)
+
+
+@pytest.fixture(scope="module")
 def session():
     db_url = os.environ.get("DATABASE_URL")
     engine = create_engine(db_url)
@@ -41,7 +47,7 @@ def settings() -> Settings:
         attributes=["name", "addr"],  # list of entity attribute names
         model=SettingsModel(
             dedupe=False,
-            n=1000,
+            n=100,
             k=3,
             max_compare=20_000,
             n_covered=5_000,
