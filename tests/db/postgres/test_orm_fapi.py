@@ -57,9 +57,7 @@ class TestFapiRepository(unittest.TestCase):
 
     def setUp(self):
         self.init = InitializeRepository(settings=self.settings)
-        self.init.setup(
-            df=self.df, df2=self.df2, reset=True, resample=False, rl=""
-        )
+        self.init.setup(df=self.df, df2=self.df2, rl="")
         self.orm = FapiRepository(settings=self.settings)
         seed_labels_distances(orm=self.orm)
         seed_distances(orm=self.orm)
@@ -76,3 +74,7 @@ class TestFapiRepository(unittest.TestCase):
         self.orm._update_table(newrow, self.init.maindf())
         df = pd.read_sql("SELECT * FROM dedupe.df", con=self.orm.engine)
         self.assertEqual(df.loc[100, "name"], "test")
+
+    def test_get_distances(self):
+        df = self.orm.get_distances()
+        self.assertEqual(len(df), 1)

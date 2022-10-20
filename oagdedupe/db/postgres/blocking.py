@@ -138,9 +138,8 @@ class PostgresBlockingRepository(
                     f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
                 ).columns
 
-                exists = scheme in columns
-
-                self.add_scheme(scheme=scheme, exists=exists, rl=rl)
+                if scheme not in columns:
+                    self.add_scheme(scheme=scheme, rl=rl)
         else:
             self.execute(
                 self.query_blocks(
@@ -151,7 +150,6 @@ class PostgresBlockingRepository(
     def add_scheme(
         self,
         scheme: str,
-        exists: bool,
         rl: str = "",
     ) -> None:
         """
@@ -160,9 +158,6 @@ class PostgresBlockingRepository(
         check if column is in exists
         if not, add to blocks_df
         """
-
-        if scheme in exists:
-            return
 
         if "ngrams" in scheme:
             coltype = "text[]"
@@ -253,7 +248,7 @@ class PostgresBlockingRepository(
             .to_dict()
         )
 
-        res["scheme"] = conjunction
+        res["conjunction"] = conjunction
         res["rr"] = 1 - (res["n_pairs"] / (self.n_comparisons))
 
         return StatsDict(**res)

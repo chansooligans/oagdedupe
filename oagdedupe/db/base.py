@@ -132,7 +132,8 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
 
         If full == True, for each conjunction (from best to worst),
         construct forward index for a scheme at a time,
-        using "add_scheme()" and append output to `blocks_df`
+        using "add_scheme()" and append output to `blocks_df`. If scheme already
+        exists in `blocks_df`, skip!
 
         Parameters
         ----------
@@ -153,7 +154,6 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
     def add_scheme(
         self,
         scheme: str,
-        exists: bool,
         rl: str = "",
     ) -> None:
         """Only used for building forward index on full data;

@@ -15,14 +15,14 @@ def conjunctions():
         [
             StatsDict(
                 n_pairs=100,
-                scheme=tuple(["scheme"]),
+                conjunction=tuple(["scheme"]),
                 rr=0.9,
                 positives=100,
                 negatives=1,
             ),
             StatsDict(
                 n_pairs=100,
-                scheme=tuple(["scheme"]),
+                conjunction=tuple(["scheme"]),
                 rr=0.99,
                 positives=1,
                 negatives=100,
@@ -31,14 +31,14 @@ def conjunctions():
         [
             StatsDict(
                 n_pairs=100,
-                scheme=tuple(["scheme"]),
+                conjunction=tuple(["scheme"]),
                 rr=0.9,
                 positives=100,
                 negatives=1,
             ),
             StatsDict(
                 n_pairs=100,
-                scheme=tuple(["scheme"]),
+                conjunction=tuple(["scheme"]),
                 rr=0.99,
                 positives=1,
                 negatives=100,

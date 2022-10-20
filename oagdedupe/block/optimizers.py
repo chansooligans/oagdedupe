@@ -89,7 +89,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
 
         for n in range(1, self.settings.model.k):
             scores = [
-                self.score(conjunction=tuple(sorted(dp[n - 1].scheme + x)))
+                self.score(conjunction=tuple(sorted(dp[n - 1].conjunction + x)))
                 for x in self.block_scheme_tuples
                 if x not in dp[n - 1].conjunction
             ]

@@ -80,12 +80,7 @@ class Dedupe(BaseModel):
     def __post_init__(self):
         super().__post_init__()
 
-    def initialize(
-        self,
-        df: pd.DataFrame,
-        reset: bool = True,
-        resample: bool = False,
-    ) -> None:
+    def initialize(self, df: pd.DataFrame) -> None:
         """learn p(match)"""
 
         self.repo.setup(df=df, df2=None)
