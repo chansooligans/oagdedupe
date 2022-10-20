@@ -75,6 +75,7 @@ async def predict(dists: Dists) -> Dists:
 
 @app.post("/payload")
 async def payload() -> None:
+    logging.info("received request for new samples from labelstudio")
     m.generate_new_samples()
 
 

@@ -130,13 +130,13 @@ class TasksGet(SettingsEnabler):
         for entities that were labelled,
         set "labelled" column in train table to True
         """
-        self.api.repo.update_train()
+        self.api.repo.update_train(newlabels=newlabels)
 
     def _update_labels(self, newlabels: pd.DataFrame) -> None:
         """
         add new labels to labels table
         """
-        self.api.repo.update_labels()
+        self.api.repo.update_labels(newlabels=newlabels)
 
     def _get_new_labels(self) -> pd.DataFrame:
         """
@@ -206,7 +206,7 @@ class Model(TasksGet, TasksPost, Projects):
                 return
 
             # learn new block conjunctions
-            self.api.initialize(reset=False, resample=True)
+            self.api.initialize()
 
             # re-train model
             self._train()

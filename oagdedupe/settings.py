@@ -23,8 +23,6 @@ class SettingsService(BaseModel):
 
 class SettingsLabelStudio(SettingsService):
 
-    port: int = 8089
-
     api_key: str = "please provide an api key"
 
     """project description"""

@@ -194,7 +194,7 @@ class APIWebhooks(SettingsEnabler):
         """
         query = {
             "project": project_id,
-            "url": f"{self.settings.fast_api.url}/payload",
+            "url": f"http://host.docker.internal:{self.settings.fast_api.port}/payload",
             "send_payload": False,
             "is_active": True,
             "actions": ["ANNOTATION_CREATED", "ANNOTATION_UPDATED"],

@@ -36,6 +36,7 @@ test-postgres:
 label-studio:
 	docker run --rm -it -dp $(port):8080 \
 	--name oagdedupe-labelstudio \
+	--add-host host.docker.internal:host-gateway \
 	--env LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true \
 	--env LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files \
 	-v "`pwd`/.dedupe:/label-studio/data" \
