@@ -35,17 +35,18 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         return hash(id(self))
 
     @lru_cache
-    def score(self, arr: Tuple[str]) -> StatsDict:
+    def score(self, conjunction: Tuple[str]) -> StatsDict:
         """
-        Wraps scheme_stats() function with @lru_cache decorator for caching.
+        Wraps get_conjunction_stats() function with @lru_cache decorator
+        for caching.
 
         Parameters
         ----------
-        arr: tuple
+        conjunction: tuple
             tuple of block schemes
         """
-        return self.repo.get_inverted_index_stats(
-            names=arr, table="blocks_train"
+        return self.repo.get_conjunction_stats(
+            conjunction=conjunction, table="blocks_train"
         )
 
     def _keep_if(self, x: StatsDict) -> bool:
@@ -56,7 +57,7 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
             (x.positives > 0)
             & (x.rr < 1)
             & (x.n_pairs > 1)
-            & (sum(["_ngrams" in _ for _ in x.scheme]) <= 1)
+            & (sum(["_ngrams" in _ for _ in x.conjunction]) <= 1)
         )
 
     def _filter_and_sort(
@@ -81,16 +82,16 @@ class DynamicProgram(BaseOptimizer, BlockSchemes):
         dp = [
             None for _ in range(self.settings.model.k)
         ]  # type: List[StatsDict]
-        dp[0] = self.score(scheme)
+        dp[0] = self.score(conjunction=scheme)
 
         if (dp[0].positives == 0) or (dp[0].rr < 0.99):
             return None
 
         for n in range(1, self.settings.model.k):
             scores = [
-                self.score(tuple(sorted(dp[n - 1].scheme + x)))
+                self.score(conjunction=tuple(sorted(dp[n - 1].scheme + x)))
                 for x in self.block_scheme_tuples
-                if x not in dp[n - 1].scheme
+                if x not in dp[n - 1].conjunction
             ]
             if len(scores) == 0:
                 return dp[:n]

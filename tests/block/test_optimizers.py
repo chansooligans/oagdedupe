@@ -43,7 +43,7 @@ def fake_sort(x):
 
 @dataclass
 class FakeComputeBlocking:
-    def get_inverted_index_stats(self, names, table):
+    def get_conjunction_stats(self, names, table):
         return StatsDict(
             n_pairs=10,
             scheme=names,

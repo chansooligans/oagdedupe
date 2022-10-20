@@ -23,29 +23,6 @@ from oagdedupe.settings import Settings
 
 @dataclass
 class DistanceRepository(BaseDistanceRepository, Tables):
-    def get_distances(self) -> pd.DataFrame:
-        """
-        query unlabelled distances for sample data
-
-        Returns
-        ----------
-        pd.DataFrame
-        """
-        with self.Session() as session:
-            q = (
-                session.query(self.Distances)
-                .join(
-                    self.LabelsDistances,
-                    (self.Distances._index_l == self.LabelsDistances._index_l)
-                    & (
-                        self.Distances._index_r == self.LabelsDistances._index_r
-                    ),
-                    isouter=True,
-                )
-                .filter(self.LabelsDistances.label == None)
-            )
-            return pd.read_sql(q.statement, q.session.bind)
-
     @du.recordlinkage
     def fields_table(self, table: str, rl: str = "") -> tuple:
         mapping = {
@@ -245,6 +222,29 @@ class FapiRepository(BaseFapiRepository, Tables):
         add new labels to labels table
         """
         self._update_table(newlabels, self.Labels())
+
+    def get_distances(self) -> pd.DataFrame:
+        """
+        query unlabelled distances for sample data
+
+        Returns
+        ----------
+        pd.DataFrame
+        """
+        with self.Session() as session:
+            q = (
+                session.query(self.Distances)
+                .join(
+                    self.LabelsDistances,
+                    (self.Distances._index_l == self.LabelsDistances._index_l)
+                    & (
+                        self.Distances._index_r == self.LabelsDistances._index_r
+                    ),
+                    isouter=True,
+                )
+                .filter(self.LabelsDistances.label == None)
+            )
+            return pd.read_sql(q.statement, q.session.bind)
 
     def get_labels(self) -> pd.DataFrame:
         """

@@ -32,12 +32,11 @@ class Forward(BaseForward, BlockSchemes):
         self,
         rl: str = "",
         full: bool = False,
-        iter: Optional[int] = None,
         conjunction: Optional[Tuple[str]] = None,
     ) -> None:
         """
         Build forward indices for train or full datasets
         """
         self.repo.build_forward_indices(
-            rl=rl, full=full, iter=iter, conjunction=conjunction
+            full=full, rl=rl, conjunction=conjunction
         )

@@ -178,10 +178,29 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
+    def _init_forward_index_full(self, rl: str = "") -> None:
+        """initialize full index table
+
+        (only required for sql implementation)
+        """
+        self.engine.execute(
+            f"""
+            DROP TABLE IF EXISTS {self.settings.db.db_schema}.blocks_df{rl};
+
+            CREATE TABLE {self.settings.db.db_schema}.blocks_df{rl} as (
+                SELECT
+                    _index
+                FROM {self.settings.db.db_schema}.df{rl}
+            );
+        """
+        )
+
+    @du.recordlinkage_repeat
     def resample(self, session: SESSION) -> None:
         """resample unlabelled from train"""
         self._delete_unlabelled(session)
         self.resample_unlabelled(session)
+        self._init_forward_index_full()
         # reset table
         for table in [
             "clusters",
@@ -197,9 +216,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
             )
 
     @du.recordlinkage
-    def setup(
-        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
-    ) -> None:
+    def setup(self, df, df2=None, rl: str = "") -> None:
         """
         runs table creation functions
 
@@ -207,11 +224,6 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         ----------
         df: Optional[pd.DataFrame]
             dataframe to dedupe
-        reset: bool
-            set True to delete and create all tables
-        resample: bool
-            used for active learning loops where model needs to pull a new
-            sample, without deleting df, train, or labels
         """
 
         funcs.create_functions(settings=self.settings)
@@ -225,3 +237,4 @@ class InitializeRepository(BaseInitializeRepository, Tables):
             self._init_unlabelled(session)
             self._init_train(session)
             getattr(self, f"_init_labels{rl}")(session)
+            self._init_forward_index_full()
