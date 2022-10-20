@@ -195,7 +195,7 @@ class APIWebhooks(SettingsEnabler):
         query = {
             "project": project_id,
             "url": f"{self.settings.fast_api.url}/payload",
-            "send_payload": False,
+            "send_payload": True,
             "is_active": True,
             "actions": ["ANNOTATION_CREATED", "ANNOTATION_UPDATED"],
         }
