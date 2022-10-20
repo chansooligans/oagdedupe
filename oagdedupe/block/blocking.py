@@ -95,4 +95,4 @@ class Blocking(BaseBlocking):
             )
         else:
             self.forward.build_forward_indices(full=False)
-            self.save_comparisons(table="blocks_train", n_covered=500)
+            self.save_comparisons(table="blocks_train", n_covered=50000)
