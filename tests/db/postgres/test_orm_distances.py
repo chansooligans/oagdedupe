@@ -80,3 +80,10 @@ class TestDistanceRepository(unittest.TestCase):
         df = pd.read_sql(str(distance_query.subquery()), con=self.orm.engine)
         self.assertEqual(2, df.loc[0, self.settings.attributes].sum())
         self.assertEqual(any(df.loc[0].isnull()), False)
+
+    def test_save_distances(self):
+        self.orm.save_distances(full=False, labels=True)
+        df = pd.read_sql(
+            "SELECT * FROM dedupe.labels_distances", con=self.orm.engine
+        )
+        self.assertEqual(2 + 14, len(df))
