@@ -173,20 +173,20 @@ class PostgresBlockingRepository(
         full: bool = False,
         rl: str = "",
         iter: Optional[int] = None,
-        columns: Optional[Tuple[str]] = None,
+        conjunction: Optional[Tuple[str]] = None,
     ) -> None:
         """
         Executes SQL queries to build forward indices on train or full data
 
         Parameters
         ----------
-        columns : List[str]
+        schemes : List[str]
             block schemes to include in forward index
         """
         if full:
             if iter == 0:
                 self.init_forward_index_full()
-            for col in columns:
+            for col in conjunction:
 
                 logging.info(
                     "building forward index on full data for scheme %s", col

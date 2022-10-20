@@ -15,28 +15,58 @@ from oagdedupe.settings import Settings
 
 @dataclass
 class BaseInitializeRepository(ABC):
-    """abstract implementation for initialization operations"""
+    """Abstract implementation for initialization operations
+
+    This repository only requires setup(), which is called at initialization
+
+    """
 
     @abstractmethod
     @du.recordlinkage_repeat
     def resample(self) -> None:
-        """resample unlabelled from train"""
+        """Used by fast-api to generate new samples between active learning
+        cycles.
+
+        The `train` table contains a column, `labels` indicating whether the
+        sample exists in the labels table. Delete all records where
+        labels == False. Then replace with a new sample of size n. Importantly,
+        train records that WERE labelled should not be discarded. If there are
+        20 records with labels == True, there should be n + 20 records
+        after resampling.
+        """
         pass
 
     @abstractmethod
-    def setup(
-        self, df=None, df2=None, reset=True, resample=False, rl: str = ""
-    ) -> None:
+    @du.recordlinkage
+    def setup(self, df=None, df2=None, rl: str = "") -> None:
         """sets up environment
 
-        creates:
+        Parameters
+        ----------
+        df: Optional[pd.DataFrame]
+            dataframe to dedupe
+        df2: Optional[pd.DataFrame]
+            dataframe for recordlinkage
+        rl: str
+            for recordlinkage, used by decorator
+
+        Creates the following tables (see oagdedupe/db/postgres/tables for an
+        example of table schemas in sqlalchemy):
         - df
         - pos
         - neg
         - unlabelled
         - train
         - labels
+
+        if record linakge also create:
+        - df_link
+        - neg_link
+        - unlabelled_link
+        - train_link
         """
+        # if SQL, create blocking scheme functions
+        # funcs.create_functions(settings=self.settings)
         pass
 
 
@@ -59,9 +89,26 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         full: bool = False,
         rl: str = "",
         iter: Optional[int] = None,
-        columns: Optional[Tuple[str]] = None,
+        conjunction: Optional[Tuple[str]] = None,
     ) -> None:
-        """build forward indices on train or full data"""
+        """Builds forward indices on train or full data
+
+        A forward index is a mapping from entity to signature. As an example,
+        for a table with 2 block schemes:
+
+        | Entity        | first_letter_first_name | 3-grams    |
+        |---------------|-------------------------|------------|
+        | Jack Johnson  | J                       |['Jac', 'ack', 'ck ', 'k J', ' Jo', 'Joh', 'ohn', 'hns', 'nso', 'son']|
+        | Elvis Presley | E                       |['Elv', 'lvi', 'vis', 'is ', 's P', ' Pr', 'Pre', 'res', 'esl', 'sle', 'ley']|
+        | Tom Waits     | T                       |['Tom', 'om ', 'm W', ' Wa', 'Wai', 'ait', 'its']|
+        | Dolly Parton  | D                       |['Dol', 'oll', 'lly', 'ly ', 'y P', ' Pa', 'Par', 'art', 'rto', 'ton']|
+        | Brenda Lee    | B                       |['Bre', 'ren', 'end', 'nda', 'da ', 'a L', ' Le', 'Lee']|
+
+        If full == False, construct forward index on `train` table and
+        save output to blocks_train.
+
+        If full == True, construct forward index for a conjunction at a time.
+        """
         pass
 
     def build_inverted_index(

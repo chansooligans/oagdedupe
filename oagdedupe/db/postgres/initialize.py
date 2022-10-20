@@ -155,7 +155,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
     def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:
         """delete unlabelled from train"""
         stmt = delete(getattr(self, f"Train{rl}")).where(
-            getattr(self, f"Train{rl}").labelled is False
+            getattr(self, f"Train{rl}").labelled == False
         )
         session.execute(stmt)
         session.commit()
@@ -168,6 +168,7 @@ class InitializeRepository(BaseInitializeRepository, Tables):
                 TRUNCATE TABLE {self.settings.db.db_schema}.unlabelled{rl};
             """
         )
+        self._init_unlabelled(session=session)
         records = self._to_dicts(
             session.query(getattr(self, f"Unlabelled{rl}")).all()
         )
@@ -216,18 +217,11 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         funcs.create_functions(settings=self.settings)
 
         with self.Session() as session:
-            if reset:
-                logging.info(f"building schema: {self.settings.db.db_schema}")
-                self.reset_tables()
-                self._init_df(df=df, df_link=df2)
-                self._init_pos(session)
-                self._init_neg(session)
-                self._init_unlabelled(session)
-                self._init_train(session)
-                getattr(self, f"_init_labels{rl}")(session)
-
-            if resample:
-                logging.info("resampling train")
-                self.resample(session)
-
-            logging.info("computing distances for labels")
+            logging.info(f"building schema: {self.settings.db.db_schema}")
+            self.reset_tables()
+            self._init_df(df=df, df_link=df2)
+            self._init_pos(session)
+            self._init_neg(session)
+            self._init_unlabelled(session)
+            self._init_train(session)
+            getattr(self, f"_init_labels{rl}")(session)

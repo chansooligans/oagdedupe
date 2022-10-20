@@ -72,7 +72,7 @@ class Blocking(BaseBlocking):
                 return
             if table == "blocks_df":
                 self.forward.build_forward_indices(
-                    columns=stats.scheme, iter=i, full=True
+                    conjunction=stats.scheme, iter=i, full=True
                 )
             self.pairs.add_new_comparisons(stats=stats, table=table)
             n_pairs = self.repo.get_n_pairs(table=table)
