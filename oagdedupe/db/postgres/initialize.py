@@ -152,7 +152,9 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
-    def _delete_unlabelled(self, session: SESSION, rl: str = "") -> None:
+    def _delete_unlabelled_from_train(
+        self, session: SESSION, rl: str = ""
+    ) -> None:
         """delete unlabelled from train"""
         stmt = delete(getattr(self, f"Train{rl}")).where(
             getattr(self, f"Train{rl}").labelled == False
@@ -161,14 +163,16 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         session.commit()
 
     @du.recordlinkage_repeat
-    def resample_unlabelled(self, session: SESSION, rl: str = "") -> None:
-        """delete unlabelled from train"""
+    def _truncate_unlabelled(self, rl: str = ""):
         self.engine.execute(
             f"""
                 TRUNCATE TABLE {self.settings.db.db_schema}.unlabelled{rl};
             """
         )
-        self._init_unlabelled(session=session)
+
+    @du.recordlinkage_repeat
+    def resample_unlabelled(self, session: SESSION, rl: str = "") -> None:
+        """delete unlabelled from train"""
         records = self._to_dicts(
             session.query(getattr(self, f"Unlabelled{rl}")).all()
         )
@@ -195,11 +199,12 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         """
         )
 
-    @du.recordlinkage_repeat
     def resample(self, session: SESSION) -> None:
         """resample unlabelled from train"""
-        self._delete_unlabelled(session)
-        self.resample_unlabelled(session)
+        self._delete_unlabelled_from_train(session=session)
+        self._truncate_unlabelled()
+        self._init_unlabelled(session=session)
+        self.resample_unlabelled(session=session)
         self._init_forward_index_full()
         # reset table
         for table in [

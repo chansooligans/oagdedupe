@@ -1,5 +1,6 @@
 """ integration testing postgres database initialization functions
 """
+import os
 import unittest
 
 import pandas as pd
@@ -50,8 +51,9 @@ def seed_distances(orm):
 
 class TestDistanceRepository(unittest.TestCase):
     @pytest.fixture(autouse=True)
-    def prepare_fixtures(self, settings, df):
+    def prepare_fixtures(self, settings, df, session):
         self.settings = settings
+        self.session = session
         self.df = df
         self.df2 = df.copy()
 
@@ -62,3 +64,26 @@ class TestDistanceRepository(unittest.TestCase):
         seed_labels_distances(orm=self.orm)
         seed_distances(orm=self.orm)
         return
+
+    def test_get_attributes(self):
+        subquery = self.orm.get_attributes(
+            session=self.session, table=self.orm.Labels
+        )
+        df = pd.read_sql(str(subquery), con=self.orm.engine)
+        self.assertEqual(14, len(df))
+
+    def test_compute_distances(self):
+        subquery = self.orm.get_attributes(
+            session=self.session, table=self.orm.Labels
+        )
+        distance_query = self.orm.compute_distances(subquery)
+        df = pd.read_sql(str(distance_query.subquery()), con=self.orm.engine)
+        self.assertEqual(2, df.loc[0, self.settings.attributes].sum())
+        self.assertEqual(any(df.loc[0].isnull()), False)
+
+    def test_save_distances(self):
+        self.orm.save_distances(full=False, labels=True)
+        df = pd.read_sql(
+            "SELECT * FROM dedupe.labels_distances", con=self.orm.engine
+        )
+        self.assertEqual(2 + 14, len(df))

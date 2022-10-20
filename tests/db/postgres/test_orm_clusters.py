@@ -6,7 +6,6 @@ import unittest
 import pandas as pd
 import pytest
 from faker import Faker
-from pytest import MonkeyPatch
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -59,7 +58,6 @@ class TestORM(unittest.TestCase):
         self.session = session
 
     def setUp(self):
-        self.monkeypatch = MonkeyPatch()
         self.init = InitializeRepository(settings=self.settings)
         self.init.engine = engine
         self.init.reset_tables()
