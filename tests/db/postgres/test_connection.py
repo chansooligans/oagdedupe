@@ -52,4 +52,4 @@ def test_schema_inits_tables(settings):
                 WHERE table_schema = '{settings.db.db_schema}';""",
         con=tables.engine,
     )
-    assert len(df) == 17
+    assert len(df) == 14

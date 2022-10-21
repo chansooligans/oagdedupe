@@ -96,9 +96,6 @@ class Tables(TablesRecordLinkage):
             self.Unlabelled_link,
             self.Train_link,
             self.Labels,
-            self.LabelsDistances,
-            self.Distances,
-            self.FullDistances,
             self.Comparisons,
             self.FullComparisons,
             self.Clusters,
@@ -236,63 +233,13 @@ class Tables(TablesRecordLinkage):
         """table for labels"""
         return type(
             "labels",
-            (self.Base,),
+            (
+                self.BaseAttributesDistances,
+                self.BaseAttributeComparisons,
+                self.Base,
+            ),
             {
                 "__tablename__": "labels",
-                "_index_l": Column(Integer, primary_key=True),
-                "_index_r": Column(Integer, primary_key=True),
-                "label": Column(Integer),
-            },
-        )
-
-    @cached_property
-    def LabelsDistances(self):
-        """table for labels_distances"""
-        return type(
-            "labels_distances",
-            (
-                self.BaseAttributesDistances,
-                self.BaseAttributeComparisons,
-                self.Base,
-            ),
-            {
-                "__tablename__": "labels_distances",
-                "_index_l": Column(Integer, primary_key=True),
-                "_index_r": Column(Integer, primary_key=True),
-                "label": Column(Integer),
-            },
-        )
-
-    @cached_property
-    def Distances(self):
-        """table for distances"""
-        return type(
-            "distances",
-            (
-                self.BaseAttributesDistances,
-                self.BaseAttributeComparisons,
-                self.Base,
-            ),
-            {
-                "__tablename__": "distances",
-                "_index_l": Column(Integer, primary_key=True),
-                "_index_r": Column(Integer, primary_key=True),
-                "label": Column(Integer),
-            },
-        )
-
-    @cached_property
-    def FullDistances(self):
-        """table for full_distances"""
-        return type(
-            "full_distances",
-            (
-                self.BaseAttributesDistances,
-                self.BaseAttributeComparisons,
-                self.Base,
-            ),
-            {
-                "__tablename__": "full_distances",
                 "_index_l": Column(Integer, primary_key=True),
                 "_index_r": Column(Integer, primary_key=True),
                 "label": Column(Integer),
@@ -304,7 +251,11 @@ class Tables(TablesRecordLinkage):
         """table for comparisons"""
         return type(
             "comparisons",
-            (self.Base,),
+            (
+                self.BaseAttributesDistances,
+                self.BaseAttributeComparisons,
+                self.Base,
+            ),
             {
                 "__tablename__": "comparisons",
                 "_index_l": Column(Integer, primary_key=True),
@@ -318,7 +269,11 @@ class Tables(TablesRecordLinkage):
         """table for full_comparisons"""
         return type(
             "full_comparisons",
-            (self.Base,),
+            (
+                self.BaseAttributesDistances,
+                self.BaseAttributeComparisons,
+                self.Base,
+            ),
             {
                 "__tablename__": "full_comparisons",
                 "_index_l": Column(Integer, primary_key=True),

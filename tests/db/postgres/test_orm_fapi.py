@@ -25,18 +25,6 @@ def df():
     )
 
 
-def seed_labels_distances(orm):
-    data = [
-        {"_index_l": 1, "_index_r": 1, "label": None},
-        {"_index_l": 2, "_index_r": 2, "label": 1},
-    ]
-    with orm.Session() as session:
-        for d in data:
-            row = orm.LabelsDistances(**d)
-            session.add(row)
-            session.commit()
-
-
 def seed_distances(orm):
     data = [
         {"name": 0.8, "addr": 0.8, "_index_l": 2, "_index_r": 2, "label": 1},
@@ -44,8 +32,8 @@ def seed_distances(orm):
     ]
     with orm.Session() as session:
         for d in data:
-            row = orm.Distances(**d)
-            row2 = orm.FullDistances(**d)
+            row = orm.Comparisons(**d)
+            row2 = orm.FullComparisons(**d)
             session.add(row)
             session.add(row2)
             session.commit()
@@ -67,17 +55,16 @@ class TestFapiRepository(unittest.TestCase):
         self.init = InitializeRepository(settings=self.settings)
         self.init.setup(df=self.df, df2=self.df2, rl="")
         self.orm = FapiRepository(settings=self.settings)
-        seed_labels_distances(orm=self.orm)
         seed_distances(orm=self.orm)
         return
 
     def test_get_distances(self):
         df = self.orm.get_distances()
-        self.assertEqual(len(df), 1)
+        self.assertEqual(len(df), 2)
 
     def test_get_labels(self):
         df = self.orm.get_labels()
-        self.assertEqual(len(df), 2)
+        self.assertEqual(len(df), 14)
 
     def test__update_table(self):
         newrow = pd.DataFrame(
