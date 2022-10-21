@@ -32,3 +32,7 @@ def recordlinkage_repeat(f):
             f(*args, **kwargs)
 
     return wrapper
+
+
+def inherit_attr(obj1, obj2, attr, newattr):
+    setattr(obj1, newattr, getattr(obj2, attr))

@@ -28,7 +28,6 @@ class DistanceRepository(BaseDistanceRepository, Tables):
         mapping = {
             "comparisons": "Train",
             "full_comparisons": "maindf",
-            "labels": "Train",
         }
 
         return (
@@ -36,72 +35,65 @@ class DistanceRepository(BaseDistanceRepository, Tables):
             aliased(getattr(self, mapping[table] + rl)),
         )
 
-    def get_attributes(self, session: SESSION, table: TABLE) -> SUBQUERY:
+    def get_attributes(self, table: TABLE) -> None:
         dataL, dataR = self.fields_table(table.__tablename__)
-        return (
-            session.query(
-                *(
-                    getattr(dataL, x).label(f"{x}_l")
-                    for x in self.settings.attributes
-                ),
-                *(
-                    getattr(dataR, x).label(f"{x}_r")
-                    for x in self.settings.attributes
-                ),
-                table._index_l,
-                table._index_r,
-                table.label,
+        with self.Session() as session:
+            q = (
+                update(table)
+                .where(
+                    table._index_l == dataL._index,
+                    table._index_r == dataR._index,
+                )
+                .values(
+                    {
+                        **{
+                            f"{attr}_l": getattr(dataL, attr)
+                            for attr in self.settings.attributes
+                        },
+                        **{
+                            f"{attr}_r": getattr(dataR, attr)
+                            for attr in self.settings.attributes
+                        },
+                    }
+                )
+                .execution_options(synchronize_session=False)
             )
-            .outerjoin(dataL, table._index_l == dataL._index)
-            .outerjoin(dataR, table._index_r == dataR._index)
-            .order_by(table._index_l, table._index_r)
-        ).subquery()
+            session.execute(q)
+            session.commit()
 
-    def compute_distances(self, subquery: SUBQUERY) -> select:
-        return select(
-            *(
-                func.jarowinkler(
-                    getattr(subquery.c, f"{attr}_l"),
-                    getattr(subquery.c, f"{attr}_r"),
-                ).label(attr)
-                for attr in self.settings.attributes
-            ),
-            subquery,
-        )
+    def compute_distances(self, table: TABLE) -> None:
+        with self.Session() as session:
+            q = (
+                update(table)
+                .values(
+                    {
+                        getattr(table, attr): func.jarowinkler(
+                            getattr(table, f"{attr}_l"),
+                            getattr(table, f"{attr}_r"),
+                        ).label(attr)
+                        for attr in self.settings.attributes
+                    }
+                )
+                .execution_options(synchronize_session=False)
+            )
+
+            session.execute(q)
+            session.commit()
 
     def save_distances(self, full: bool, labels: bool) -> None:
         """
         merge attributes on to dataframe with just comparison pair indices
         assign "_l" and "_r" suffices
-
-        Returns
-        ----------
-        pd.DataFrame
         """
         if labels:
             table = self.Labels
-            newtable = self.LabelsDistances
         else:
             if full:
                 table = self.FullComparisons
-                newtable = self.FullDistances
             else:
                 table = self.Comparisons
-                newtable = self.Distances
-
-        with self.Session() as session:
-            subquery = self.get_attributes(session, table)
-            distance_query = self.compute_distances(subquery)
-
-            stmt = insert(newtable).from_select(
-                self.settings.attributes
-                + self.settings.compare_cols
-                + ["label"],
-                distance_query,
-            )
-
-            session.execute(str(stmt) + " ON CONFLICT DO NOTHING")
-            session.commit()
+            self.get_attributes(table=table)
+        self.compute_distances(table=table)
 
 
 @dataclass
@@ -197,7 +189,7 @@ class FapiRepository(BaseFapiRepository, Tables):
     def full_distance_partitions(self) -> select:
         return select(
             *(
-                getattr(self.FullDistances, x)
+                getattr(self.FullComparisons, x)
                 for x in self.settings.attributes + ["_index_l", "_index_r"]
             )
         ).execution_options(yield_per=50000)
@@ -233,16 +225,14 @@ class FapiRepository(BaseFapiRepository, Tables):
         """
         with self.Session() as session:
             q = (
-                session.query(self.Distances)
+                session.query(self.Comparisons)
                 .join(
-                    self.LabelsDistances,
-                    (self.Distances._index_l == self.LabelsDistances._index_l)
-                    & (
-                        self.Distances._index_r == self.LabelsDistances._index_r
-                    ),
+                    self.Labels,
+                    (self.Comparisons._index_l == self.Labels._index_l)
+                    & (self.Comparisons._index_r == self.Labels._index_r),
                     isouter=True,
                 )
-                .filter(self.LabelsDistances.label == None)
+                .filter(self.Labels.label == None)
             )
             return pd.read_sql(q.statement, q.session.bind)
 
@@ -255,7 +245,7 @@ class FapiRepository(BaseFapiRepository, Tables):
         pd.DataFrame
         """
         with self.Session() as session:
-            query = session.query(self.LabelsDistances)
+            query = session.query(self.Labels)
             return pd.read_sql(query.statement, query.session.bind)
 
     def save_predictions(self):

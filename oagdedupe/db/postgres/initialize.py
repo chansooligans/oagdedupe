@@ -127,8 +127,9 @@ class InitializeRepository(BaseInitializeRepository, Tables):
             for left, right in pairs:
                 label = self.Labels()
                 if left._index < right._index:
-                    label._index_l = left._index
-                    label._index_r = right._index
+                    for attr in self.settings.attributes + ["_index"]:
+                        du.inherit_attr(label, left, attr, attr + "_l")
+                        du.inherit_attr(label, right, attr, attr + "_r")
                     label.label = lab
                     session.add(label)
         session.commit()
@@ -145,8 +146,9 @@ class InitializeRepository(BaseInitializeRepository, Tables):
             records_link = session.query(tab_link).all()
             for left, right in zip(records, records_link):
                 label = self.Labels()
-                label._index_l = left._index
-                label._index_r = right._index
+                for attr in self.settings.attributes + ["_index"]:
+                    du.inherit_attr(label, left, attr, attr + "_l")
+                    du.inherit_attr(label, right, attr, attr + "_r")
                 label.label = lab
                 session.add(label)
         session.commit()
@@ -199,26 +201,24 @@ class InitializeRepository(BaseInitializeRepository, Tables):
         """
         )
 
-    def resample(self, session: SESSION) -> None:
+    def resample(self) -> None:
         """resample unlabelled from train"""
-        self._delete_unlabelled_from_train(session=session)
-        self._truncate_unlabelled()
-        self._init_unlabelled(session=session)
-        self.resample_unlabelled(session=session)
-        self._init_forward_index_full()
-        # reset table
-        for table in [
-            "clusters",
-            "comparisons",
-            "full_comparisons",
-            "distances",
-            "full_distances",
-        ]:
-            self.engine.execute(
-                f"""
-                TRUNCATE TABLE {self.settings.db.db_schema}.{table};
-            """
-            )
+        with self.Session() as session:
+            self._delete_unlabelled_from_train(session=session)
+            self._truncate_unlabelled()
+            self._init_unlabelled(session=session)
+            self.resample_unlabelled(session=session)
+            self._init_forward_index_full()
+            # reset table
+            for table in [
+                "clusters",
+                "comparisons",
+            ]:
+                self.engine.execute(
+                    f"""
+                    TRUNCATE TABLE {self.settings.db.db_schema}.{table};
+                """
+                )
 
     @du.recordlinkage
     def setup(self, df, df2=None, rl: str = "") -> None:

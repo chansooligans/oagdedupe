@@ -296,7 +296,7 @@ class PostgresBlockingRepository(
         engine = create_engine(self.settings.db.path_database)
         engine.execute(
             f"""
-            INSERT INTO {self.settings.db.db_schema}.{newtable}
+            INSERT INTO {self.settings.db.db_schema}.{newtable} (_index_l, _index_r)
             (
                 WITH
                     inverted_index AS (

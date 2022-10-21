@@ -206,7 +206,7 @@ class Model(TasksGet, TasksPost, Projects):
                 return
 
             # learn new block conjunctions
-            self.api.resample()
+            self.api.initialize()
 
             # re-train model
             self._train()

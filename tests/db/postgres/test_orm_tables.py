@@ -29,7 +29,7 @@ def seed_labels_distances(orm):
     ]
     with orm.Session() as session:
         for d in data:
-            row = orm.LabelsDistances(**d)
+            row = orm.Labels(**d)
             session.add(row)
             session.commit()
 
@@ -41,8 +41,8 @@ def seed_distances(orm):
     ]
     with orm.Session() as session:
         for d in data:
-            row = orm.Distances(**d)
-            row2 = orm.FullDistances(**d)
+            row = orm.Comparisons(**d)
+            row2 = orm.FullComparisons(**d)
             session.add(row)
             session.add(row2)
             session.commit()
@@ -67,7 +67,12 @@ class TestDistanceRepository(unittest.TestCase):
         newrow = pd.DataFrame(
             {"name": ["test"], "addr": ["test"], "_index": [-99]}
         )
-        self.orm.engine.execute("TRUNCATE TABLE dedupe.df_link")
+        self.orm.engine.execute(
+            f"TRUNCATE TABLE {self.settings.db.db_schema}.df_link"
+        )
         self.orm.bulk_insert(newrow, self.init.maindf_link)
-        df = pd.read_sql("SELECT * FROM dedupe.df_link", con=self.orm.engine)
+        df = pd.read_sql(
+            f"SELECT * FROM {self.settings.db.db_schema}.df_link",
+            con=self.orm.engine,
+        )
         self.assertEqual(len(df), 1)

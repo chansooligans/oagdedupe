@@ -127,7 +127,7 @@ class Fapi(BaseModel):
     def initialize(self) -> None:
         """learn p(match)"""
 
-        self.repo.resample(reset=False)
+        self.repo.resample()
         self.repo.save_distances(full=False, labels=True)
 
         logging.info("getting comparisons")
