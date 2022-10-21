@@ -47,7 +47,7 @@ def test_get_signature_no_exception(record, scheme):
 
 def test_signatures_match_no_exception(record, scheme):
     try:
-        signatures_match({record, record}, "name", scheme)
+        signatures_match(frozenset({record, record}), "name", scheme)
     except Exception as e:
         assert False, e
 
@@ -59,7 +59,7 @@ def test_signatures_match_no_exception(record, scheme):
         (FirstLetterFirstWord, "address", False),
     ],
 )
-def test_get_pairs_works(record, record2, scheme, attribute, expected):
+def test_get_pairs_one_conjunction_works(record, record2, scheme, attribute, expected):
     records = frozenset({record, record2})
     assert (
         frozenset({record, record2})

@@ -44,15 +44,13 @@ def get_pairs_one_conjunction(
 
 
 def get_pairs(
-    records: FrozenSet[Record], conj_finder: ConjunctionFinder, limit: int
+    records: FrozenSet[Record],
+    conjs: Generator[Conjunction, None, None],
+    limit: int,
 ) -> FrozenSet[Pair]:
     pairs = set()
-    for conj in conj_finder.get_best_conjunctions():
-        new_pairs = pairs.union(
-            get_pairs_one_conjunction(
-                records, conj
-            )
-        )
+    for conj in conjs:
+        new_pairs = pairs.union(get_pairs_one_conjunction(records, conj))
         if len(new_pairs) > limit:
             break
         else:

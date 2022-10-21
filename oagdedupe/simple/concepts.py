@@ -4,7 +4,17 @@ Base concepts of a simple version
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Set, Callable, Any, Tuple, List, Dict, FrozenSet, Generator
+from typing import (
+    Set,
+    Callable,
+    Any,
+    Tuple,
+    List,
+    Dict,
+    FrozenSet,
+    Generator,
+    Type,
+)
 from abc import ABC, abstractmethod, abstractclassmethod, abstractstaticmethod
 from frozendict import frozendict
 
@@ -40,7 +50,7 @@ class Scheme(ABC):
 
 
 Pair = FrozenSet[Record]
-Conjunction = Set[Tuple[Scheme, Attribute]]
+Conjunction = Set[Tuple[Type[Scheme], Attribute]]
 
 
 class Label(Enum):
@@ -51,7 +61,9 @@ class Label(Enum):
 class ConjunctionFinder(ABC):
     @abstractstaticmethod
     def get_best_conjunctions(
-        records: FrozenSet[Record], labels: Dict[Pair, Label]
+        records: FrozenSet[Record],
+        attributes: Set[Attribute],
+        labels: Dict[Pair, Label],
     ) -> Generator[Conjunction, None, None]:
         # what if this is a generator that yeilds the next best conjunction?
         pass
