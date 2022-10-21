@@ -3,7 +3,7 @@ testing simple version schemes
 """
 
 from oagdedupe.simple.schemes import FirstLetterFirstWord
-from oagdedupe.simple.concepts import Record, Scheme, Attribute
+from oagdedupe.simple.concepts import Conjunction, Record, Scheme, Attribute
 from oagdedupe.simple.schemes import FirstLetterFirstWord
 from pytest import fixture, mark
 from typing import Tuple
@@ -11,7 +11,7 @@ from typing import Tuple
 
 @fixture
 def record() -> Record:
-    return Record({"name": "fake name", "address": "111 some road"})
+    return Record.from_dict({"name": "fake name", "address": "111 some road"})
 
 
 @mark.parametrize(
@@ -23,6 +23,7 @@ def record() -> Record:
 )
 def test_get_signature_works(record, attribute, scheme, expected):
     assert scheme.get_signature(record, attribute) == expected
+
 
 @mark.parametrize(
     "scheme,sigs,expected",
