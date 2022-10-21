@@ -5,9 +5,10 @@ testing simple version subroutines
 from oagdedupe.simple.subroutines import (
     get_signature,
     signatures_match,
-    get_pairs,
+    get_pairs_one_conjunction,
+    make_initial_labels,
 )
-from oagdedupe.simple.concepts import Record, Scheme, Attribute
+from oagdedupe.simple.concepts import Record, Scheme, Attribute, Label
 from oagdedupe.simple.schemes import FirstLetterFirstWord
 from pytest import fixture, mark
 from typing import Tuple, Type
@@ -59,7 +60,15 @@ def test_signatures_match_no_exception(record, scheme):
     ],
 )
 def test_get_pairs_works(record, record2, scheme, attribute, expected):
-    records = {record, record2}
+    records = frozenset({record, record2})
     assert (
-        {record, record2} in get_pairs(records, {(scheme, attribute)})
+        frozenset({record, record2})
+        in get_pairs_one_conjunction(records, {(scheme, attribute)})
     ) is expected
+
+
+def test_make_initial_labels_works(record, record2):
+    labels = make_initial_labels(frozenset({record, record2}))
+    assert labels[frozenset({record, record})] == Label.SAME
+    assert labels[frozenset({record, record2})] == Label.NOT_SAME
+    assert labels[frozenset({record2, record})] == Label.NOT_SAME

@@ -4,7 +4,7 @@ Base concepts of a simple version
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Set, Callable, Any, Tuple, List, Dict, FrozenSet
+from typing import Set, Callable, Any, Tuple, List, Dict, FrozenSet, Generator
 from abc import ABC, abstractmethod, abstractclassmethod, abstractstaticmethod
 from frozendict import frozendict
 
@@ -40,7 +40,6 @@ class Scheme(ABC):
 
 
 Pair = FrozenSet[Record]
-
 Conjunction = Set[Tuple[Scheme, Attribute]]
 
 
@@ -51,9 +50,16 @@ class Label(Enum):
 
 class ConjunctionFinder(ABC):
     @abstractstaticmethod
-    def get_best_conjunction(
-        records: FrozenSet[Record], labels: Dict[Pair, Label] 
-    ) -> Conjunction:
+    def get_best_conjunctions(
+        records: FrozenSet[Record], labels: Dict[Pair, Label]
+    ) -> Generator[Conjunction, None, None]:
+        # what if this is a generator that yeilds the next best conjunction?
+        pass
+
+
+class LabelManager(ABC):
+    @abstractstaticmethod
+    def make_initial_labels(records: FrozenSet[Record]) -> Dict[Pair, Label]:
         pass
 
 
@@ -65,3 +71,7 @@ class LabelRepository(ABC):
     @abstractmethod
     def get(self) -> Dict[Pair, Label]:
         pass
+
+    def add_all(self, labels: Dict[Pair, Label]) -> None:
+        for pair, label in labels.items():
+            self.add(pair, label)
