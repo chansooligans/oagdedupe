@@ -2,35 +2,26 @@
 testing simple version schemes
 """
 
-from oagdedupe.simple.schemes import FirstLetterFirstWord
-from oagdedupe.simple.concepts import Conjunction, Record, Scheme, Attribute
-from oagdedupe.simple.schemes import FirstLetterFirstWord
-from pytest import fixture, mark
-from typing import Tuple
+from oagdedupe.simple.schemes import first_letter_first_word
+from pytest import mark
 
-
-@fixture
-def record() -> Record:
-    return Record.from_dict({"name": "fake name", "address": "111 some road"})
+@mark.parametrize(
+    "scheme,value,expected",
+    [
+        (first_letter_first_word, "testing this value", "t"),
+        (first_letter_first_word, "123 some road", "1"),
+    ],
+)
+def test_get_signature_works(scheme, value, expected):
+    assert scheme(value) == expected
 
 
 @mark.parametrize(
-    "scheme,attribute,expected",
+    "scheme,value1,value2,expected",
     [
-        (FirstLetterFirstWord, "name", "f"),
-        (FirstLetterFirstWord, "address", "1"),
+        (first_letter_first_word, "testing test", "test, testing", True),
+        (first_letter_first_word, "test test", "112 some road", False),
     ],
 )
-def test_get_signature_works(record, attribute, scheme, expected):
-    assert scheme.get_signature(record, attribute) == expected
-
-
-@mark.parametrize(
-    "scheme,sigs,expected",
-    [
-        (FirstLetterFirstWord, ("a", "a"), True),
-        (FirstLetterFirstWord, ("a", "b"), False),
-    ],
-)
-def test_signatures_match_works(scheme, sigs, expected):
-    assert scheme.signatures_match(sigs) is expected
+def test_signatures_match_works(scheme, value1, value2, expected):
+    assert (scheme(value1) == scheme(value2)) is expected

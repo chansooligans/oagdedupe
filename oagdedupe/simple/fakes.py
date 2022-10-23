@@ -2,12 +2,21 @@
 simple version fakes for testing
 """
 
-from .concepts import ConjunctionFinder, Conjunction, Attribute, Record, Pair, Label
-from .schemes import FirstLetterFirstWord
+from .concepts import (
+    ConjunctionFinder,
+    Conjunction,
+    Attribute,
+    Entity,
+    Record,
+    Pair,
+    Label,
+    Clusterer,
+)
+from .schemes import first_letter_first_word
 from typing import Set, FrozenSet, Dict, Generator
 
 
-class FakeConjunctionFinder:
+class FakeConjunctionFinder(ConjunctionFinder):
     @staticmethod
     def get_best_conjunctions(
         records: FrozenSet[Record],
@@ -15,4 +24,20 @@ class FakeConjunctionFinder:
         labels: Dict[Pair, Label],
     ) -> Generator[Conjunction, None, None]:
         for attribute in attributes:
-            yield {(FirstLetterFirstWord, attribute)}
+            yield {(first_letter_first_word, attribute)}
+
+
+def fake_classifier(pair: Pair) -> Label:
+    return Label.NOT_SAME
+
+
+class FakeClusterer(Clusterer):
+    @staticmethod
+    def get_clusters(
+        labels: Dict[Pair, Label],
+    ) -> Set[Entity]:
+        return {
+            Entity(pair)
+            for pair, label in labels.items()
+            if label == Label.SAME
+        }

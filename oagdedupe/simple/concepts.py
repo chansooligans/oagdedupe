@@ -7,15 +7,14 @@ from enum import Enum, auto
 from typing import (
     Set,
     Callable,
-    Any,
     Tuple,
-    List,
     Dict,
     FrozenSet,
     Generator,
     Type,
+    Union,
 )
-from abc import ABC, abstractmethod, abstractclassmethod, abstractstaticmethod
+from abc import ABC, abstractmethod, abstractstaticmethod
 from frozendict import frozendict
 
 Attribute = str
@@ -25,7 +24,7 @@ Attribute = str
 class Record:
 
     # frozendict is just an immutable dict
-    # so I can put records in Sets, etc.
+    # so I can put records in a Set, etc.
     # https://marco-sulla.github.io/python-frozendict/
     values: frozendict
 
@@ -39,15 +38,13 @@ class Entity:
     records: FrozenSet[Record]
 
 
-class Scheme(ABC):
-    @abstractstaticmethod
-    def get_signature(record: Record, attribute: Attribute):
+class Signature(ABC):
+    @abstractmethod
+    def __eq__(self, other) -> bool:
         pass
 
-    @abstractstaticmethod
-    def signatures_match(sigs: Tuple) -> bool:
-        pass
 
+Scheme = Callable[[str], Union[str, Signature]]
 
 Pair = FrozenSet[Record]
 Conjunction = Set[Tuple[Type[Scheme], Attribute]]
@@ -69,12 +66,6 @@ class ConjunctionFinder(ABC):
         pass
 
 
-class LabelManager(ABC):
-    @abstractstaticmethod
-    def make_initial_labels(records: FrozenSet[Record]) -> Dict[Pair, Label]:
-        pass
-
-
 class LabelRepository(ABC):
     @abstractmethod
     def add(self, pair: Pair, label: Label) -> None:
@@ -87,3 +78,24 @@ class LabelRepository(ABC):
     def add_all(self, labels: Dict[Pair, Label]) -> None:
         for pair, label in labels.items():
             self.add(pair, label)
+
+
+Classifier = Callable[[Pair], Label]
+
+
+class ClassifierRepository(ABC):
+    @abstractmethod
+    def add(self, classifier: Classifier) -> None:
+        pass
+
+    @abstractmethod
+    def get(self) -> Classifier:
+        pass
+
+
+class Clusterer(ABC):
+    @abstractstaticmethod
+    def get_clusters(
+        labels: Dict[Pair, Label],
+    ) -> Set[Entity]:
+        pass

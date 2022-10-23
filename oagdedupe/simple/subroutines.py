@@ -11,20 +11,10 @@ from .concepts import (
     Attribute,
     Label,
     Pair,
+    Signature,
 )
 from typing import FrozenSet, Dict, List, Generator
 import random
-
-
-def get_signature(record: Record, attribute: Attribute, scheme: Scheme):
-    return scheme.get_signature(record, attribute)
-
-
-def signatures_match(pair: Pair, attribute: Attribute, scheme: Scheme) -> bool:
-    return scheme.signatures_match(
-        get_signature(record, attribute, scheme) for record in pair
-    )
-
 
 def get_pairs_one_conjunction(
     records: FrozenSet[Record], conj: Conjunction
@@ -36,7 +26,7 @@ def get_pairs_one_conjunction(
             for rec2 in records
             if rec1 != rec2
             and all(
-                signatures_match(frozenset({rec1, rec2}), attribute, scheme)
+                scheme(rec1.values[attribute]) == scheme(rec2.values[attribute])
                 for scheme, attribute in conj
             )
         }
