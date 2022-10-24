@@ -7,11 +7,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ValueSignature(Signature):
-    value: str
-
-
-@dataclass
 class SetSignature(Signature):
     values: FrozenSet[str]
 
