@@ -199,9 +199,9 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
             for scheme in conjunction:
                 if scheme not in columns:
                     self.add_scheme(scheme)
-
         else:
-            pass
+            train = self.file_store.read("train")
+            
 
 
     @abstractmethod
