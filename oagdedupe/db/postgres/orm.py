@@ -166,9 +166,7 @@ class ClusterRepository(BaseClusterRepository, Tables):
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
 
-    def merge_clusters_with_raw_data(self, df_clusters, rl):
-
-        self.bulk_insert(df=df_clusters, to_table=self.Clusters)
+    def merge_clusters_with_raw_data(self, rl):
 
         if rl == "":
             return self.get_clusters()

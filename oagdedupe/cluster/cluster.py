@@ -37,10 +37,8 @@ class ConnectedComponents(BaseCluster):
             clusters merged with raw data
         """
         scores = self.repo.get_scores(threshold=threshold)
-        df_clusters = getattr(self, f"get_connected_components{rl}")(scores)
-        return self.repo.merge_clusters_with_raw_data(
-            df_clusters=df_clusters, rl=rl
-        )
+        getattr(self, f"get_connected_components{rl}")(scores)
+        return self.repo.merge_clusters_with_raw_data(rl=rl)
 
     def get_connected_components(self, scores: pd.DataFrame) -> pd.DataFrame:
         """
@@ -59,26 +57,20 @@ class ConnectedComponents(BaseCluster):
         pd.DataFrame
             dataframe mapping cluster index to entity index
         """
-        g = nx.Graph()
-        g.add_weighted_edges_from(
-            [
-                tuple(
-                    [
-                        f"{score['_index_l']}",
-                        f"{score['_index_r']}",
-                        score["score"],
-                    ]
-                )
-                for score in scores.to_dict(orient="records")
-            ]
+        self.repo.engine.execute(
+            """
+        TRUNCATE TABLE dedupe.clusters;
+        INSERT INTO dedupe.clusters (cluster, _index, _type)
+        SELECT component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
+                'SELECT
+                    ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                    _index_l as source,
+                    _index_r as target,
+                    score as cost
+                FROM dedupe.scores'
+            );
+        """
         )
-        conn_comp = list(nx.connected_components(g))
-        clusters = [
-            {"cluster": clusteridx, "_index": int(rec_id), "_type": None}
-            for clusteridx, cluster in enumerate(conn_comp)
-            for rec_id in cluster
-        ]
-        return pd.DataFrame(clusters)
 
     def get_connected_components_link(
         self, scores: pd.DataFrame
@@ -103,27 +95,21 @@ class ConnectedComponents(BaseCluster):
         pd.DataFrame
             dataframe mapping cluster index to entity index
         """
-        g = nx.Graph()
-        g.add_weighted_edges_from(
-            [
-                tuple(
-                    [
-                        f"{score['_index_l']}_l",
-                        f"{score['_index_r']}_r",
-                        score["score"],
-                    ]
+        self.repo.engine.execute(
+            """
+        TRUNCATE TABLE dedupe.clusters;
+        INSERT INTO dedupe.clusters (cluster, _index, _type)
+        (
+            SELECT -1*component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
+                    'SELECT
+                        ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                        _index_l as source,
+                        -1*_index_r as target,
+                        score as cost
+                    FROM dedupe.scores'
                 )
-                for score in scores.to_dict(orient="records")
-            ]
+            WHERE component * node < 0
         )
-        conn_comp = list(nx.connected_components(g))
-        clusters = [
-            {
-                "cluster": clusteridx,
-                "_index": rec_id.split("_")[0],
-                "_type": "_l" in rec_id,
-            }
-            for clusteridx, cluster in enumerate(conn_comp)
-            for rec_id in cluster
-        ]
-        return pd.DataFrame(clusters)
+        ;
+        """
+        )

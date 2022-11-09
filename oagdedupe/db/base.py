@@ -451,16 +451,11 @@ class BaseClusterRepository(ABC):
         pass
 
     @abstractmethod
-    def merge_clusters_with_raw_data(self, df_clusters, rl):
+    def merge_clusters_with_raw_data(self, rl):
         """wrapper for get_clusters() and get_clusters_link(); call
         get_clusters_link() instead of get_clusters() if rl != ""
 
         in sql, also saves df_clusters to `clusters` table
-
-        Parameters
-        ----------
-        `df_clusters` is the output of get_connected_components() in
-        oagdedupe.cluster
         """
         pass
 

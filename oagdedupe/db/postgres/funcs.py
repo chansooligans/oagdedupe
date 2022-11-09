@@ -14,7 +14,7 @@ def create_functions(settings: Settings):
         CREATE EXTENSION IF NOT EXISTS pg_trgm;
         CREATE EXTENSION IF NOT EXISTS plpython3u;
         CREATE EXTENSION IF NOT EXISTS pg_similarity;
-        CREATE EXTENSION IF NOT EXISTS pgrouting;
+        CREATE EXTENSION IF NOT EXISTS pgrouting CASCADE;
         CREATE OR REPLACE LANGUAGE pg_trgm;
         CREATE OR REPLACE LANGUAGE plpython3u;
         CREATE OR REPLACE LANGUAGE pg_similarity;
