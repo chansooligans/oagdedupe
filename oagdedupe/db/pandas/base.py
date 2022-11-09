@@ -24,6 +24,7 @@ class FileStore:
     def fp(self, name: str) -> Path:
         return self.loc / f"{name}.csv"
 
+    @property
     def names(self) -> Set[str]:
         return {fp.stem for fp in self.loc.glob("*.csv")}
 
@@ -33,15 +34,25 @@ class FileStore:
 
     def save(self, df: DataFrame, name: str) -> None:
         info(f"Saving to {self.fp(name)}")
-        return df.to_csv(self.fp(name))
+        return df.to_csv(self.fp(name), index=False)
 
 
 def get_file_store(settings: Settings) -> FileStore:
     return FileStore(Path(settings.db.path_database))
 
 
+class FileStoreFromSettings:
+    settings: Settings
+
+    @property
+    def file_store(self) -> FileStore:
+        return get_file_store(self.settings)
+
+
 @dataclass
-class PandasInitializeRepository(BaseInitializeRepository):
+class PandasInitializeRepository(
+    BaseInitializeRepository, FileStoreFromSettings
+):
     """pandas implementation for initialization operations"""
 
     settings: Settings
@@ -95,9 +106,9 @@ class PandasInitializeRepository(BaseInitializeRepository):
 
         Parameters
         ----------
-        df: pd.DataFrame
+        df: DataFrame
             dataframe to dedupe
-        df2: Optional[pd.DataFrame]
+        df2: Optional[DataFrame]
             dataframe for recordlinkage
         rl: str
             for recordlinkage, used by decorator
@@ -109,15 +120,14 @@ class PandasInitializeRepository(BaseInitializeRepository):
         saves each table in database/memory
         """
 
-        self.df = df
-
-        if self.df is not None:
+        if df is not None:
+            self.df = df.copy()
             self.df.loc[:, "_index"] = range(len(self.df))
-            get_file_store(self.settings).save(self.df, name="df")
+            self.file_store.save(self.df, name="df")
 
 
 @dataclass
-class PandasRepositoryBlocking(BaseRepositoryBlocking):
+class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
     """pandas implementation for blocking-related operations"""
 
     settings: Settings
@@ -181,8 +191,18 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking):
         in sql, save to `blocks_train`/`blocks_train_link` or `blocks_df`/`blocks_df_link`
         """
         if full:
+            columns: Set[str] = (
+                set(self.file_store.read("blocks_df").columns)
+                if "blocks_df" in self.file_store.names
+                else set()
+            )
             for scheme in conjunction:
-                pass
+                if scheme not in columns:
+                    self.add_scheme(scheme)
+
+        else:
+            pass
+
 
     @abstractmethod
     def add_scheme(
@@ -208,6 +228,7 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking):
         ----------
         in sql, appends to `blocks_df`/`blocks_df_link`
         """
+        pass
 
     @abstractmethod
     def build_inverted_index(
@@ -247,9 +268,7 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking):
 
     @abstractmethod
     @du.recordlinkage
-    def pairs_query(
-        self, conjunction: Tuple[str], rl: str = ""
-    ) -> pd.DataFrame:
+    def pairs_query(self, conjunction: Tuple[str], rl: str = "") -> DataFrame:
         """Get comparison pairs for a conjunction.
 
         For dedupe, cross join the "exploded" inverted index from
@@ -435,7 +454,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def update_train(self, newlabels: pd.DataFrame) -> None:
+    def update_train(self, newlabels: DataFrame) -> None:
         """
         From FastAPI, this method is used at end of each active learning loop;
         For entities that were labelled, set "labelled" column in
@@ -444,7 +463,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def update_labels(self, newlabels: pd.DataFrame) -> None:
+    def update_labels(self, newlabels: DataFrame) -> None:
         """
         From FastAPI, this method is used at end of each active learning loop;
         For entities that were labelled, add these newly labelled records
@@ -453,7 +472,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def get_distances(self) -> pd.DataFrame:
+    def get_distances(self) -> DataFrame:
         """Get the distances table to obtain uncertainty samples.
 
         This query should get the distances and join to `labels_distances`
@@ -464,7 +483,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def get_labels(self) -> pd.DataFrame:
+    def get_labels(self) -> DataFrame:
         """Get the labels_distances table (or labels) table;
 
         This query is used by FastAPI to teach the active learner. So it should
@@ -476,7 +495,7 @@ class BaseFapiRepository(ABC):
 @dataclass
 class BaseClusterRepository(ABC):
     @abstractmethod
-    def get_scores(self, threshold) -> pd.DataFrame:
+    def get_scores(self, threshold) -> DataFrame:
         """Get the `scores` table, created in
         BaseFapiRepository.save_predictions()
 
@@ -499,12 +518,12 @@ class BaseClusterRepository(ABC):
         pass
 
     @abstractmethod
-    def get_clusters(self) -> pd.DataFrame:
+    def get_clusters(self) -> DataFrame:
         """adds cluster IDs to df and returns dataframe"""
         pass
 
     @abstractmethod
-    def get_clusters_link(self, threshold) -> List[pd.DataFrame]:
+    def get_clusters_link(self, threshold) -> List[DataFrame]:
         """adds cluster IDs to df and df_link and retursn list of dataframes"""
         pass
 

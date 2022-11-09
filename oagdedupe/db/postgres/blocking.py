@@ -128,15 +128,16 @@ class PostgresBlockingRepository(
             block schemes to include in forward index
         """
         if full:
+
+            columns = self.query(
+                f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
+            ).columns
+
             for scheme in conjunction:
 
                 logging.info(
                     "building forward index on full data for scheme %s", scheme
                 )
-
-                columns = self.query(
-                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
-                ).columns
 
                 if scheme not in columns:
                     self.add_scheme(scheme=scheme, rl=rl)
