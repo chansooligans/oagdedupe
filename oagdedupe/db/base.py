@@ -22,6 +22,8 @@ class BaseInitializeRepository(ABC):
 
     """
 
+    settings: Settings
+
     @abstractmethod
     @du.recordlinkage_repeat
     def resample(self) -> None:
@@ -141,8 +143,10 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
             indicator for wheter to use `train` or `df`
         rl: str
             for recordlinkage, used by decorator
-        conjunction: Optional[int]
-            dataframe for recordlinkage
+        iter: Optional[int]
+            ?
+        conjunction: Optional[Tuple[str]]
+            dataframe for recordlinkage(?)
 
         Returns
         ----------

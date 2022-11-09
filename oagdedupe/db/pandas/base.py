@@ -2,27 +2,50 @@ import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame, read_csv
 import requests
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.settings import Settings
+from oagdedupe.db.base import BaseInitializeRepository, BaseRepositoryBlocking
+from pathlib import Path
+from logging import info
 
 
 @dataclass
-class BaseInitializeRepository(ABC):
-    """Abstract implementation for initialization operations
+class FileStore:
+    loc: Path
 
-    This repository only requires setup(), which is called at initialization
+    def fp(self, name: str) -> Path:
+        return self.loc / f"{name}.csv"
 
-    """
+    def names(self) -> Set[str]:
+        return {fp.stem for fp in self.loc.glob("*.csv")}
 
-    @abstractmethod
+    def read(self, name: str) -> DataFrame:
+        info(f"Reading {self.fp(name)}")
+        return read_csv(self.fp(name))
+
+    def save(self, df: DataFrame, name: str) -> None:
+        info(f"Saving to {self.fp(name)}")
+        return df.to_csv(self.fp(name))
+
+
+def get_file_store(settings: Settings) -> FileStore:
+    return FileStore(Path(settings.db.path_database))
+
+
+@dataclass
+class PandasInitializeRepository(BaseInitializeRepository):
+    """pandas implementation for initialization operations"""
+
+    settings: Settings
+
     @du.recordlinkage_repeat
     def resample(self) -> None:
         """Used by fast-api to generate new samples between active learning
@@ -42,9 +65,13 @@ class BaseInitializeRepository(ABC):
         """
         pass
 
-    @abstractmethod
     @du.recordlinkage
-    def setup(self, df=None, df2=None, rl: str = "") -> None:
+    def setup(
+        self,
+        df: Optional[DataFrame] = None,
+        df2: Optional[DataFrame] = None,
+        rl: str = "",
+    ) -> None:
         """sets up environment
 
         Creates the following tables (see oagdedupe/db/postgres/tables for an
@@ -82,12 +109,16 @@ class BaseInitializeRepository(ABC):
         saves each table in database/memory
         """
 
-        pass
+        self.df = df
+
+        if self.df is not None:
+            self.df.loc[:, "_index"] = range(len(self.df))
+            get_file_store(self.settings).save(self.df, name="df")
 
 
 @dataclass
-class BaseRepositoryBlocking(ABC, BlockSchemes):
-    """abstract implementation for blocking-related operations"""
+class PandasRepositoryBlocking(BaseRepositoryBlocking):
+    """pandas implementation for blocking-related operations"""
 
     settings: Settings
 
@@ -105,7 +136,6 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         """
         return (x.rr, x.positives, -x.negatives)
 
-    @abstractmethod
     @du.recordlinkage_repeat
     def build_forward_indices(
         self,
@@ -141,14 +171,18 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
             indicator for wheter to use `train` or `df`
         rl: str
             for recordlinkage, used by decorator
-        conjunction: Optional[int]
-            dataframe for recordlinkage
+        iter: Optional[int]
+            ?
+        conjunction: Optional[Tuple[str]]
+            dataframe for recordlinkage(?)
 
         Returns
         ----------
         in sql, save to `blocks_train`/`blocks_train_link` or `blocks_df`/`blocks_df_link`
         """
-        pass
+        if full:
+            for scheme in conjunction:
+                pass
 
     @abstractmethod
     def add_scheme(
