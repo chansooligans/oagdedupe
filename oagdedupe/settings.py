@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     db: Optional[SettingsDB] = SettingsDB()
 
     """label studio settings"""
-    label_studio: SettingsLabelStudio = SettingsLabelStudio()
+    label_studio: SettingsLabelStudio = SettingsLabelStudio(port=8089)
 
     """fast api settings"""
     fast_api: SettingsService = SettingsService(port=8090)

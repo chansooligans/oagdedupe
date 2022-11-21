@@ -19,6 +19,9 @@ class BaseBlocking(ABC):
     pairs: block.BasePairs = Pairs
     optimizer: block.BaseConjunctions = None
 
+    def save(self, full: bool = False, rl: str = ""):
+        pass
+
 
 # cluster
 @dataclass

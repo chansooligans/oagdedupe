@@ -189,7 +189,7 @@ class ClusterRepository(BaseClusterRepository, Tables):
             TRUNCATE TABLE dedupe.clusters;
             INSERT INTO dedupe.clusters (cluster, _index, _type)
             (
-                SELECT -1*component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
+                SELECT component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
                         'SELECT
                             ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
                             _index_l as source,
