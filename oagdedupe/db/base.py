@@ -469,6 +469,20 @@ class BaseClusterRepository(ABC):
         """adds cluster IDs to df and df_link and retursn list of dataframes"""
         pass
 
+    @abstractmethod
+    def get_connected_components(self, rl):
+        """
+        Build graph with "matched" candidate pairs then return "clusters".
+
+        For record linkage:
+        - Keeps track of whether index is from left or right dataframe
+
+        "Clusters" should have two columns:
+        - cluster: cluter ID
+        - _index: entity ID
+        """
+        return
+
 
 @dataclass
 class BaseRepository(

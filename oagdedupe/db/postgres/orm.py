@@ -137,7 +137,6 @@ class ClusterRepository(BaseClusterRepository, Tables):
             session.query(
                 self.Clusters.cluster,
                 self.Clusters._index,
-                self.Clusters._type,
             )
             .filter(self.Clusters._type == _type)
             .subquery()
@@ -172,6 +171,52 @@ class ClusterRepository(BaseClusterRepository, Tables):
             return self.get_clusters()
         else:
             return self.get_clusters_link()
+
+    def get_connected_components(self, rl):
+        """
+        Build graph with "matched" candidate pairs then return "clusters".
+
+        For record linkage:
+        - Keeps track of whether index is from left or right dataframe
+
+        "Clusters" should have two columns:
+        - cluster: cluter ID
+        - _index: entity ID
+        """
+        if rl:
+            self.engine.execute(
+                """
+            TRUNCATE TABLE dedupe.clusters;
+            INSERT INTO dedupe.clusters (cluster, _index, _type)
+            (
+                SELECT -1*component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
+                        'SELECT
+                            ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                            _index_l as source,
+                            -1*_index_r as target,
+                            score as cost
+                        FROM dedupe.scores'
+                    )
+                WHERE component * node < 0
+            )
+            ;
+            """
+            )
+        else:
+            self.engine.execute(
+                """
+            TRUNCATE TABLE dedupe.clusters;
+            INSERT INTO dedupe.clusters (cluster, _index)
+            SELECT component as cluster, node as _index FROM pgr_connectedComponents(
+                    'SELECT
+                        ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                        _index_l as source,
+                        _index_r as target,
+                        score as cost
+                    FROM dedupe.scores'
+                );
+            """
+            )
 
 
 @dataclass
