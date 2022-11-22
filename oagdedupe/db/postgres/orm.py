@@ -188,18 +188,21 @@ class ClusterRepository(BaseClusterRepository, Tables):
                 f"""
             TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
             INSERT INTO {self.settings.db.db_schema}.clusters (cluster, _index, _type)
-            (
-                SELECT component as cluster, node as _index, Null as _type FROM pgr_connectedComponents(
-                        'SELECT
-                            ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
-                            _index_l as source,
-                            -1*_index_r as target,
-                            score as cost
-                        FROM {self.settings.db.db_schema}.scores'
-                    )
-                WHERE component * node < 0
-            )
-            ;
+            SELECT 
+                component as cluster, 
+                abs(node) as _index, 
+                CASE 
+                    WHEN node >= 0 THEN True
+                    ELSE False
+                END as _type 
+            FROM pgr_connectedComponents(
+                    'SELECT
+                        ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                        _index_l as source,
+                        -1*_index_r as target,
+                        score as cost
+                    FROM {self.settings.db.db_schema}.scores'
+                );
             """
             )
         else:
