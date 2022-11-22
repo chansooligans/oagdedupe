@@ -135,7 +135,7 @@ class PostgresBlockingRepository(
                 )
 
                 columns = self.query(
-                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df LIMIT 1"
+                    f"SELECT * FROM {self.settings.db.db_schema}.blocks_df{rl} LIMIT 1"
                 ).columns
 
                 if scheme not in columns:

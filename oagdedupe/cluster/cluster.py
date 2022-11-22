@@ -36,59 +36,15 @@ class ConnectedComponents(BaseCluster):
         pd.DataFrame
             clusters merged with raw data
         """
-        scores = self.repo.get_scores(threshold=threshold)
-        df_clusters = getattr(self, f"get_connected_components{rl}")(scores)
-        return self.repo.merge_clusters_with_raw_data(
-            df_clusters=df_clusters, rl=rl
-        )
+        self.get_connected_components(rl=rl)
+        return self.repo.merge_clusters_with_raw_data(rl=rl)
 
-    def get_connected_components(self, scores: pd.DataFrame) -> pd.DataFrame:
+    def get_connected_components(self, rl: bool) -> pd.DataFrame:
         """
         Build graph with "matched" candidate pairs, weighted by p(match).
 
-        Need to add feature to consider weights when generating
-        connected components.
-
-        Parameters
-        ----------
-        scores: pd.DataFrame
-            dataframe with pair indices and match scores
-
-        Returns
-        ----------
-        pd.DataFrame
-            dataframe mapping cluster index to entity index
-        """
-        g = nx.Graph()
-        g.add_weighted_edges_from(
-            [
-                tuple(
-                    [
-                        f"{score['_index_l']}",
-                        f"{score['_index_r']}",
-                        score["score"],
-                    ]
-                )
-                for score in scores.to_dict(orient="records")
-            ]
-        )
-        conn_comp = list(nx.connected_components(g))
-        clusters = [
-            {"cluster": clusteridx, "_index": int(rec_id), "_type": None}
-            for clusteridx, cluster in enumerate(conn_comp)
-            for rec_id in cluster
-        ]
-        return pd.DataFrame(clusters)
-
-    def get_connected_components_link(
-        self, scores: pd.DataFrame
-    ) -> pd.DataFrame:
-        """
         For record linkage:
-
-        Build graph with "matched" candidate pairs, weighted by p(match).
-
-        Keeps track of whether index is from left or right dataframe
+        - Keeps track of whether index is from left or right dataframe
 
         Need to add feature to consider weights when generating
         connected components.
@@ -103,27 +59,4 @@ class ConnectedComponents(BaseCluster):
         pd.DataFrame
             dataframe mapping cluster index to entity index
         """
-        g = nx.Graph()
-        g.add_weighted_edges_from(
-            [
-                tuple(
-                    [
-                        f"{score['_index_l']}_l",
-                        f"{score['_index_r']}_r",
-                        score["score"],
-                    ]
-                )
-                for score in scores.to_dict(orient="records")
-            ]
-        )
-        conn_comp = list(nx.connected_components(g))
-        clusters = [
-            {
-                "cluster": clusteridx,
-                "_index": rec_id.split("_")[0],
-                "_type": "_l" in rec_id,
-            }
-            for clusteridx, cluster in enumerate(conn_comp)
-            for rec_id in cluster
-        ]
-        return pd.DataFrame(clusters)
+        self.repo.get_connected_components(rl=rl)

@@ -451,16 +451,11 @@ class BaseClusterRepository(ABC):
         pass
 
     @abstractmethod
-    def merge_clusters_with_raw_data(self, df_clusters, rl):
+    def merge_clusters_with_raw_data(self, rl):
         """wrapper for get_clusters() and get_clusters_link(); call
         get_clusters_link() instead of get_clusters() if rl != ""
 
         in sql, also saves df_clusters to `clusters` table
-
-        Parameters
-        ----------
-        `df_clusters` is the output of get_connected_components() in
-        oagdedupe.cluster
         """
         pass
 
@@ -473,6 +468,20 @@ class BaseClusterRepository(ABC):
     def get_clusters_link(self, threshold) -> List[pd.DataFrame]:
         """adds cluster IDs to df and df_link and retursn list of dataframes"""
         pass
+
+    @abstractmethod
+    def get_connected_components(self, rl):
+        """
+        Build graph with "matched" candidate pairs then return "clusters".
+
+        For record linkage:
+        - Keeps track of whether index is from left or right dataframe
+
+        "Clusters" should have two columns:
+        - cluster: cluter ID
+        - _index: entity ID
+        """
+        return
 
 
 @dataclass

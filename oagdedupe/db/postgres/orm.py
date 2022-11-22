@@ -137,7 +137,6 @@ class ClusterRepository(BaseClusterRepository, Tables):
             session.query(
                 self.Clusters.cluster,
                 self.Clusters._index,
-                self.Clusters._type,
             )
             .filter(self.Clusters._type == _type)
             .subquery()
@@ -166,14 +165,61 @@ class ClusterRepository(BaseClusterRepository, Tables):
                 dflist.append(pd.read_sql(q.statement, q.session.bind))
             return dflist
 
-    def merge_clusters_with_raw_data(self, df_clusters, rl):
-
-        self.bulk_insert(df=df_clusters, to_table=self.Clusters)
+    def merge_clusters_with_raw_data(self, rl):
 
         if rl == "":
             return self.get_clusters()
         else:
             return self.get_clusters_link()
+
+    def get_connected_components(self, rl):
+        """
+        Build graph with "matched" candidate pairs then return "clusters".
+
+        For record linkage:
+        - Keeps track of whether index is from left or right dataframe
+
+        "Clusters" should have two columns:
+        - cluster: cluter ID
+        - _index: entity ID
+        """
+        if rl:
+            self.engine.execute(
+                f"""
+            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
+            INSERT INTO {self.settings.db.db_schema}.clusters (cluster, _index, _type)
+            SELECT 
+                component as cluster, 
+                abs(node) as _index, 
+                CASE 
+                    WHEN node >= 0 THEN True
+                    ELSE False
+                END as _type 
+            FROM pgr_connectedComponents(
+                    'SELECT
+                        ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                        _index_l as source,
+                        -1*_index_r as target,
+                        score as cost
+                    FROM {self.settings.db.db_schema}.scores'
+                );
+            """
+            )
+        else:
+            self.engine.execute(
+                f"""
+            TRUNCATE TABLE {self.settings.db.db_schema}.clusters;
+            INSERT INTO {self.settings.db.db_schema}.clusters (cluster, _index)
+            SELECT component as cluster, node as _index FROM pgr_connectedComponents(
+                    'SELECT
+                        ROW_NUMBER() OVER (ORDER BY _index_l,_index_r) as id,
+                        _index_l as source,
+                        _index_r as target,
+                        score as cost
+                    FROM {self.settings.db.db_schema}.scores'
+                );
+            """
+            )
 
 
 @dataclass
