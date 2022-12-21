@@ -15,6 +15,7 @@ from oagdedupe.settings import Settings
 from oagdedupe.db.base import BaseInitializeRepository, BaseRepositoryBlocking
 from pathlib import Path
 from logging import info
+from .schemes import FUNC, Scheme
 
 
 @dataclass
@@ -152,7 +153,7 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         full: bool = False,
         rl: str = "",
         iter: Optional[int] = None,
-        conjunction: Optional[Tuple[str]] = None,
+        conjunction: Optional[Tuple[Scheme]] = None,
     ) -> None:
         """Builds forward indices on train or full data
 
@@ -201,13 +202,11 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
                     self.add_scheme(scheme)
         else:
             train = self.file_store.read("train")
-            
-
 
     @abstractmethod
     def add_scheme(
         self,
-        scheme: str,
+        scheme: Scheme,
         rl: str = "",
     ) -> None:
         """Only used for building forward index on full data;
@@ -228,9 +227,11 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         ----------
         in sql, appends to `blocks_df`/`blocks_df_link`
         """
-        pass
+        df = self.file_store.read("blocks_df")
+        for attribute in self.settings.attributes:
+            df[f"{scheme.name}_{attribute}"] = df[attribute].map(FUNC(scheme))
+        self.file_store.save(df, "blocks_df")
 
-    @abstractmethod
     def build_inverted_index(
         self, conjunction: Tuple[str], table: str, col: str = "_index_l"
     ) -> None:
@@ -264,7 +265,9 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         ----------
         in sql, returns a query
         """
-        pass
+        df_inverted_index = self.file_store.read("blocks_df")
+        for scheme in conjunction:
+            df_inverted_index = df_inverted_index.explode(scheme)
 
     @abstractmethod
     @du.recordlinkage
