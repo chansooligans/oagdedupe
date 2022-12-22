@@ -2,29 +2,69 @@ import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 import numpy as np
-import pandas as pd
+from pandas import DataFrame, read_csv
 import requests
 
 from oagdedupe import utils as du
 from oagdedupe._typing import ENGINE, StatsDict
 from oagdedupe.block.schemes import BlockSchemes
 from oagdedupe.settings import Settings
+from oagdedupe.db.base import BaseInitializeRepository, BaseRepositoryBlocking
+from pathlib import Path
+from logging import info
+from .schemes import FUNC, Scheme
+
+Attribute = str
+Conjunction = Set[Tuple[Scheme, Attribute]]
+
+
+def get_name(scheme: Scheme, attribute: Attribute) -> str:
+    return f"{scheme.name}_{attribute}"
 
 
 @dataclass
-class BaseInitializeRepository(ABC):
-    """Abstract implementation for initialization operations
+class FileStore:
+    loc: Path
 
-    This repository only requires setup(), which is called at initialization
+    def fp(self, name: str) -> Path:
+        return self.loc / f"{name}.csv"
 
-    """
+    @property
+    def names(self) -> Set[str]:
+        return {fp.stem for fp in self.loc.glob("*.csv")}
+
+    def read(self, name: str) -> DataFrame:
+        info(f"Reading {self.fp(name)}")
+        return read_csv(self.fp(name))
+
+    def save(self, df: DataFrame, name: str) -> None:
+        info(f"Saving to {self.fp(name)}")
+        return df.to_csv(self.fp(name), index=False)
+
+
+def get_file_store(settings: Settings) -> FileStore:
+    return FileStore(Path(settings.db.path_database))
+
+
+class FileStoreFromSettings:
+    settings: Settings
+
+    @property
+    def file_store(self) -> FileStore:
+        return get_file_store(self.settings)
+
+
+@dataclass
+class PandasInitializeRepository(
+    BaseInitializeRepository, FileStoreFromSettings
+):
+    """pandas implementation for initialization operations"""
 
     settings: Settings
 
-    @abstractmethod
     @du.recordlinkage_repeat
     def resample(self) -> None:
         """Used by fast-api to generate new samples between active learning
@@ -44,9 +84,13 @@ class BaseInitializeRepository(ABC):
         """
         pass
 
-    @abstractmethod
     @du.recordlinkage
-    def setup(self, df=None, df2=None, rl: str = "") -> None:
+    def setup(
+        self,
+        df: Optional[DataFrame] = None,
+        df2: Optional[DataFrame] = None,
+        rl: str = "",
+    ) -> None:
         """sets up environment
 
         Creates the following tables (see oagdedupe/db/postgres/tables for an
@@ -70,9 +114,9 @@ class BaseInitializeRepository(ABC):
 
         Parameters
         ----------
-        df: pd.DataFrame
+        df: DataFrame
             dataframe to dedupe
-        df2: Optional[pd.DataFrame]
+        df2: Optional[DataFrame]
             dataframe for recordlinkage
         rl: str
             for recordlinkage, used by decorator
@@ -84,12 +128,16 @@ class BaseInitializeRepository(ABC):
         saves each table in database/memory
         """
 
-        pass
+        if df is not None:
+            self.df = df.copy()
+            self.df.loc[:, "_index"] = range(len(self.df))
+            self.file_store.save(self.df, name="df")
+            self.file_store.save(self.df, name="blocks_df")
 
 
 @dataclass
-class BaseRepositoryBlocking(ABC, BlockSchemes):
-    """abstract implementation for blocking-related operations"""
+class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
+    """pandas implementation for blocking-related operations"""
 
     settings: Settings
 
@@ -107,14 +155,13 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         """
         return (x.rr, x.positives, -x.negatives)
 
-    @abstractmethod
     @du.recordlinkage_repeat
     def build_forward_indices(
         self,
+        conjunction: Conjunction,
         full: bool = False,
         rl: str = "",
         iter: Optional[int] = None,
-        conjunction: Optional[Tuple[str]] = None,
     ) -> None:
         """Builds forward indices on train or full data
 
@@ -152,12 +199,19 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         ----------
         in sql, save to `blocks_train`/`blocks_train_link` or `blocks_df`/`blocks_df_link`
         """
-        pass
+        if full:
+            columns: Set[str] = set(self.file_store.read("blocks_df").columns)
+            for scheme, attribute in conjunction:
+                if get_name(scheme, attribute) not in columns:
+                    self.add_scheme(scheme, attribute)
+        else:
+            train = self.file_store.read("train")
 
     @abstractmethod
     def add_scheme(
         self,
-        scheme: str,
+        scheme: Scheme,
+        attribute: Attribute,
         rl: str = "",
     ) -> None:
         """Only used for building forward index on full data;
@@ -178,10 +232,12 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         ----------
         in sql, appends to `blocks_df`/`blocks_df_link`
         """
+        df = self.file_store.read("blocks_df")
+        df.loc[:, get_name(scheme, attribute)] = df[attribute].map(FUNC(scheme))
+        self.file_store.save(df, "blocks_df")
 
-    @abstractmethod
     def build_inverted_index(
-        self, conjunction: Tuple[str], table: str, col: str = "_index_l"
+        self, conjunction: Conjunction, table: str, col: str = "_index_l"
     ) -> None:
         """Gets "exploded" inverted index for a particular conjunction, from either
         blocks_train (for sample) or blocks_df (for full).
@@ -213,13 +269,15 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         ----------
         in sql, returns a query
         """
-        pass
+        df_inverted_index = self.file_store.read("blocks_df")
+        for scheme, attribute in conjunction:
+            df_inverted_index = df_inverted_index.explode(
+                get_name(scheme, attribute)
+            )
 
     @abstractmethod
     @du.recordlinkage
-    def pairs_query(
-        self, conjunction: Tuple[str], rl: str = ""
-    ) -> pd.DataFrame:
+    def pairs_query(self, conjunction: Conjunction, rl: str = "") -> DataFrame:
         """Get comparison pairs for a conjunction.
 
         For dedupe, cross join the "exploded" inverted index from
@@ -242,7 +300,23 @@ class BaseRepositoryBlocking(ABC, BlockSchemes):
         ----------
         in sql, returns a query
         """
-        pass
+        df = self.file_store.read("blocks_df")
+        df_pairs = (
+            df.join(
+                right=df,
+                on=[
+                    get_name(scheme, attribute)
+                    for scheme, attribute in conjunction
+                ],
+                how="inner",
+                lsuffix="_l",
+                rsuffix="_r",
+            )[["_index_l", "_index_r"]]
+            .query("_index_l < _index_r")
+            .drop_duplicates()
+        )
+        self.file_store.save(df_pairs, "df_pairs")
+        return df_pairs
 
     @abstractmethod
     @du.recordlinkage
@@ -405,7 +479,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def update_train(self, newlabels: pd.DataFrame) -> None:
+    def update_train(self, newlabels: DataFrame) -> None:
         """
         From FastAPI, this method is used at end of each active learning loop;
         For entities that were labelled, set "labelled" column in
@@ -414,7 +488,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def update_labels(self, newlabels: pd.DataFrame) -> None:
+    def update_labels(self, newlabels: DataFrame) -> None:
         """
         From FastAPI, this method is used at end of each active learning loop;
         For entities that were labelled, add these newly labelled records
@@ -423,7 +497,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def get_distances(self) -> pd.DataFrame:
+    def get_distances(self) -> DataFrame:
         """Get the distances table to obtain uncertainty samples.
 
         This query should get the distances and join to `labels_distances`
@@ -434,7 +508,7 @@ class BaseFapiRepository(ABC):
         pass
 
     @abstractmethod
-    def get_labels(self) -> pd.DataFrame:
+    def get_labels(self) -> DataFrame:
         """Get the labels_distances table (or labels) table;
 
         This query is used by FastAPI to teach the active learner. So it should
@@ -446,7 +520,7 @@ class BaseFapiRepository(ABC):
 @dataclass
 class BaseClusterRepository(ABC):
     @abstractmethod
-    def get_scores(self, threshold) -> pd.DataFrame:
+    def get_scores(self, threshold) -> DataFrame:
         """Get the `scores` table, created in
         BaseFapiRepository.save_predictions()
 
@@ -469,12 +543,12 @@ class BaseClusterRepository(ABC):
         pass
 
     @abstractmethod
-    def get_clusters(self) -> pd.DataFrame:
+    def get_clusters(self) -> DataFrame:
         """adds cluster IDs to df and returns dataframe"""
         pass
 
     @abstractmethod
-    def get_clusters_link(self, threshold) -> List[pd.DataFrame]:
+    def get_clusters_link(self, threshold) -> List[DataFrame]:
         """adds cluster IDs to df and df_link and retursn list of dataframes"""
         pass
 
