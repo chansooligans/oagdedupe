@@ -17,6 +17,13 @@ from pathlib import Path
 from logging import info
 from .schemes import FUNC, Scheme
 
+Attribute = str
+Conjunction = Set[Tuple[Scheme, Attribute]]
+
+
+def get_name(scheme: Scheme, attribute: Attribute) -> str:
+    return f"{scheme.name}_{attribute}"
+
 
 @dataclass
 class FileStore:
@@ -150,10 +157,10 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
     @du.recordlinkage_repeat
     def build_forward_indices(
         self,
+        conjunction: Conjunction,
         full: bool = False,
         rl: str = "",
         iter: Optional[int] = None,
-        conjunction: Optional[Tuple[Scheme]] = None,
     ) -> None:
         """Builds forward indices on train or full data
 
@@ -197,9 +204,9 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
                 if "blocks_df" in self.file_store.names
                 else set()
             )
-            for scheme in conjunction:
-                if scheme not in columns:
-                    self.add_scheme(scheme)
+            for scheme, attribute in conjunction:
+                if get_name(scheme, attribute) not in columns:
+                    self.add_scheme(scheme, attribute)
         else:
             train = self.file_store.read("train")
 
@@ -207,6 +214,7 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
     def add_scheme(
         self,
         scheme: Scheme,
+        attribute: Attribute,
         rl: str = "",
     ) -> None:
         """Only used for building forward index on full data;
@@ -228,12 +236,11 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         in sql, appends to `blocks_df`/`blocks_df_link`
         """
         df = self.file_store.read("blocks_df")
-        for attribute in self.settings.attributes:
-            df[f"{scheme.name}_{attribute}"] = df[attribute].map(FUNC(scheme))
+        df.loc[:, get_name(scheme, attribute)] = df[attribute].map(FUNC(scheme))
         self.file_store.save(df, "blocks_df")
 
     def build_inverted_index(
-        self, conjunction: Tuple[str], table: str, col: str = "_index_l"
+        self, conjunction: Conjunction, table: str, col: str = "_index_l"
     ) -> None:
         """Gets "exploded" inverted index for a particular conjunction, from either
         blocks_train (for sample) or blocks_df (for full).
@@ -266,12 +273,14 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         in sql, returns a query
         """
         df_inverted_index = self.file_store.read("blocks_df")
-        for scheme in conjunction:
-            df_inverted_index = df_inverted_index.explode(scheme)
+        for scheme, attribute in conjunction:
+            df_inverted_index = df_inverted_index.explode(
+                get_name(scheme, attribute)
+            )
 
     @abstractmethod
     @du.recordlinkage
-    def pairs_query(self, conjunction: Tuple[str], rl: str = "") -> DataFrame:
+    def pairs_query(self, conjunction: Conjunction, rl: str = "") -> DataFrame:
         """Get comparison pairs for a conjunction.
 
         For dedupe, cross join the "exploded" inverted index from
@@ -294,7 +303,23 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         ----------
         in sql, returns a query
         """
-        pass
+        df = self.file_store.read("blocks_df")
+        df_pairs = (
+            df.join(
+                right=df,
+                on=[
+                    get_name(scheme, attribute)
+                    for scheme, attribute in conjunction
+                ],
+                how="inner",
+                lsuffix="_l",
+                rsuffix="_r",
+            )[["_index_l", "_index_r"]]
+            .query("_index_l < _index_r")
+            .drop_duplicates()
+        )
+        self.file_store.save(df_pairs, "df_pairs")
+        return df_pairs
 
     @abstractmethod
     @du.recordlinkage
