@@ -132,6 +132,7 @@ class PandasInitializeRepository(
             self.df = df.copy()
             self.df.loc[:, "_index"] = range(len(self.df))
             self.file_store.save(self.df, name="df")
+            self.file_store.save(self.df, name="blocks_df")
 
 
 @dataclass
@@ -199,11 +200,7 @@ class PandasRepositoryBlocking(BaseRepositoryBlocking, FileStoreFromSettings):
         in sql, save to `blocks_train`/`blocks_train_link` or `blocks_df`/`blocks_df_link`
         """
         if full:
-            columns: Set[str] = (
-                set(self.file_store.read("blocks_df").columns)
-                if "blocks_df" in self.file_store.names
-                else set()
-            )
+            columns: Set[str] = set(self.file_store.read("blocks_df").columns)
             for scheme, attribute in conjunction:
                 if get_name(scheme, attribute) not in columns:
                     self.add_scheme(scheme, attribute)
