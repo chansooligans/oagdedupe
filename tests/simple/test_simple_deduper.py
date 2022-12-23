@@ -33,19 +33,12 @@ def pair(record, record2) -> Pair:
     return frozenset({record, record2})
 
 
-@fixture
-def label_repo_same(pair) -> InMemoryLabelRepository:
-    label_repo = InMemoryLabelRepository()
-    label_repo.add(pair, Label.SAME)
-    return label_repo
-
-
-def test_dedupe_no_labels_runs(record, records):
+def test_dedupe_single_label_runs(record, records):
     deduper = Deduper(
         records=records,
         attributes={"name", "address"},
         conj_finder=FakeConjunctionFinder(),
-        label_repo=InMemoryLabelRepository(),
+        labels={pair: Label.SAME},
         classifier_repo=InMemoryClassifierRepository(),
         clusterer=FakeClusterer(),
     )
