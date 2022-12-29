@@ -3,6 +3,7 @@ top-level API for this simple dedupe version
 """
 
 from .concepts import (
+    Record,
     Entity,
     LabelRepository,
     ConjunctionFinder,
@@ -12,16 +13,13 @@ from .concepts import (
     Pair,
     Label,
     Conjunction,
-    ClassifierFinder,
     ActiveLearner,
 )
 from .subroutines import get_pairs
-from .utils import get_singletons
 from typing import Set, Generator
 
-from pandera.typing import DataFrame
+from pandera.typing import DataFrame, Series
 from pandera import DataFrameSchema, Column, check_types
-from pandas import concat
 
 from dataclasses import dataclass
 
@@ -29,10 +27,10 @@ from dataclasses import dataclass
 @dataclass
 class Deduper:
     attributes: Set[Attribute]
-    records: DataFrame
+    records: DataFrame[Record]
     label_repo: LabelRepository
     conj_finder: ConjunctionFinder
-    classifier_finder: ClassifierFinder
+    classifier: Classifier
     active_learner: ActiveLearner
     clusterer: Clusterer
     limit_pairs: int = 1000
@@ -45,7 +43,7 @@ class Deduper:
     def schema(self) -> DataFrameSchema:
         return DataFrameSchema(
             {
-                "id": Column(str),
+                Record.id: Column(int),
                 **{attr: Column(str) for attr in self.attributes},
             }
         )
@@ -57,7 +55,7 @@ class Deduper:
 
     @property
     def sample(self) -> DataFrame:
-        return self.records.sample(5000)
+        return self.records.sample(min(5000, len(self.records)))
 
     @property
     def conjunctions(self) -> Generator[Conjunction, None, None]:
@@ -66,8 +64,8 @@ class Deduper:
         )
 
     @property
-    def classifier(self) -> Classifier:
-        return self.classifier_finder.learn_classifier(
+    def learn(self) -> Classifier:
+        return self.classifier.learn(
             records=self.records, attrbutes=self.attributes, labels=self.labels
         )
 
@@ -83,28 +81,26 @@ class Deduper:
     @property  # type: ignore
     @check_types
     def next_to_label(self) -> DataFrame[Pair]:
+        self.learn()
         self.active_learner(
             predictions=self.classifier.predict(
-                self.get_pairs(records=self.sample)
+                records=self.records,
+                attributes=self.attributes,
+                pairs=self.get_pairs(records=self.sample),
             )
-        ).get_next()
+        ).get_next_to_label()
+
+    @property
+    def ids(self) -> Series[int]:
+        return self.records[Record.id]
 
     @property  # type: ignore
     @check_types
     def entities(self) -> DataFrame[Entity]:
         pairs = self.get_pairs(records=self.records)
-        entities = self.clusterer.get_clusters(
+        self.learn()
+        return self.clusterer.get_clusters(
             predictions=self.classifier.predict(pairs)
-        )
-        return concat(
-            [
-                entities,
-                get_singletons(
-                    ids=self.ids,
-                    pairs=pairs,
-                    start=entities[Entity.entity_id].max() + 1,
-                ),
-            ]
         )
 
 
@@ -115,21 +111,14 @@ class Deduper:
 # - use a good conjuction and classifier to cluster on all data
 
 # Process:
-# 1. learn a good classifier from the labels
-# 2. take a sample (that includes labels)
-# 3. generate the best conjunctions from the sample and labels
-# 4. decide from the classifier and good conjunctions what to label next
-# 5. label
-# 6. repeat from 1, or
-# 7. do steps 1 through 3
-# 8. get all pairs from the top best conjunctions
-# 9. classify all of those pairs
-# 10. cluster all of those pairs
-
-
-# %%
-from oagdedupe.simplepandas.learner import Learner
-
-# %%
-Learner()
-# %%
+# 1. take a sample
+# 2. generate the best conjunctions from the sample and labels
+# 3. get some pairs from the top best conjunctions
+# 4. learn a good classifier from the labels
+# 5. decide from the classifier what to label next from the pairs
+# 6. label
+# 7. repeat from 1, or
+# 8. do steps 1 through 5
+# 9. get all pairs from the top best conjunctions
+# 10. classify all of those pairs
+# 11. cluster all of those pairs

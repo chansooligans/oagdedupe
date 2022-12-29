@@ -1,17 +1,17 @@
-from typing import FrozenSet
 from oagdedupe.simplepandas.deduper import Deduper
-from oagdedupe.simplepandas.concepts import Entity, Pair, Record, Label
+from oagdedupe.simplepandas.concepts import Entity, Pair
 from oagdedupe.simplepandas.fakes import (
     FakeConjunctionFinder,
     FakeClusterer,
-    fake_classifier,
+    FakeClassifier,
+    FakeActiveLearner,
 )
 from oagdedupe.simplepandas.repositories import (
     InMemoryLabelRepository,
-    InMemoryClassifierRepository,
 )
 from pytest import fixture
 from pandera.typing import DataFrame
+from pandas.testing import assert_frame_equal
 
 
 @fixture
@@ -32,19 +32,27 @@ def pair(record, record2) -> Pair:
 @fixture
 def label_repo_same(pair) -> InMemoryLabelRepository:
     label_repo = InMemoryLabelRepository()
-    label_repo.add(pair, Label.SAME)
+    label_repo.add(pair, True)
     return label_repo
 
 
 def test_dedupe_single_label_runs(records):
     deduper = Deduper(
         records=records,
-        name_field_id = "id",
         attributes={"name", "address"},
         conj_finder=FakeConjunctionFinder(),
-        labels={pair: Label.SAME},
-        classifier_repo=InMemoryClassifierRepository(),
+        label_repo=InMemoryLabelRepository(),
+        classifier=FakeClassifier(),
         clusterer=FakeClusterer(),
+        active_learner=FakeActiveLearner(),
     )
 
-    assert Entity(records=records) in deduper.get_entities()
+    assert_frame_equal(
+        deduper.entities,
+        DataFrame(
+            [
+                {"id": 1, "entity_id": 0},
+                {"id": 2, "entity_id": 0},
+            ]
+        ),
+    )

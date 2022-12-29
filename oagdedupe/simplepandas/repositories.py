@@ -1,26 +1,19 @@
 """simple version repository implementations
 """
-from .concepts import LabelRepository, Pair, Label, ClassifierRepository, Classifier
-from typing import Dict, Optional
+from .concepts import LabelRepository, Label
+from pandera.typing import DataFrame
+from pandas import concat
+from pandera import check_types
 
 
 class InMemoryLabelRepository(LabelRepository):
     def __init__(self):
-        self.labels = {}
+        self.labels = Label.example(size=0)
 
-    def add(self, pair: Pair, label: Label) -> None:
-        self.labels[pair] = label
+    @check_types
+    def add(self, labels: DataFrame[Label]) -> None:
+        self.labels = concat([self.labels, labels]).drop_duplicates()
 
-    def get(self) -> Dict[Pair, Label]:
+    @check_types
+    def get(self) -> DataFrame[Label]:
         return self.labels
-
-
-class InMemoryClassifierRepository(ClassifierRepository):
-    def __init__(self):
-        self.classifier: Optional[Classifier] = None
-
-    def add(self, classifier: Classifier) -> None:
-        self.classifier = classifier
-
-    def get(self) -> Optional[Classifier]:
-        return self.classifier
