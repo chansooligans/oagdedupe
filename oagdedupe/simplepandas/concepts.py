@@ -6,10 +6,9 @@ from typing import (
     Set,
     Callable,
     Tuple,
-    Dict,
     Generator,
-    Type,
     Union,
+    List,
 )
 from abc import ABC, abstractmethod
 from pandera import SchemaModel
@@ -39,14 +38,25 @@ class Entity(Record):
     entity_id: Series[int]
 
 
-class Signature(ABC):
+class Scheme(ABC):
+    @staticmethod
     @abstractmethod
-    def __eq__(self, other) -> bool:
+    def get(value: str) -> Union[str, List[str]]:
         pass
 
+    @classmethod
+    def name_field(self, attribute: Attribute) -> str:
+        return f"{self.__name__}_{attribute}"
 
-Scheme = Callable[[str], Union[str, Signature]]
-Conjunction = Set[Tuple[Type[Scheme], Attribute]]
+    @classmethod
+    def add(
+        self, records: DataFrame[Record], attribute: Attribute
+    ) -> DataFrame[Record]:
+        if self.name_field(attribute) not in records.columns:
+            records[self.name_field(attribute)] = records[attribute].map(self.get)
+
+
+Conjunction = Set[Tuple[Scheme, Attribute]]
 
 
 class ConjunctionFinder(ABC):

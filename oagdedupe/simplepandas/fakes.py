@@ -17,7 +17,7 @@ from .concepts import (
     ActiveLearner,
     Prediction,
 )
-from .schemes import first_letter_first_word
+from .schemes import FirstLetterFirstWord
 from pandera.typing import DataFrame
 from pandas import concat
 
@@ -30,7 +30,7 @@ class FakeConjunctionFinder(ConjunctionFinder):
         labels: DataFrame[Label],
     ) -> Generator[Conjunction, None, None]:
         for attribute in attributes:
-            yield {(first_letter_first_word, attribute)}
+            yield {(FirstLetterFirstWord, attribute)}
 
 
 class FakeClassifier(Classifier):
@@ -61,7 +61,9 @@ class FakeClusterer(Clusterer):
         return (
             concat(
                 [
-                    predictions[[field]].rename(columns={field: Entity.id})
+                    predictions[[field]].rename(columns={field: Entity.id})[
+                        [Entity.id]
+                    ]
                     for field in [Prediction.id1, Prediction.id2]
                 ]
             )

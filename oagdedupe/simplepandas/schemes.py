@@ -1,7 +1,10 @@
 """
 simple version schemes
 """
+from pandera.typing import Series
+from .concepts import Scheme
 
 
-def first_letter_first_word(value: str) -> str:
-    return value.split(" ")[0][0]
+class FirstLetterFirstWord(Scheme):
+    def get(value: str) -> str:
+        return value.split(" ")[0][0]

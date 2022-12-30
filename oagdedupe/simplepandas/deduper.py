@@ -15,8 +15,8 @@ from .concepts import (
     Conjunction,
     ActiveLearner,
 )
-from .subroutines import get_pairs
-from typing import Set, Generator
+from .subroutines import get_pairs_limit_pairs, get_pairs_limit_conjunctions
+from typing import Set, Generator, Optional
 
 from pandera.typing import DataFrame, Series
 from pandera import DataFrameSchema, Column, check_types
@@ -63,19 +63,9 @@ class Deduper:
             records=self.sample, attributes=self.attributes, labels=self.labels
         )
 
-    @property
-    def learn(self) -> Classifier:
-        return self.classifier.learn(
-            records=self.records, attrbutes=self.attributes, labels=self.labels
-        )
-
-    @check_types
-    def get_pairs(self, records: DataFrame) -> DataFrame[Pair]:
-        return get_pairs(
-            records=records,
-            conjs=self.conjunctions,
-            limit_pairs=self.limit_pairs,
-            limit_conjunctions=self.limit_conjunctions,
+    def learn(self) -> None:
+        self.classifier.learn(
+            records=self.records, attributes=self.attributes, labels=self.labels
         )
 
     @property  # type: ignore
@@ -86,21 +76,29 @@ class Deduper:
             predictions=self.classifier.predict(
                 records=self.records,
                 attributes=self.attributes,
-                pairs=self.get_pairs(records=self.sample),
+                pairs=get_pairs_limit_pairs(
+                    records=self.sample,
+                    conjunctions=self.conjunctions,
+                    limit=self.limit_pairs,
+                ),
             )
         ).get_next_to_label()
-
-    @property
-    def ids(self) -> Series[int]:
-        return self.records[Record.id]
 
     @property  # type: ignore
     @check_types
     def entities(self) -> DataFrame[Entity]:
-        pairs = self.get_pairs(records=self.records)
         self.learn()
+        
         return self.clusterer.get_clusters(
-            predictions=self.classifier.predict(pairs)
+            predictions=self.classifier.predict(
+                records=self.records,
+                attributes=self.attributes,
+                pairs=get_pairs_limit_conjunctions(
+                    records=self.records,
+                    conjunctions=self.conjunctions,
+                    limit=self.limit_conjunctions,
+                ),
+            )
         )
 
 

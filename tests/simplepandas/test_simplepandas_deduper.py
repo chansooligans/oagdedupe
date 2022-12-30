@@ -48,11 +48,12 @@ def test_dedupe_single_label_runs(records):
     )
 
     assert_frame_equal(
-        deduper.entities,
         DataFrame(
             [
                 {"id": 1, "entity_id": 0},
-                {"id": 2, "entity_id": 0},
-            ]
+                {"id": 2, "entity_id": 1},
+            ],
+            index=[1, 1],
         ),
+        deduper.entities,
     )

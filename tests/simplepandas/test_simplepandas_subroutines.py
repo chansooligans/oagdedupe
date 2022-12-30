@@ -1,45 +1,107 @@
 """
-testing simple version subroutines
+testing simple pandas version subroutines
 """
 
-from oagdedupe.simple.subroutines import (
+from oagdedupe.simplepandas.subroutines import (
+    get_signatures,
     get_pairs_one_conjunction,
-    make_initial_labels,
+    get_pairs_limit_pairs,
+    get_pairs_limit_conjunctions,
+    get_initial_labels,
 )
-from oagdedupe.simple.concepts import Record, Label
-from oagdedupe.simple.schemes import first_letter_first_word
 from pytest import fixture, mark
+from oagdedupe.simplepandas.concepts import Record, Conjunction, Pair, Scheme
+from pandera.typing import DataFrame, Series
+from oagdedupe.simplepandas.schemes import FirstLetterFirstWord
+from pandas.testing import assert_series_equal, assert_frame_equal
+from pandas import RangeIndex
 
 
 @fixture
-def record() -> Record:
-    return Record.from_dict({"name": "g", "address": "1"})
-
-
-@fixture
-def record2() -> Record:
-    return Record.from_dict({"name": "g", "address": "211 some road"})
+def records() -> DataFrame[Record]:
+    return DataFrame(
+        [
+            {"id": 1, "name": "g", "address": "1"},
+            {"id": 2, "name": "g", "address": "211 some road"},
+        ]
+    )
 
 
 @mark.parametrize(
-    "scheme,attribute,expected",
+    ["conjunction", "scheme", "attribute", "expected"],
     [
-        (first_letter_first_word, "name", True),
-        (first_letter_first_word, "address", False),
+        (
+            {(FirstLetterFirstWord, "address")},
+            FirstLetterFirstWord,
+            "address",
+            Series(["1", "2"]),
+        ),
+        (
+            {(FirstLetterFirstWord, "name")},
+            FirstLetterFirstWord,
+            "name",
+            Series(["g", "g"]),
+        ),
     ],
 )
-def test_get_pairs_one_conjunction_works(
-    record, record2, scheme, attribute, expected
+def test_get_signatures(
+    records: DataFrame[Record],
+    conjunction: Conjunction,
+    scheme: Scheme,
+    attribute: str,
+    expected: Series,
 ):
-    records = frozenset({record, record2})
-    assert (
-        frozenset({record, record2})
-        in get_pairs_one_conjunction(records, {(scheme, attribute)})
-    ) is expected
+    get_signatures(records=records, conjunction=conjunction)
+    assert_series_equal(
+        records[scheme.name_field(attribute)],
+        expected.rename(scheme.name_field(attribute)),
+    )
 
 
-def test_make_initial_labels_works(record, record2):
-    labels = make_initial_labels(frozenset({record, record2}))
-    assert labels[frozenset({record, record})] == Label.SAME
-    assert labels[frozenset({record, record2})] == Label.NOT_SAME
-    assert labels[frozenset({record2, record})] == Label.NOT_SAME
+@mark.parametrize(
+    ["conjunction", "expected"],
+    [
+        (
+            {
+                (FirstLetterFirstWord, "address"),
+            },
+            Pair.example(size=0),
+        ),
+        (
+            {
+                (FirstLetterFirstWord, "name"),
+            },
+            DataFrame(
+                [{"id1": 1, "id2": 2}],
+                index=[1],
+            ),
+        ),
+    ],
+)
+def test_get_pairs_one_conjunction(
+    records: DataFrame[Record],
+    conjunction: Conjunction,
+    expected: DataFrame[Pair],
+):
+    assert_frame_equal(
+        expected.reindex(),
+        get_pairs_one_conjunction(records=records, conjunction=conjunction),
+    )
+
+
+def test_get_pairs_limit_conjunctions(records: DataFrame[Record]):
+    assert_frame_equal(
+        DataFrame(
+            [{"id1": 1, "id2": 2}],
+            index=[1],
+        ),
+        get_pairs_limit_conjunctions(
+            records,
+            (
+                {
+                    (FirstLetterFirstWord, "name"),
+                },
+            ),
+            limit=1,
+        ),
+    )
