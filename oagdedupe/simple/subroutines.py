@@ -2,19 +2,11 @@
 simple version subroutines
 """
 
-from .concepts import (
-    ConjunctionFinder,
-    Pair,
-    Record,
-    Conjunction,
-    Scheme,
-    Attribute,
-    Label,
-    Pair,
-    Signature,
-)
-from typing import FrozenSet, Dict, List, Generator
 import random
+from typing import Dict, FrozenSet, Generator
+
+from .concepts import Conjunction, Label, Pair, Record
+
 
 def get_pairs_one_conjunction(
     records: FrozenSet[Record], conj: Conjunction

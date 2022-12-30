@@ -2,18 +2,19 @@
 simple version fakes for testing
 """
 
+from typing import Dict, FrozenSet, Generator, Set
+
 from .concepts import (
-    ConjunctionFinder,
-    Conjunction,
     Attribute,
-    Entity,
-    Record,
-    Pair,
-    Label,
     Clusterer,
+    Conjunction,
+    ConjunctionFinder,
+    Entity,
+    Label,
+    Pair,
+    Record,
 )
 from .schemes import first_letter_first_word
-from typing import Set, FrozenSet, Dict, Generator
 
 
 class FakeConjunctionFinder(ConjunctionFinder):
